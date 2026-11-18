@@ -273,8 +273,8 @@
   #cropBox i[data-h="ne"] { right: -10px; top: -10px; cursor: nesw-resize; } #cropBox i[data-h="e"] { right: -10px; top: calc(50% - 9px); cursor: ew-resize; }
   #cropBox i[data-h="se"] { right: -10px; bottom: -10px; cursor: nwse-resize; } #cropBox i[data-h="s"] { left: calc(50% - 9px); bottom: -10px; cursor: ns-resize; }
   #cropBox i[data-h="sw"] { left: -10px; bottom: -10px; cursor: nesw-resize; } #cropBox i[data-h="w"] { left: -10px; top: calc(50% - 9px); cursor: ew-resize; }
-  #cropWm { position: absolute; font-family: var(--font); font-weight: 800; font-style: italic; color: rgba(255, 255, 255, .95); line-height: 1; white-space: nowrap;
-    -webkit-text-stroke: 2px rgba(14, 27, 61, .8); paint-order: stroke fill; pointer-events: none; }
+  #cropWm { position: absolute; font-family: var(--font); font-weight: 800; font-style: italic; color: rgba(255, 255, 255, .4); line-height: 1; white-space: nowrap;
+    -webkit-text-stroke: 1px rgba(14, 27, 61, .18); paint-order: stroke fill; pointer-events: none; }
   .shotHint { font-size: 12.5px; color: var(--muted); text-align: center; max-width: 560px; }
   .shotBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .shotBtns button, .shotHead button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 8px 16px; cursor: pointer; }
@@ -1290,9 +1290,9 @@ function saveSharedTeams(teamsObj) {
     var fs = wmFont(W), pad = Math.round(fs * 0.7);
     g.save();
     g.font = 'italic 800 ' + fs + 'px "Exo 2", Arial, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'bottom';
-    g.lineJoin = 'round'; g.lineWidth = Math.max(3, fs * 0.2); g.strokeStyle = 'rgba(14,27,61,.8)';
+    g.lineJoin = 'round'; g.lineWidth = Math.max(2, fs * 0.1); g.strokeStyle = 'rgba(14,27,61,.18)';
     g.strokeText(WATERMARK, W - pad, H - pad * 0.7);
-    g.fillStyle = 'rgba(255,255,255,.95)'; g.fillText(WATERMARK, W - pad, H - pad * 0.7);
+    g.fillStyle = 'rgba(255,255,255,.4)'; g.fillText(WATERMARK, W - pad, H - pad * 0.7); // przezroczysty znak wodny
     g.restore();
   }
   function placeCrop() {
