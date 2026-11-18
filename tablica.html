@@ -368,7 +368,7 @@ function saveSharedTeams(teamsObj) {
 
     <details class="card" id="pawnsCard" open>
       <summary>Pionki</summary>
-      <div class="hint" style="margin-top:0">Kliknij pionek na boisku, aby go zaznaczyć – u góry pojawi się pasek z przyciskami − + 🗑 (rozmiar i usunięcie). Klawisze: + / − / Delete / Esc.</div>
+      <div class="hint" style="margin-top:0">Kliknij pionek na boisku, aby go zaznaczyć – u góry pojawi się pasek z przyciskiem 🗑 (usunięcie pionka). Klawisze: Delete / Esc. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).</div>
       <div class="row"><b>Rozmiar wszystkich</b></div>
       <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset">100%</button></div>
       <div class="row"><button type="button" id="restoreGone" title="Przywróć pionki usunięte z boiska">Przywróć usunięte pionki <span id="goneN"></span></button></div>
@@ -384,8 +384,6 @@ function saveSharedTeams(teamsObj) {
   <main>
     <div id="pawnTools" hidden>
       <span id="pawnToolsLbl"></span>
-      <button type="button" id="pawnSmaller" title="Pomniejsz pionek (−)">−</button>
-      <button type="button" id="pawnBigger" title="Powiększ pionek (+)">+</button>
       <button type="button" id="pawnDel" title="Usuń pionek z boiska (Delete)">🗑</button>
       <button type="button" id="pawnDesel" title="Odznacz (Esc)">✕</button>
     </div>
@@ -575,7 +573,7 @@ function saveSharedTeams(teamsObj) {
   } catch (e) {}
   function savePst() { try { localStorage.setItem(PSTATE_KEY, JSON.stringify(pst)); } catch (e) {} }
   function pawnOwn(t, n) { pst.ps[t] = pst.ps[t] || {}; return pst.ps[t][n] || (pst.ps[t][n] = { s: 1, gone: false }); }
-  function pawnScale(t, n) { var o = pst.ps[t] && pst.ps[t][n]; return ((o && o.s) || 1) * (pst.gs || 1); }
+  function pawnScale(t, n) { return pst.gs || 1; } // rozmiar zmienia się tylko dla wszystkich pionków naraz
   function isGone(t, n) { var o = pst.ps[t] && pst.ps[t][n]; return !!(o && o.gone); }
   function goneCount() { var c = 0; ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (isGone(t, n)) c++; }); return c; }
   var selPawn = null; // { team, n }
@@ -678,7 +676,7 @@ function saveSharedTeams(teamsObj) {
     bar.hidden = !ok; if (!ok) return;
     var r = roster[selPawn.team][selPawn.n];
     document.getElementById('pawnToolsLbl').textContent = (teams[selPawn.team].name || defName[selPawn.team]) + ' · ' + r.num + (r.role ? ' (' + (ROLE_NAME[r.role] || r.role) + ')' : '') +
-      ' · ' + Math.round(pawnScale(selPawn.team, selPawn.n) * 100) + '%';
+      ''; 
   }
   function syncPawnsPanel() {
     var el_ = document.getElementById('gsVal'); if (el_) el_.textContent = Math.round(pst.gs * 100) + '%';
@@ -687,10 +685,6 @@ function saveSharedTeams(teamsObj) {
     var bb = document.querySelector('#rail [data-act="ball"]'); if (bb) bb.classList.toggle('on', !!pst.ball.on);
   }
   function selectPawn(team, n) { selPawn = (selPawn && selPawn.team === team && selPawn.n === n) ? null : { team: team, n: n }; render(); }
-  function resizePawn(d) {
-    if (!selPawn) return; var o = pawnOwn(selPawn.team, selPawn.n);
-    o.s = Math.max(0.5, Math.min(2.2, Math.round(((o.s || 1) + d) * 100) / 100)); commit();
-  }
   function removePawn() {
     if (!selPawn) return; pawnOwn(selPawn.team, selPawn.n).gone = true; selPawn = null; commit();
   }
@@ -1531,8 +1525,6 @@ function saveSharedTeams(teamsObj) {
     else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
   });
   // pionki: rozmiar / usuwanie zaznaczonego, rozmiar wszystkich, przywracanie usuniętych
-  $('pawnBigger').addEventListener('click', function () { resizePawn(0.15); });
-  $('pawnSmaller').addEventListener('click', function () { resizePawn(-0.15); });
   $('pawnDel').addEventListener('click', removePawn);
   $('pawnDesel').addEventListener('click', function () { selPawn = null; render(); });
   $('gsBigger').addEventListener('click', function () { pst.gs = Math.min(1.8, Math.round((pst.gs + 0.1) * 100) / 100); commit(); });
@@ -1544,8 +1536,6 @@ function saveSharedTeams(teamsObj) {
     if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || drawOn || !selPawn) return;
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removePawn(); }
     else if (e.key === 'Escape') { selPawn = null; render(); }
-    else if (e.key === '+' || e.key === '=') resizePawn(0.15);
-    else if (e.key === '-') resizePawn(-0.15);
   });
   // tło poza boiskiem: parkiet (niebieskozielone) albo jasne
   function syncBg() { var b = document.documentElement.getAttribute('data-bg') || 'floor'; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.bg === b); }); }
