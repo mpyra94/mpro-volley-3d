@@ -399,7 +399,7 @@ function saveSharedTeams(teamsObj) {
     3: { pos: { 1: [-6.4, 2.9], 2: [-1.0, 3.5], 3: [-0.8, 0.8], 4: [-5.0, -2.9], 5: [-6.8, -0.3], 6: [-8.0, 1.3] } },
     2: { pos: { 1: [-6.4, 2.9], 2: [-0.6, 2.5], 3: [-5.0, -2.6], 4: [-0.8, -3.8], 5: [-8.0, -3.6], 6: [-6.8, 0.0] } },
   };
-  var DEFENSE = { 4: [-0.7, -2.4], 3: [-0.7, 0], 2: [-0.7, 2.4], 5: [-4.2, -2.1], 6: [-6.0, 0], 1: [-4.6, 2.0] };
+  var DEFENSE = { 4: [-0.7, -2.4], 3: [-0.7, 0], 2: [-0.7, 2.4], 5: [-5.8, -2.4], 6: [-7.0, 0], 1: [-5.8, 2.4] }; // druga linia symetrycznie: boki na tej samej głębokości i w tej samej odległości od osi co blok
   // ławka (libero / środkowy schodzący z boiska) – po lewej stronie boiska
   var BENCH_MX = { libero: -5.06, mb: -3.82 }, BENCH_X = -10;
   function benchPos(team, key) { var mx = BENCH_MX[key]; return [BENCH_X, CY - (team === 'a' ? mx : -mx) * UNIT]; }
