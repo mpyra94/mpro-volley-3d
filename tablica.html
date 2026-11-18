@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tablica Taktyczna – mPro Volley 3D</title>
+<!-- © 2026 Michał Pyra · mPro Volley 3D. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
+<script>(function(){var t='light',b='floor';try{t=localStorage.getItem('mpv:theme')||'light';b=localStorage.getItem('mpv:tablica:bg')||'floor';}catch(e){}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bg',b);})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f6fc; --glass: rgba(255, 255, 255, 0.96); --line: #d3dff0;
+    --text: #0e1b3d; --muted: #5a6b88; --accent: #ff8a00; --a: #ff3b5c; --b: #1e88ff;
+    --boardBg: #2f6b8a; --field: #ffffff; /* jeden kolor poza boiskiem – niebieskozielony jak parkiet siatkarski */
+    --benchFill: rgba(255, 255, 255, .14); --benchStroke: rgba(255, 255, 255, .45); --benchTxt: rgba(255, 255, 255, .75);
+    --font: "Exo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --line: #27364d;
+    --text: #e6edf7; --muted: #93a3bd; --field: #1a2638;
+  }
+  :root[data-bg="light"] { --boardBg: #e6eefa; --boardZone: #cfe0f6; --benchFill: rgba(14, 27, 61, .06); --benchStroke: rgba(14, 27, 61, .3); --benchTxt: rgba(14, 27, 61, .6); }
+  .bgOuter { fill: var(--boardBg); }
+  .bgZone { fill: var(--boardZone, var(--boardBg)); } /* jasne tło: jaśniejsza ramka wokół boiska jak wcześniej; parkiet: ten sam kolor co tło */
+  .bench { fill: var(--benchFill); stroke: var(--benchStroke); stroke-width: 1.5; }
+  .benchTxt { fill: var(--benchTxt); }
+  header .seg { display: inline-flex; border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; overflow: hidden; }
+  header .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; }
+  .hl { font-size: 12px; font-weight: 700; color: #cfe3ff; text-transform: uppercase; letter-spacing: .05em; }
+  header .seg button.on { background: #ffd60a; color: #0e1b3d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.4 var(--font); overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  button { font: inherit; font-weight: 600; color: #fff; background: rgba(255, 255, 255, .16);
+    border: 1px solid rgba(255, 255, 255, .45); border-radius: 9px; padding: 6px 12px; cursor: pointer;
+    transition: background .15s, border-color .15s; }
+  button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
+  header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; color: #fff;
+    background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%);
+    box-shadow: 0 8px 20px -12px rgba(7, 26, 82, .8); z-index: 2; }
+  header h1 { font-size: 19px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase;
+    letter-spacing: .02em; flex: 1; min-width: 150px; }
+  header a { text-decoration: none; }
+  header button:disabled { opacity: .4; cursor: default; }
+  #undoBtn, #redoBtn { font-size: 17px; padding: 4px 12px; }
+
+  .layout { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+  main { flex: 1; min-width: 0; min-height: 0; position: relative; padding: 0; background: var(--boardBg); }
+  #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .pawn { cursor: grab; filter: drop-shadow(0 3px 3px rgba(14, 27, 61, .35)); }
+  .pawn.dragging { cursor: grabbing; }
+  .pawn circle.ring { fill: none; stroke: rgba(14, 27, 61, .3); stroke-width: 1; }
+  .pawn text { fill: #fff; font-size: 16px; font-weight: 800; text-anchor: middle; dominant-baseline: central;
+    paint-order: stroke; stroke: rgba(14, 27, 61, .65); stroke-width: 3px; stroke-linejoin: round;
+    pointer-events: none; user-select: none; }
+  .pawn text.plbl { font-size: 11px; font-weight: 600; stroke: none; fill: #dcebff; }
+  .pawn text.plbl.b { font-weight: 800; fill: #fff; }
+  .teamLabel { font-size: 18px; font-weight: 800; font-style: italic; text-transform: uppercase; text-anchor: middle; }
+  #board.drawing { cursor: crosshair; }
+  #board.drawing .pawn { pointer-events: none; }
+  footer { text-align: center; color: var(--muted); font-size: 11px; padding: 6px 0 10px; }
+
+  /* ---------- Menu boczne ---------- */
+  #side { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
+  #side[hidden] { display: none; }
+  .card { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px 10px; margin-bottom: 8px; }
+  .card > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 8px 0 4px;
+    font-size: 13px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--text); user-select: none; }
+  .card > summary::-webkit-details-marker { display: none; }
+  .card > summary::after { content: '▸'; color: var(--muted); transition: transform .15s; }
+  .card[open] > summary::after { transform: rotate(90deg); }
+  #side details.sub { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; }
+  #side details.sub > summary { cursor: pointer; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); list-style: none; }
+  #side details.sub > summary::-webkit-details-marker { display: none; }
+  #side button, #side select, #side input { font: inherit; font-size: 13px; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; }
+  #side button { font-weight: 600; cursor: pointer; }
+  #side button:hover { border-color: var(--accent); background: var(--field); }
+  #side button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #side button:disabled { opacity: .45; cursor: default; }
+  #side input[type=text] { width: 100%; }
+  #side input[type=color] { width: 100%; height: 32px; padding: 2px; cursor: pointer; }
+  #side input[type=range] { width: 100px; padding: 0; accent-color: var(--accent); }
+  #side label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 2px; }
+  #side .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  #side .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  #side .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+  #side .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  #side .grid3 button { padding: 6px 4px; font-size: 12.5px; }
+  #side .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  #side .seg button { border: 0; border-radius: 0; }
+  #side .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #side .alpha { display: inline-flex; align-items: center; gap: 5px; }
+  #side .alpha b { min-width: 34px; font-size: 12px; }
+  #side .logoRow { flex-wrap: nowrap; }
+  #side .logoPrev { width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 8px; background: var(--field) center / contain no-repeat;
+    display: grid; place-items: center; color: var(--muted); }
+  #side .rrow { display: grid; grid-template-columns: 28px 56px minmax(0, 1fr) 52px; gap: 5px; align-items: center; margin-top: 6px; }
+  #side .rrow input, #side .rrow select { padding: 3px 6px; }
+  #side .rb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 11px;
+    color: #fff; border: 2px solid #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--line); }
+  #side.dimTools #drawTools { opacity: .6; }
+  /* ---------- Pasek rotacji (dół) ---------- */
+  #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px;
+    background: var(--glass); border-top: 1px solid var(--line); }
+  #rotBar .rb-title { font-size: 13px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #rotBar .rb-sep { width: 1px; height: 26px; background: var(--line); }
+  #rotBar button { font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer; }
+  #rotBar button:hover { border-color: var(--accent); background: var(--field); }
+  #rotBar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #rotBar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  #rotBar .seg button { border: 0; border-radius: 0; }
+  #rotBar .rotGrid { display: inline-flex; gap: 4px; }
+  #rotBar .rotGrid button { padding: 5px 10px; min-width: 38px; }
+  #rotBar #rotCur { min-width: 34px; text-align: center; font-size: 15px; }
+  #drText { position: fixed; z-index: 70; width: 220px; transform: translate(-4px, -50%); font: inherit; padding: 6px 10px;
+    border-radius: 8px; border: 2px solid var(--accent); background: var(--field); color: var(--text); }
+  #drText[hidden] { display: none; }
+  @media (max-width: 820px) {
+    .layout { flex-direction: column; }
+    #side { width: auto; max-height: 44vh; order: 2; padding: 0 8px 8px; }
+    main { flex: 1 1 0; }
+  }
+  /* ---------- Pasek rotacji: układ pulpit / telefon ---------- */
+  .rb-main, .rb-extra { display: contents; }
+  #rotBar .short, #rbMore { display: none; }
+  @media (max-width: 820px) {
+    footer { display: none; }
+    #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+    .rb-main, .rb-extra { display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .rb-extra { display: none; margin-top: 8px; }
+    #rotBar.open .rb-extra { display: flex; flex-wrap: wrap; }
+    #rotBar .rb-title, #rotBar .rb-sep { display: none; }
+    #rotBar .full { display: none; }
+    #rotBar .short { display: inline; }
+    #rotBar button { padding: 7px 10px; }
+    #rotBar .seg button { padding: 7px 9px; }
+    #rotBar #rotCur { min-width: 28px; font-size: 14px; }
+    #rbMore { display: inline-block; margin-left: auto; padding: 7px 12px; transition: transform .15s; }
+    #rotBar.open #rbMore { transform: rotate(180deg); }
+    #rotBar .rotGrid { display: flex; flex: 1 1 100%; gap: 4px; }
+    #rotBar .rotGrid button { flex: 1; min-width: 0; padding: 8px 0; }
+    #rotBar #resetBtn { flex: 1 1 100%; }
+    /* menu boczne na telefonie: arkusz nad paskiem rotacji (domyślnie schowany – boisko ma całe miejsce) */
+    .layout { flex-direction: column; }
+    main { flex: 1 1 0; }
+    #side { position: fixed; left: 8px; right: 8px; bottom: calc(var(--rotH, 56px) + 8px); width: auto; max-height: 58vh; order: 0; z-index: 20;
+      padding: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 30px -8px rgba(7, 26, 82, .55); }
+  }
+  /* ---------- Nagłówek: pulpit / telefon ---------- */
+  .hdr-extra { display: contents; }
+  #hdrMore { display: none; }
+  @media (max-width: 820px) {
+    header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+    header h1 { font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    header button { padding: 6px 10px; }
+    .hide-m { display: none; }
+    #hdrMore { display: inline-block; font-size: 16px; padding: 4px 12px; }
+    .hdr-extra { display: none; }
+    header.open .hdr-extra { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, .25); }
+    header.open #hdrMore { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+  }
+  #drawDock { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
+  #drawDock[hidden] { display: none; }
+  #drawDock button, #drawDock select, #drawDock input { font: inherit; font-size: 13px; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; }
+  #drawDock button { font-weight: 600; cursor: pointer; }
+  #drawDock button:hover { border-color: var(--accent); background: var(--field); }
+  #drawDock button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #drawDock button:disabled { opacity: .45; cursor: default; }
+  #drawDock input[type=text] { width: 100%; }
+  #drawDock input[type=color] { width: 100%; height: 32px; padding: 2px; cursor: pointer; }
+  #drawDock input[type=range] { width: 100px; padding: 0; accent-color: var(--accent); }
+  #drawDock label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 2px; }
+  #drawDock .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  #drawDock .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  #drawDock .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+  #drawDock .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  #drawDock .grid3 button { padding: 6px 4px; font-size: 12.5px; }
+  #drawDock .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  #drawDock .seg button { border: 0; border-radius: 0; }
+  #drawDock .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #drawDock .alpha { display: inline-flex; align-items: center; gap: 5px; }
+  #drawDock .alpha b { min-width: 34px; font-size: 12px; }
+  #drawDock .logoRow { flex-wrap: nowrap; }
+  #drawDock .logoPrev { width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 8px; background: var(--field) center / contain no-repeat;
+    display: grid; place-items: center; color: var(--muted); }
+  #drawDock .rrow { display: grid; grid-template-columns: 28px 56px minmax(0, 1fr) 52px; gap: 5px; align-items: center; margin-top: 6px; }
+  #drawDock .rrow input, #drawDock .rrow select { padding: 3px 6px; }
+  #drawDock .rb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 11px;
+    color: #fff; border: 2px solid #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--line); }
+  #drawDock { display: none; }
+  #hdrDraw { display: none; }
+  @media (max-width: 820px) {
+    #hdrDraw { display: inline-block; font-size: 15px; padding: 4px 12px; }
+    body.drawing #hdrDraw { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    body.drawing #drawDock { display: block; flex: none; background: var(--glass); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+    body.drawing #rotBar { display: none; }
+    #drawDock .card { border: 0; background: transparent; padding: 0; margin: 0; border-radius: 0; }
+    #drawDock .card > summary, #drawDock .hint, #drawDock .card > .row:first-of-type { display: none; }
+    #drawDock #drawTools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    #drawDock #drTools { display: flex; flex: 1 1 100%; overflow-x: auto; gap: 6px; margin-top: 0; padding-bottom: 2px; }
+    #drawDock #drTools button { flex: none; white-space: nowrap; padding: 7px 11px; }
+    #drawDock #drawTools .row { display: contents; }
+    #drawDock select { max-width: 118px; }
+    #drawDock input[type=color] { width: 44px; }
+    #drawDock input[type=range] { width: 70px; }
+  }
+  .swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .sw { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+  .sw:hover { transform: scale(1.1); }
+  .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
+  @media (max-width: 820px) { #drawDock .swatches { flex: 1 1 100%; justify-content: space-between; } #drawDock .sw { width: 30px; height: 30px; } }
+  #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 4px;
+    background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); }
+  #zoomCtl button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+    min-width: 44px; padding: 7px 8px; font-size: 15px; cursor: pointer; }
+  #zoomCtl button:hover { border-color: var(--accent); }
+  #zoomCtl #zoomReset { font-size: 12px; }
+  #shotModal { position: fixed; inset: 0; z-index: 300; background: rgba(14, 27, 61, .72); display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #shotModal[hidden] { display: none; }
+  .shotBox { background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: 96vw; max-height: 96vh; overflow: auto;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .6); }
+  .shotHead { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .shotHead b { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .04em; flex: 1; }
+  .shotInfo { font-size: 12px; color: var(--muted); }
+  .shotStage { position: relative; overflow: hidden; border-radius: 6px; touch-action: none; line-height: 0; }
+  #shotCanvas { display: block; }
+  #cropBox { position: absolute; border: 2px solid #ffd60a; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .58); cursor: move; touch-action: none; }
+  #cropBox i { position: absolute; width: 18px; height: 18px; background: #ffd60a; border: 2px solid #0e1b3d; border-radius: 4px; touch-action: none; }
+  #cropBox i[data-h="nw"] { left: -10px; top: -10px; cursor: nwse-resize; } #cropBox i[data-h="n"] { left: calc(50% - 9px); top: -10px; cursor: ns-resize; }
+  #cropBox i[data-h="ne"] { right: -10px; top: -10px; cursor: nesw-resize; } #cropBox i[data-h="e"] { right: -10px; top: calc(50% - 9px); cursor: ew-resize; }
+  #cropBox i[data-h="se"] { right: -10px; bottom: -10px; cursor: nwse-resize; } #cropBox i[data-h="s"] { left: calc(50% - 9px); bottom: -10px; cursor: ns-resize; }
+  #cropBox i[data-h="sw"] { left: -10px; bottom: -10px; cursor: nesw-resize; } #cropBox i[data-h="w"] { left: -10px; top: calc(50% - 9px); cursor: ew-resize; }
+  #cropWm { position: absolute; font-family: var(--font); font-weight: 800; font-style: italic; color: rgba(255, 255, 255, .95); line-height: 1; white-space: nowrap;
+    -webkit-text-stroke: 2px rgba(14, 27, 61, .8); paint-order: stroke fill; pointer-events: none; }
+  .shotHint { font-size: 12.5px; color: var(--muted); text-align: center; max-width: 560px; }
+  .shotBtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .shotBtns button, .shotHead button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 8px 16px; cursor: pointer; }
+  .shotBtns button:hover, .shotHead button:hover { border-color: var(--accent); }
+  .shotBtns button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<script>
+var SHARED_TEAMS_KEY = 'mpv:teams';
+var TEAM_SHARED_FIELDS = ['name', 'logo', 'jersey', 'shorts', 'libero', 'shoes', 'gender', 'floorLogo'];
+var DEFAULT_SHARED_TEAMS = {
+  a: { jersey: '#d94848', shorts: '#2b2b33', libero: '#f2d23d', shoes: '#f0f0f0', name: '', logo: '', gender: 'm', floorLogo: true },
+  b: { jersey: '#3b7ddd', shorts: '#1d2a44', libero: '#3fd08a', shoes: '#222831', name: '', logo: '', gender: 'm', floorLogo: true },
+};
+function loadSharedTeams() {
+  try { return JSON.parse(localStorage.getItem(SHARED_TEAMS_KEY) || 'null'); }
+  catch (e) { return null; }
+}
+function saveSharedTeams(teamsObj) {
+  var out = {};
+  ['a', 'b'].forEach(function (t) {
+    out[t] = {};
+    TEAM_SHARED_FIELDS.forEach(function (k) { out[t][k] = teamsObj[t][k]; });
+  });
+  try { localStorage.setItem(SHARED_TEAMS_KEY, JSON.stringify(out)); } catch (e) {}
+}
+</script>
+
+<header>
+  <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="hide-m"> Menu</span></button></a>
+  <h1>📋 Tablica Taktyczna</h1>
+  <div class="hdr-extra">
+    <span class="hl">Na pionku</span>
+    <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button></span>
+    <span class="hl">Etykieta</span>
+    <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span>
+    <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">Zrzut PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">Zrzut PDF</button></span>
+    <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span>
+  </div>
+  <button type="button" id="undoBtn" title="Cofnij (Ctrl+Z)" disabled>↶</button>
+  <button type="button" id="redoBtn" title="Ponów (Ctrl+Y)" disabled>↷</button>
+  <button type="button" id="hdrDraw" title="Rysowanie na boisku">✏️</button>
+  <button type="button" id="hdrMore" title="Etykiety i tło" aria-expanded="false">⋯</button>
+  <button type="button" id="sideToggle" title="Pokaż / ukryj menu boczne">☰<span class="hide-m"> Panel</span></button>
+</header>
+<div class="layout">
+  <aside id="side">
+    <details class="card" id="drawCard" open>
+      <summary>Rysowanie</summary>
+      <div class="row"><button type="button" id="drawBtn" title="Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki">✏️ Rysuj na boisku</button></div>
+      <div id="drawTools">
+        <div class="grid3" id="drTools">
+          <button type="button" data-dtool="select" title="Edytuj kształty – przeciągaj punkty lub cały kształt">↖ Edycja</button>
+          <button type="button" data-dtool="pen" class="on" title="Rysuj odręcznie">✏ Pióro</button>
+          <button type="button" data-dtool="line" title="Linia">╱ Linia</button>
+          <button type="button" data-dtool="arrow" title="Strzałka">➜ Strzałka</button>
+          <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
+          <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
+          <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
+          <button type="button" data-dtool="quad" title="Czworokąt – kliknij 4 punkty">▱ Czworokąt</button>
+          <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
+        </div>
+        <div class="row">
+          <input type="color" id="drColor" value="#ff3b30" hidden>
+          <div class="swatches" id="drSwatches" title="Kolor"></div>
+          <select id="drWidth" title="Grubość"><option value="3">cienka</option><option value="6" selected>średnia</option><option value="12">gruba</option></select>
+          <select id="drBorder" title="Obramowanie wielokątów"><option value="0" selected>bez obramowania</option><option value="2">obramowanie cienkie</option><option value="5">obramowanie grube</option></select>
+        </div>
+        <div class="row">
+          <button type="button" id="drFill" class="on" title="Wypełnienie półprzezroczyste kształtów">◧ Wypełnienie</button>
+          <label class="alpha" title="Krycie wypełnienia (%)"><input type="range" id="drAlpha" min="10" max="100" step="5" value="40" aria-label="Krycie wypełnienia (%)"><b id="drAlphaV">40%</b></label>
+        </div>
+        <div class="row">
+          <button type="button" id="drDel" title="Usuń zaznaczony rysunek (Delete)">🗑 Usuń</button>
+          <button type="button" id="drClear">Wyczyść rysunki</button>
+        </div>
+        <div class="hint">Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.</div>
+      </div>
+    </details>
+
+    <details class="card" open>
+      <summary>Drużyny</summary>
+      <div id="tBox"></div>
+    </details>
+
+  </aside>
+
+  <main>
+    <div id="zoomCtl" role="group" aria-label="Przybliżenie">
+      <button type="button" id="zoomIn" title="Przybliż (kółko myszy / szczypanie)">+</button>
+      <button type="button" id="zoomReset" title="Przywróć widok całego boiska">100%</button>
+      <button type="button" id="zoomOut" title="Oddal">−</button>
+    </div>
+    <svg id="board" viewBox="-100 -60 640 1020" preserveAspectRatio="xMidYMid meet"></svg>
+  </main>
+</div>
+<div id="rotBar">
+  <div class="rb-main">
+    <span class="rb-title">Rotacje</span>
+    <span class="seg" id="fTeamSeg"><button type="button" data-fteam="a" class="on"><span class="full">Drużyna A</span><span class="short">A</span></button><button type="button" data-fteam="b"><span class="full">Drużyna B</span><span class="short">B</span></button></span>
+    <span class="rb-sep"></span>
+    <button type="button" id="rotPrev" title="Poprzednia rotacja">⟲</button>
+    <b id="rotCur">P1</b>
+    <button type="button" id="rotNext" title="Następna rotacja (zgodnie ze wskazówkami zegara)">⟳</button>
+    <span class="rb-sep"></span>
+    <span class="seg" id="fModeSeg"><button type="button" data-fmode="base" title="Ustawienie bazowe"><span class="full">Bazowo</span><span class="short">Baz.</span></button><button type="button" data-fmode="recv" title="Przyjęcie: 2 przyjmujących + libero, środkowy z tylnej linii schodzi na ławkę"><span class="full">Przyjęcie</span><span class="short">Prz.</span></button><button type="button" data-fmode="def" title="Obrona: blok trzech z przodu, tył w obronie, libero za środkowego"><span class="full">Obrona</span><span class="short">Obr.</span></button></span>
+    <button type="button" id="rbMore" title="Wybór rotacji i reset" aria-expanded="false">⌃</button>
+  </div>
+  <div class="rb-extra">
+    <span class="rotGrid" id="rotGrid" title="Rotacja = strefa rozgrywającego. Kolejność: P1 → P6 → P5 → P4 → P3 → P2"></span>
+    <span class="rb-sep"></span>
+    <button type="button" id="resetBtn" title="Przywróć domyślne rozstawienie, rotację P1 i ustawienie bazowe">↺ Przywróć domyślne</button>
+  </div>
+</div>
+<div id="shotModal" hidden>
+  <div class="shotBox">
+    <div class="shotHead"><b>Zrzut ekranu <span id="shotKind"></span></b><span id="shotInfo" class="shotInfo"></span><button type="button" id="shotClose" title="Zamknij">✕</button></div>
+    <div class="shotStage" id="shotStage">
+      <canvas id="shotCanvas"></canvas>
+      <div id="cropBox">
+        <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
+        <span id="cropWm">mPro Volley 3D</span>
+      </div>
+    </div>
+    <div class="shotHint">Przeciągnij ramkę lub jej uchwyty, aby wykadrować. Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.</div>
+    <div class="shotBtns"><button type="button" id="shotAll">Cały obraz</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
+  </div>
+</div>
+<div id="drawDock"></div>
+<input id="drText" type="text" hidden placeholder="Wpisz tekst i Enter" aria-label="Tekst na boisku">
+
+<footer>© 2026 Michał Pyra · mPro Volley 3D — przeciągnij pionki, aby ustawić formację</footer>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var POS_KEY = 'mpv:tablica:positions:v3';
+  var svg = document.getElementById('board');
+
+  var teams = loadSharedTeams() || JSON.parse(JSON.stringify(DEFAULT_SHARED_TEAMS));
+  ['a', 'b'].forEach(function (t) { teams[t] = Object.assign({}, DEFAULT_SHARED_TEAMS[t], teams[t] || {}); });
+  var defName = { a: 'Drużyna A', b: 'Drużyna B' };
+
+  // ---------- Geometria boiska (rzut z góry, pionowo, siatka pośrodku; A na dole, B na górze) ----------
+  // 1 m = 40 px, siatka na y = 450, oś środkowa x = 250. Układ z modelu 3D (x wzdłuż boiska, z w poprzek, A po stronie x < 0)
+  // przeliczamy na tablicę: x = 250 + z·40, y = 450 − x·40.
+  var UNIT = 40, CX = 250, CY = 450;
+  function toBoard(mp) { return [CX + mp[1] * UNIT, CY - mp[0] * UNIT]; }
+  var ZONE_A = { 1: [-7, 3], 2: [-1.8, 3], 3: [-1.8, 0], 4: [-1.8, -3], 5: [-7, -3], 6: [-7, 0] };
+  var mirror = function (team, p) { return team === 'a' ? p : [-p[0], -p[1]]; };
+  var RECEPTION = {
+    1: { pos: { 1: [-7.0, 4.1], 2: [-5.8, 2.9], 3: [-1.0, -0.5], 4: [-1.0, -3.8], 5: [-6.3, -2.9], 6: [-6.8, 0.0] } },
+    6: { pos: { 1: [-6.5, 2.9], 2: [-1.0, 3.8], 3: [-1.2, 1.2], 4: [-5.0, -2.9], 5: [-6.8, -0.2], 6: [-3.0, 0.8] } },
+    5: { pos: { 1: [-6.5, 2.9], 2: [-1.0, 4.0], 3: [-5.0, -2.4], 4: [-0.8, -4.0], 5: [-2.2, -3.4], 6: [-6.8, 0.2] } },
+    4: { pos: { 1: [-7.2, 4.0], 2: [-5.6, 2.9], 3: [-1.0, -0.6], 4: [-0.6, -1.8], 5: [-6.3, -2.9], 6: [-6.8, 0.0] } },
+    3: { pos: { 1: [-6.4, 2.9], 2: [-1.0, 3.5], 3: [-0.8, 0.8], 4: [-5.0, -2.9], 5: [-6.8, -0.3], 6: [-8.0, 1.3] } },
+    2: { pos: { 1: [-6.4, 2.9], 2: [-0.6, 2.5], 3: [-5.0, -2.6], 4: [-0.8, -3.8], 5: [-8.0, -3.6], 6: [-6.8, 0.0] } },
+  };
+  var DEFENSE = { 4: [-0.7, -2.4], 3: [-0.7, 0], 2: [-0.7, 2.4], 5: [-4.2, -2.1], 6: [-6.0, 0], 1: [-4.6, 2.0] };
+  // ławka (libero / środkowy schodzący z boiska) – po lewej stronie boiska
+  var BENCH_MX = { libero: -5.06, mb: -3.82 }, BENCH_X = -10;
+  function benchPos(team, key) { var mx = BENCH_MX[key]; return [BENCH_X, CY - (team === 'a' ? mx : -mx) * UNIT]; }
+  var zoneFor = function (rot, slot) { return ((rot - 1 + slot) % 6) + 1; };
+
+  // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
+  // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
+  var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -20, x1: 480 };
+  function clampPos(team, x, y) {
+    var b = BOUNDS[team];
+    return [Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x)), Math.max(b.y0, Math.min(b.y1, y))];
+  }
+
+  // ---- etykieta pod/nad pionkiem i zakaz nachodzenia (pionek + jego etykieta nie mogą dotykać innych) ----
+  function pillInfo(team, num) {
+    var r = roster[team][num], lines = [];
+    if (labels.name && r.name) lines.push({ t: r.name.length > 15 ? r.name.slice(0, 14) + '…' : r.name, b: true });
+    if (labels.role && r.role) lines.push({ t: ROLE_NAME[r.role] || r.role, b: false });
+    if (!lines.length) return null;
+    var w = 0; lines.forEach(function (l) { w = Math.max(w, l.t.length * (l.b ? 6.6 : 6) + 14); });
+    return { lines: lines, w: w, h: lines.length * 14 + 6, dir: team === 'a' ? 1 : -1 };
+  }
+  function shapesOf(x, y, pill) { return [{ c: 1, x: x, y: y, r: 18 }]; } // tylko pionek – etykieta nie blokuje zbliżania pionków
+  function shapeHit(p, q, m) {
+    if (p.c && q.c) return Math.hypot(p.x - q.x, p.y - q.y) < p.r + q.r + m;
+    if (p.c || q.c) {
+      var c = p.c ? p : q, r = p.c ? q : p;
+      var dx = Math.max(r.x0 - c.x, 0, c.x - r.x1), dy = Math.max(r.y0 - c.y, 0, c.y - r.y1);
+      return Math.hypot(dx, dy) < c.r + m;
+    }
+    return p.x0 - m < q.x1 && q.x0 - m < p.x1 && p.y0 - m < q.y1 && q.y0 - m < p.y1;
+  }
+  function collides(x, y, pill, others) { // others: [{ x, y, pill }]
+    var mine = shapesOf(x, y, pill);
+    for (var i = 0; i < others.length; i++) {
+      var o = shapesOf(others[i].x, others[i].y, others[i].pill);
+      for (var a = 0; a < mine.length; a++) for (var b = 0; b < o.length; b++) if (shapeHit(mine[a], o[b], 2)) return true;
+    }
+    return false;
+  }
+  function freeSpot(team, x, y, pill, others) { // najbliższe wolne miejsce
+    var c = clampPos(team, x, y);
+    if (!collides(c[0], c[1], pill, others)) return c;
+    for (var r = 8; r <= 520; r += 8) for (var k = 0; k < 24; k++) {
+      var a = k * Math.PI / 12, q = clampPos(team, x + r * Math.cos(a), y + r * Math.sin(a));
+      if (!collides(q[0], q[1], pill, others)) return q;
+    }
+    return c;
+  }
+  function resolveMap(map) { // map[team][n] = [x, y] → ta sama mapa bez nachodzenia
+    var placed = [], out = { a: {}, b: {} };
+    ['a', 'b'].forEach(function (t) {
+      for (var n = 1; n <= 7; n++) {
+        var p = pillInfo(t, n), pos = freeSpot(t, map[t][n][0], map[t][n][1], p, placed);
+        out[t][n] = pos; placed.push({ x: pos[0], y: pos[1], pill: p });
+      }
+    });
+    return out;
+  }
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e);
+    return e;
+  }
+
+  function drawCourt() {
+    el('rect', { x: -100, y: -100, width: 640, height: 1100, fill: '#2f6b8a', class: 'bgOuter' });
+    el('rect', { x: 28, y: -20, width: 444, height: 940, rx: 20, fill: '#cfe0f6', class: 'bgZone' });
+    // ławki rezerwowych (libero / środkowy schodzący z boiska)
+    [['a', 575, 690], ['b', 210, 325]].forEach(function (b) {
+      el('rect', { x: -26, y: b[1], width: 32, height: b[2] - b[1], rx: 8, class: 'bench' });
+      el('text', { x: -10, y: b[0] === 'a' ? b[1] - 5 : b[2] + 12, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, class: 'benchTxt' }).textContent = 'ŁAWKA';
+    });
+    el('rect', { x: 70, y: 90, width: 360, height: 720, fill: '#ff9d47', stroke: '#fff', 'stroke-width': 3 });
+    // linie ataku (3 m od siatki)
+    el('line', { x1: 70, y1: 330, x2: 430, y2: 330, stroke: '#eee', 'stroke-width': 2, 'stroke-dasharray': '7,6', opacity: .85 });
+    el('line', { x1: 70, y1: 570, x2: 430, y2: 570, stroke: '#eee', 'stroke-width': 2, 'stroke-dasharray': '7,6', opacity: .85 });
+    // siatka
+    el('line', { x1: 60, y1: 450, x2: 440, y2: 450, stroke: '#fff', 'stroke-width': 5 });
+    el('circle', { cx: 60, cy: 450, r: 5, fill: '#fff' });
+    el('circle', { cx: 440, cy: 450, r: 5, fill: '#fff' });
+    el('text', { x: 250, y: 14, class: 'teamLabel', fill: '#fff', stroke: teams.b.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.b.name || defName.b;
+    el('text', { x: 250, y: 886, class: 'teamLabel', fill: '#fff', stroke: teams.a.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.a.name || defName.a;
+    // logo drużyny w strefie wolnej (tak jak na parkiecie w modelu 3D)
+    if (teams.b.logo && teams.b.floorLogo !== false) el('image', { href: teams.b.logo, x: 34, y: -14, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
+    if (teams.a.logo && teams.a.floorLogo !== false) el('image', { href: teams.a.logo, x: 34, y: 862, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
+  }
+
+  // ---------- Pionki ----------
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch (e) {}
+
+  var pawns = [];
+  function makePawn(team, num, pos) {
+    var r = roster[team][num], col = teams[team].jersey;
+    var g = el('g', { class: 'pawn', 'data-team': team, 'data-num': num, transform: 'translate(' + pos[0] + ',' + pos[1] + ')' });
+    el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, g);
+    el('circle', { r: 18, class: 'ring' }, g);
+    el('text', { x: 0, y: 1 }, g).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer albo pierwsza litera pozycji
+    // etykieta (nazwisko i/lub pozycja) – jej miejsce wybiera layoutLabels(), żeby nie zasłaniała pionków
+    var pill = pillInfo(team, num);
+    if (pill) {
+      var lg = el('g', { 'pointer-events': 'none' }, g);
+      el('rect', { x: -pill.w / 2, y: -pill.h / 2, width: pill.w, height: pill.h, rx: 6, fill: 'rgba(14,27,61,.88)' }, lg);
+      pill.lines.forEach(function (l, i) {
+        el('text', { class: 'plbl' + (l.b ? ' b' : ''), x: 0, y: -pill.h / 2 + 3 + 7 + i * 14 }, lg).textContent = l.t;
+      });
+      g.__lg = lg;
+    }
+    g.__pos = pos.slice(); g.__pill = pill;
+    pawns.push(g);
+    return g;
+  }
+
+  // Układ etykiet: każda ląduje w pierwszym wolnym miejscu (pod/nad pionkiem, z boku), tak by nie zasłaniała żadnego pionka
+  // ani innej etykiety i została na własnej połowie. Dzięki temu pionki można stawiać bardzo blisko siebie.
+  function layoutLabels() {
+    var placed = [];
+    var circ = pawns.map(function (g) { return { x: g.__pos[0], y: g.__pos[1] }; });
+    pawns.forEach(function (g, gi) {
+      var p = g.__pill; if (!p || !g.__lg) return;
+      var team = g.dataset.team, x = g.__pos[0], y = g.__pos[1], hw = p.w / 2, hh = p.h / 2;
+      var vMain = team === 'a' ? 1 : -1, cand = [];
+      [vMain, -vMain].forEach(function (v, k) {
+        if (k === 1) { cand.push([hw + 24, 0], [-(hw + 24), 0]); }
+        [0, -hw * 0.6, hw * 0.6, -(hw + 6), hw + 6].forEach(function (s) { cand.push([s, v * (22 + hh)]); });
+        if (k === 0) cand.push([hw + 24, 0], [-(hw + 24), 0]);
+      });
+      var chosen = null;
+      for (var i = 0; i < cand.length && !chosen; i++) {
+        var cx = x + cand[i][0], cy = y + cand[i][1], r = { x0: cx - hw, x1: cx + hw, y0: cy - hh, y1: cy + hh }, ok = true;
+        if (r.x0 < -98 || r.x1 > 538 || r.y0 < -58 || r.y1 > 958) ok = false;
+        if (ok && (team === 'a' ? r.y0 < 456 : r.y1 > 444)) ok = false;
+        for (var j = 0; ok && j < circ.length; j++) {
+          if (j === gi) continue;
+          var dx = Math.max(r.x0 - circ[j].x, 0, circ[j].x - r.x1), dy = Math.max(r.y0 - circ[j].y, 0, circ[j].y - r.y1);
+          if (Math.hypot(dx, dy) < 20) ok = false;
+        }
+        for (var k2 = 0; ok && k2 < placed.length; k2++) {
+          var q = placed[k2];
+          if (r.x0 - 2 < q.x1 && q.x0 - 2 < r.x1 && r.y0 - 2 < q.y1 && q.y0 - 2 < r.y1) ok = false;
+        }
+        if (ok) chosen = { c: cand[i], r: r };
+      }
+      if (!chosen) { var c0 = cand[0]; chosen = { c: c0, r: { x0: x + c0[0] - hw, x1: x + c0[0] + hw, y0: y + c0[1] - hh, y1: y + c0[1] + hh } }; }
+      g.__lg.setAttribute('transform', 'translate(' + chosen.c[0] + ',' + chosen.c[1] + ')');
+      placed.push(chosen.r);
+    });
+  }
+  function currentPositions() { // zapisane pozycje lub domyślne (z wybranej rotacji i ustawienia)
+    var m = { a: {}, b: {} };
+    ['a', 'b'].forEach(function (t) {
+      var def = computeFormation(t, formState.rot[t], formState.mode[t]);
+      for (var n = 1; n <= 7; n++) m[t][n] = (saved && saved[t] && saved[t][n]) || def[n];
+    });
+    return m;
+  }
+
+  function render() {
+    tween = null;
+    applyView();
+    svg.innerHTML = '';
+    pawns = [];
+    drawCourt();
+    annotG = el('g', { 'pointer-events': 'none' });
+    var pos = resolveMap(currentPositions());
+    for (var n = 1; n <= 7; n++) { makePawn('a', n, pos.a[n]); makePawn('b', n, pos.b[n]); }
+    handlesG = el('g', { 'pointer-events': 'none' });
+    previewG = el('g', { 'pointer-events': 'none' });
+    attachDrag();
+    layoutLabels();
+    redrawAnnots();
+  }
+
+
+  function positionsNow() { // pozycje wszystkich pionków (także drużyny ukrytej w widoku połowy)
+    var out = JSON.parse(JSON.stringify(currentPositions()));
+    pawns.forEach(function (g) { out[g.dataset.team][g.dataset.num] = g.__pos.slice(); });
+    return out;
+  }
+  function savePositions() {
+    var out = positionsNow();
+    saved = out;
+    try { localStorage.setItem(POS_KEY, JSON.stringify(out)); } catch (e) {}
+    pushHistory();
+  }
+
+  // ---------- Przeciąganie ----------
+  function attachDrag() {
+    var drag = null;
+    function toLocal(evt) {
+      var ctm = svg.getScreenCTM();
+      if (!ctm) return [0, 0];
+      var inv = ctm.inverse();
+      var lx = inv.a * evt.clientX + inv.c * evt.clientY + inv.e;
+      var ly = inv.b * evt.clientX + inv.d * evt.clientY + inv.f;
+      return [lx, ly];
+    }
+    pawns.forEach(function (g) {
+      g.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        var loc = toLocal(e);
+        drag = { g: g, dx: g.__pos[0] - loc[0], dy: g.__pos[1] - loc[1] };
+        g.classList.add('dragging');
+        g.setPointerCapture && g.setPointerCapture(e.pointerId);
+      });
+      g.addEventListener('pointermove', function (e) {
+        if (!drag || drag.g !== g) return;
+        var loc = toLocal(e);
+        var team = g.dataset.team, c = clampPos(team, loc[0] + drag.dx, loc[1] + drag.dy);
+        var others = pawns.filter(function (o) { return o !== g; }).map(function (o) { return { x: o.__pos[0], y: o.__pos[1], pill: o.__pill }; });
+        var cur = g.__pos, cand = [c, [c[0], cur[1]], [cur[0], c[1]]], x = cur[0], y = cur[1];
+        for (var i = 0; i < cand.length; i++) { // pionek (z etykietą) nie może nachodzić na inne – ślizga się wzdłuż przeszkody
+          if (!collides(cand[i][0], cand[i][1], g.__pill, others)) { x = cand[i][0]; y = cand[i][1]; break; }
+        }
+        g.__pos = [x, y];
+        g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+        layoutLabels();
+      });
+      ['pointerup', 'pointercancel'].forEach(function (ev) {
+        g.addEventListener(ev, function () {
+          if (drag && drag.g === g) { g.classList.remove('dragging'); drag = null; savePositions(); }
+        });
+      });
+    });
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    try { localStorage.removeItem(POS_KEY); } catch (e) {}
+    saved = null;
+    formState.rot = { a: 1, b: 1 }; formState.mode = { a: 'base', b: 'base' }; saveForm(); syncFormUI();
+    render();
+    pushHistory();
+  });
+
+  // ---------- Rysowanie na boisku ----------
+  // Rysunki leżą na boisku (pod pionkami). Dane: { type: pen|line|arrow|rect|ellipse|poly|text, pts: [[x, y], …],
+  // color, width (px), fill, alpha, bval, border (px), text }
+  var ANN_KEY = 'mpv:tablica:annots:v1';
+  var annots = [];
+  try { annots = JSON.parse(localStorage.getItem(ANN_KEY) || '[]') || []; } catch (e) { annots = []; }
+  var drawOn = false, drawTool = 'pen', drawSel = -1, drawTri = null, drawHover = null, drawCur = null, drawDrag = null, drFillOn = true;
+  var annotG = null, handlesG = null, previewG = null;
+  var $ = function (id) { return document.getElementById(id); };
+  function saveAnnots() { try { localStorage.setItem(ANN_KEY, JSON.stringify(annots)); } catch (e) {} pushHistory(); }
+  var isArea = function (a) { return a.type === 'poly' || a.type === 'rect' || a.type === 'ellipse'; };
+  function clearEl(g) { while (g.firstChild) g.removeChild(g.firstChild); }
+  function ptsStr(p) { return p.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '); }
+
+  function polyPts(a) {
+    var p = a.pts;
+    if (a.type === 'rect') { var x1 = p[0][0], y1 = p[0][1], x2 = p[1][0], y2 = p[1][1]; return [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]; }
+    if (a.type === 'ellipse') {
+      var cx = (p[0][0] + p[1][0]) / 2, cy = (p[0][1] + p[1][1]) / 2, rx = Math.abs(p[1][0] - p[0][0]) / 2, ry = Math.abs(p[1][1] - p[0][1]) / 2, out = [];
+      for (var i = 0; i < 48; i++) out.push([cx + rx * Math.cos(i / 48 * Math.PI * 2), cy + ry * Math.sin(i / 48 * Math.PI * 2)]);
+      return out;
+    }
+    return p;
+  }
+
+  function buildAnnot(a) {
+    var g = document.createElementNS(NS, 'g');
+    var line = { fill: 'none', stroke: a.color, 'stroke-width': a.width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+    if (a.type === 'pen') {
+      el('polyline', Object.assign({ points: ptsStr(a.pts) }, line), g);
+    } else if (a.type === 'line') {
+      el('polyline', Object.assign({ points: ptsStr(a.pts) }, line), g);
+    } else if (a.type === 'arrow') {
+      var A = a.pts[0], B = a.pts[1], dx = B[0] - A[0], dy = B[1] - A[1], L0 = Math.hypot(dx, dy) || 1, ux = dx / L0, uy = dy / L0;
+      var L = Math.min(L0, Math.max(20, a.width * 4.5)), h = L * 0.45, bx = B[0] - ux * L, by = B[1] - uy * L;
+      el('polyline', Object.assign({ points: ptsStr([A, [bx, by]]) }, line), g);
+      el('polygon', { points: ptsStr([B, [bx - uy * h, by + ux * h], [bx + uy * h, by - ux * h]]), fill: a.color }, g);
+    } else if (isArea(a)) {
+      var pp = polyPts(a);
+      if (a.fill) el('polygon', { points: ptsStr(pp), fill: a.color, 'fill-opacity': a.alpha == null ? 0.4 : a.alpha }, g);
+      var bw = a.border || (a.fill ? 0 : a.width); // bez wypełnienia i obramowania kształt byłby niewidoczny
+      if (bw > 0) el('polygon', { points: ptsStr(pp), fill: 'none', stroke: a.color, 'stroke-width': bw, 'stroke-linejoin': 'round' }, g);
+    } else if (a.type === 'text') {
+      var t = el('text', { x: a.pts[0][0], y: a.pts[0][1], fill: a.color, 'font-size': 14 + a.width * 2, 'font-weight': 800,
+        'text-anchor': 'middle', 'dominant-baseline': 'central', 'paint-order': 'stroke', stroke: 'rgba(0,0,0,.75)',
+        'stroke-width': 4, 'stroke-linejoin': 'round' }, g);
+      t.textContent = a.text;
+    }
+    return g;
+  }
+
+  function dot(p, fill, parent) { el('circle', { cx: p[0], cy: p[1], r: 7, fill: fill, stroke: '#0e1b3d', 'stroke-width': 2 }, parent); }
+  var handlePts = function (a) { return a.type === 'pen' ? [] : a.pts; };
+  function rebuildHandles() {
+    if (!handlesG) return;
+    clearEl(handlesG);
+    var a = annots[drawSel];
+    if (!a || !drawOn) return;
+    handlePts(a).forEach(function (p) { dot(p, '#ffd84a', handlesG); });
+    if (a.type === 'pen' && a.pts.length) { // pióro nie ma punktów – zaznaczenie pokazuje ramka
+      var xs = a.pts.map(function (q) { return q[0]; }), ys = a.pts.map(function (q) { return q[1]; }), pad = a.width / 2 + 6;
+      el('rect', { x: Math.min.apply(null, xs) - pad, y: Math.min.apply(null, ys) - pad, width: Math.max.apply(null, xs) - Math.min.apply(null, xs) + 2 * pad,
+        height: Math.max.apply(null, ys) - Math.min.apply(null, ys) + 2 * pad, fill: 'none', stroke: '#ffd84a', 'stroke-width': 2, 'stroke-dasharray': '6 5', rx: 6 }, handlesG);
+    }
+  }
+  function updatePreview() {
+    if (!previewG) return;
+    clearEl(previewG);
+    if (drawCur) previewG.appendChild(buildAnnot(drawCur));
+    if (drawTri && drawTri.length) {
+      var col = $('drColor').value, pts = drawHover ? drawTri.concat([drawHover]) : drawTri.slice();
+      if (pts.length >= 3) previewG.appendChild(buildAnnot({ type: 'poly', pts: pts, color: col, width: 2, fill: false, border: 0 }));
+      else if (pts.length === 2) previewG.appendChild(buildAnnot({ type: 'line', pts: pts, color: col, width: 2 }));
+      drawTri.forEach(function (p) { dot(p, '#fff', previewG); });
+    }
+  }
+  function redrawAnnots() {
+    if (!annotG) return;
+    clearEl(annotG);
+    annots.forEach(function (a) { annotG.appendChild(buildAnnot(a)); });
+    rebuildHandles(); updatePreview();
+  }
+
+  // ---- geometria trafień ----
+  function segDist(P, A, B) {
+    var dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+    var t = L2 ? ((P[0] - A[0]) * dx + (P[1] - A[1]) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    return Math.hypot(P[0] - (A[0] + t * dx), P[1] - (A[1] + t * dy));
+  }
+  function inPoly(P, pts) {
+    var inside = false;
+    for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      var xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+      if ((yi > P[1]) !== (yj > P[1]) && P[0] < (xj - xi) * (P[1] - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function annotHit(P, R) {
+    for (var i = annots.length - 1; i >= 0; i--) {
+      var a = annots[i], pp = polyPts(a), closed = isArea(a);
+      if (closed && inPoly(P, pp)) return i;
+      if (a.type === 'text') { if (Math.hypot(P[0] - a.pts[0][0], P[1] - a.pts[0][1]) < 30) return i; continue; }
+      for (var k = 0; k < pp.length; k++) {
+        if (!closed && k === pp.length - 1) break;
+        if (segDist(P, pp[k], pp[(k + 1) % pp.length]) <= Math.max(R, a.width)) return i;
+      }
+    }
+    return -1;
+  }
+  function vertexHit(P, R) {
+    var order = [drawSel].concat(annots.map(function (_, i) { return i; }).reverse());
+    for (var n = 0; n < order.length; n++) {
+      var i = order[n], a = annots[i]; if (!a) continue;
+      var hp = handlePts(a);
+      for (var k = 0; k < hp.length; k++) if (Math.hypot(hp[k][0] - P[0], hp[k][1] - P[1]) < R) return { i: i, k: k };
+    }
+    return null;
+  }
+
+  // ---- obsługa wskaźnika ----
+  function svgPt(evt) {
+    var ctm = svg.getScreenCTM(); if (!ctm) return null;
+    var inv = ctm.inverse();
+    return [inv.a * evt.clientX + inv.c * evt.clientY + inv.e, inv.b * evt.clientX + inv.d * evt.clientY + inv.f];
+  }
+  function hitR() { var c = svg.getScreenCTM(); return 16 / (c ? c.a : 1); } // ~16 px na ekranie
+  function drStyle() {
+    return { color: $('drColor').value, width: +$('drWidth').value, fill: drFillOn, alpha: +$('drAlpha').value / 100,
+      bval: $('drBorder').value, border: +$('drBorder').value };
+  }
+  function drSyncFrom(a) {
+    $('drColor').value = a.color; syncSwatches(); if (a.width != null) $('drWidth').value = String(a.width);
+    drFillOn = !!a.fill; $('drFill').classList.toggle('on', drFillOn);
+    $('drAlpha').value = Math.round((a.alpha == null ? 0.4 : a.alpha) * 100); $('drAlphaV').textContent = $('drAlpha').value + '%';
+    if (isArea(a)) $('drBorder').value = a.bval || '0';
+  }
+  function drawSelect(i) { drawSel = i; if (annots[i] && drawTool === 'select') drSyncFrom(annots[i]); rebuildHandles(); }
+  function addAnnot(a) { annots.push(a); redrawAnnots(); drawSelect(annots.length - 1); saveAnnots(); }
+
+  function drawDown(e) {
+    var P = svgPt(e); if (!P) return;
+    e.preventDefault();
+    var R = hitR(), poly = drawTool === 'triangle' || drawTool === 'quad';
+    var cap = function () { try { svg.setPointerCapture(e.pointerId); } catch (x) {} };
+    if (drawTool === 'text') {
+      var ti = $('drText'); ti.value = ''; ti.hidden = false; ti.style.left = e.clientX + 'px'; ti.style.top = e.clientY + 'px';
+      ti.dataset.x = P[0]; ti.dataset.y = P[1]; setTimeout(function () { ti.focus(); }, 0); return;
+    }
+    // narysowany kształt zostaje zaznaczony: jego punkty można przeciągać także przy innym narzędziu
+    if (!poly && drawTool !== 'select' && drawSel >= 0 && annots[drawSel]) {
+      var hp = handlePts(annots[drawSel]);
+      for (var hk = 0; hk < hp.length; hk++) {
+        if (Math.hypot(hp[hk][0] - P[0], hp[hk][1] - P[1]) < R) { drawDrag = { kind: 'v', i: drawSel, k: hk, moved: false }; cap(); return; }
+      }
+    }
+    if (poly || drawTool === 'select') {
+      var hit = (drawTool === 'select' || !drawTri) ? vertexHit(P, R) : null;
+      if (hit) { drawSelect(hit.i); drawTri = null; drawDrag = { kind: 'v', i: hit.i, k: hit.k, moved: false }; cap(); updatePreview(); return; }
+      if (drawTool === 'select') {
+        var i = annotHit(P, R);
+        if (i >= 0) { drawSelect(i); drawDrag = { kind: 'm', i: i, last: P, moved: false }; cap(); } else drawSelect(-1);
+        return;
+      }
+      drawTri = drawTri || []; drawTri.push(P); drawHover = P;
+      if (drawTri.length === (drawTool === 'quad' ? 4 : 3)) {
+        var pts = drawTri; drawTri = null; drawHover = null;
+        addAnnot(Object.assign({ type: 'poly', pts: pts }, drStyle()));
+      }
+      updatePreview(); return;
+    }
+    drawCur = Object.assign({ type: drawTool, pts: drawTool === 'pen' ? [P] : [P, P] }, drStyle()); cap(); updatePreview();
+  }
+  function drawMove(e) {
+    var P = svgPt(e); if (!P) return;
+    if (drawDrag) {
+      var a = annots[drawDrag.i];
+      if (drawDrag.kind === 'v') a.pts[drawDrag.k] = P;
+      else { var dx = P[0] - drawDrag.last[0], dy = P[1] - drawDrag.last[1]; a.pts = a.pts.map(function (q) { return [q[0] + dx, q[1] + dy]; }); drawDrag.last = P; }
+      drawDrag.moved = true; redrawAnnots(); return;
+    }
+    if (drawCur) {
+      if (drawCur.type === 'pen') { var l = drawCur.pts[drawCur.pts.length - 1]; if (Math.hypot(P[0] - l[0], P[1] - l[1]) > 3) drawCur.pts.push(P); }
+      else drawCur.pts[1] = P;
+      updatePreview(); return;
+    }
+    if (drawTri) { drawHover = P; updatePreview(); }
+  }
+  function drawUp(e) {
+    try { svg.releasePointerCapture(e.pointerId); } catch (x) {}
+    if (drawDrag) { var moved = drawDrag.moved; drawDrag = null; if (moved) saveAnnots(); return; }
+    if (!drawCur) return;
+    var c = drawCur; drawCur = null; updatePreview();
+    var ok = c.type === 'pen' ? c.pts.length > 1 : Math.hypot(c.pts[1][0] - c.pts[0][0], c.pts[1][1] - c.pts[0][1]) > 6;
+    if (ok) addAnnot(c);
+  }
+  svg.addEventListener('pointerdown', function (e) { if (drawOn) drawDown(e); });
+  svg.addEventListener('pointermove', function (e) { if (drawOn) drawMove(e); });
+  svg.addEventListener('pointerup', function (e) { if (drawOn) drawUp(e); });
+  svg.addEventListener('pointercancel', function (e) { if (drawOn) drawUp(e); });
+
+  function delAnnot() {
+    if (drawSel < 0 || !annots[drawSel]) return;
+    annots.splice(drawSel, 1); drawSel = -1; redrawAnnots(); saveAnnots();
+  }
+  // tekst
+  function commitDrText(keep) {
+    var ti = $('drText'); if (ti.hidden) return; ti.hidden = true;
+    if (keep && ti.value.trim()) addAnnot(Object.assign({ type: 'text', pts: [[+ti.dataset.x, +ti.dataset.y]], text: ti.value.trim() }, drStyle()));
+  }
+  $('drText').addEventListener('keydown', function (e) { if (e.key === 'Enter') commitDrText(true); if (e.key === 'Escape') commitDrText(false); e.stopPropagation(); });
+  $('drText').addEventListener('blur', function () { commitDrText(true); });
+
+  // tryb i narzędzia
+  function setDraw(on) {
+    drawOn = on;
+    $('drawBtn').classList.toggle('on', on);
+    $('side').classList.toggle('dimTools', !on);
+    svg.classList.toggle('drawing', on);
+    document.body.classList.toggle('drawing', on);
+    $('drawBtn').textContent = on ? '✓ Zakończ rysowanie' : '✏️ Rysuj na boisku';
+    if (!on) { drawTri = null; drawCur = null; drawHover = null; drawDrag = null; commitDrText(false); updatePreview(); }
+    rebuildHandles();
+  }
+  $('drawBtn').addEventListener('click', function () { setDraw(!drawOn); });
+  function setDrawTool(t) {
+    if (!drawOn) setDraw(true);
+    drawTool = t; drawTri = null; drawHover = null; updatePreview();
+    document.querySelectorAll('#drTools button').forEach(function (b) { b.classList.toggle('on', b.dataset.dtool === t); });
+  }
+  document.querySelectorAll('#drTools button').forEach(function (b) { b.addEventListener('click', function () { setDrawTool(b.dataset.dtool); }); });
+  // styl zaznaczonego rysunku zmieniamy tylko w trybie „Edycja”, żeby nowy kolor nie przemalowywał poprzedniego rysunku
+  function drApply(fn) { var a = annots[drawSel]; if (!a) return; fn(a); redrawAnnots(); saveAnnots(); }
+  $('drColor').addEventListener('input', function () { drApply(function (a) { a.color = $('drColor').value; }); });
+  $('drWidth').addEventListener('change', function () { drApply(function (a) { a.width = +$('drWidth').value; }); });
+  $('drBorder').addEventListener('change', function () { drApply(function (a) { if (isArea(a)) { a.bval = $('drBorder').value; a.border = +a.bval; } }); });
+  $('drAlpha').addEventListener('input', function () { $('drAlphaV').textContent = $('drAlpha').value + '%'; drApply(function (a) { a.alpha = +$('drAlpha').value / 100; }); });
+  $('drFill').addEventListener('click', function () { drFillOn = !drFillOn; $('drFill').classList.toggle('on', drFillOn); drApply(function (a) { a.fill = drFillOn; }); });
+  $('drDel').addEventListener('click', delAnnot);
+  $('drClear').addEventListener('click', function () { if (!annots.length) return; annots = []; drawSel = -1; redrawAnnots(); saveAnnots(); });
+  document.addEventListener('keydown', function (e) {
+    if (!drawOn) return;
+    var tg = e.target && e.target.tagName;
+    if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); delAnnot(); }
+    else if (e.key === 'Escape') { if (drawTri || drawCur) { drawTri = null; drawCur = null; drawHover = null; updatePreview(); } else { drawSel = -1; rebuildHandles(); } }
+  });
+
+  // ---------- Zawodnicy (skład), etykiety i panel Drużyny ----------
+  var ROLES = [['R', 'R'], ['A', 'A'], ['P', 'P'], ['Ś', 'Ś'], ['L', 'L'], ['', '—']];
+  var ROLE_NAME = { R: 'rozgrywający', A: 'atakujący', P: 'przyjmujący', 'Ś': 'środkowy', L: 'libero' };
+  var COLOR_FIELDS = [['jersey', 'Kolor drużyny']];
+  var NUMS = ['00'];
+  for (var ni = 0; ni < 100; ni++) NUMS.push(String(ni));
+  var ROSTER_KEY = 'mpv:tablica:roster:v1', LABELS_KEY = 'mpv:tablica:labels:v1';
+  var DEFAULT_ROLES = ['R', 'P', 'Ś', 'A', 'P', 'Ś']; // jak w modelu 3D: składy A (1–6) i B (11–16)
+  function defaultRoster() {
+    var r = { a: {}, b: {} };
+    DEFAULT_ROLES.forEach(function (role, i) {
+      r.a[i + 1] = { num: String(i + 1), name: '', role: role };
+      r.b[i + 1] = { num: String(i + 11), name: '', role: role };
+    });
+    r.a[7] = { num: '7', name: '', role: 'L' }; r.b[7] = { num: '17', name: '', role: 'L' }; // libero (na ławce)
+    return r;
+  }
+  var roster = defaultRoster();
+  try {
+    var sr = JSON.parse(localStorage.getItem(ROSTER_KEY) || 'null');
+    if (sr) ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (sr[t] && sr[t][n]) Object.assign(roster[t][n], sr[t][n]); });
+  } catch (e) {}
+  function saveRoster() { try { localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); } catch (e) {} }
+  var labels = { pawn: 'num', name: false, role: false }; // pawn: co jest na pionku – numer albo pozycja (pierwsza litera)
+  try { var sl = JSON.parse(localStorage.getItem(LABELS_KEY) || 'null'); if (sl) Object.assign(labels, sl); } catch (e) {}
+  function saveLabels() { try { localStorage.setItem(LABELS_KEY, JSON.stringify(labels)); } catch (e) {} }
+  function saveTeams() { saveSharedTeams(teams); }
+  function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+  // ---- etykiety (numer / nazwisko / pozycja) ----
+  var lblBtns = document.querySelectorAll('#lblPop [data-lbl]');
+  function markLabels() {
+    lblBtns.forEach(function (b) { b.classList.toggle('on', !!labels[b.dataset.lbl]); });
+    document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) { b.classList.toggle('on', b.dataset.pawn === labels.pawn); });
+  }
+  lblBtns.forEach(function (b) {
+    b.addEventListener('click', function () { labels[b.dataset.lbl] = !labels[b.dataset.lbl]; saveLabels(); markLabels(); render(); });
+  });
+  document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) {
+    b.addEventListener('click', function () { labels.pawn = b.dataset.pawn; saveLabels(); markLabels(); render(); });
+  });
+  markLabels();
+
+  // ---- panel Drużyny ----
+  var teamTab = 'a';
+  function updateLegend() {
+    if (typeof syncFormUI === 'function' && $('rotCur')) syncFormUI();
+  }
+  function teamsPanelHTML() {
+    var t = teamTab, tm = teams[t];
+    var h = '';
+    h += '<div class="row"><span class="seg" id="tTabs">' + ['a', 'b'].map(function (k) {
+      return '<button type="button" data-tab="' + k + '" class="' + (k === t ? 'on' : '') + '">' + esc(teams[k].name || defName[k]) + '</button>';
+    }).join('') + '</span></div>';
+    h += '<details class="sub" open><summary>Kategoria</summary><div class="row"><span class="seg" id="tGender">' +
+      '<button type="button" data-gender="m" class="' + ((teams.a.gender || 'm') === 'm' ? 'on' : '') + '">Mężczyźni</button>' +
+      '<button type="button" data-gender="f" class="' + (teams.a.gender === 'f' ? 'on' : '') + '">Kobiety</button></span></div>' +
+      '<div class="hint">Dotyczy obu drużyn naraz (wysokość siatki w modelu 3D).</div></details>';
+    h += '<details class="sub" open><summary>Nazwa i logo</summary>' +
+      '<div class="row"><input type="text" id="tName" maxlength="24" placeholder="' + esc(defName[t]) + '" value="' + esc(tm.name) + '" aria-label="Nazwa drużyny"></div>' +
+      '<div class="row logoRow"><span class="logoPrev" style="' + (tm.logo ? 'background-image:url(&quot;' + esc(tm.logo) + '&quot;)' : '') + '">' + (tm.logo ? '' : '—') + '</span>' +
+      '<button type="button" id="tLogoUp">Wgraj logo…</button><button type="button" id="tLogoDel"' + (tm.logo ? '' : ' disabled') + '>Usuń</button>' +
+      '<input type="file" id="tLogoFile" accept="image/*" hidden></div>' +
+      '<div class="row"><button type="button" id="tFloorLogo" class="' + (tm.floorLogo !== false ? 'on' : '') + '">Wyświetlaj logo na boisku</button></div></details>';
+    h += '<details class="sub" open><summary>Kolor</summary><div class="swatches" id="tSwatches">' + teamSwatches(tm.jersey) + '</div><div class="row" style="margin-top:8px"><button type="button" id="tResetColors">Przywróć domyślny kolor</button></div>' +
+      '<div class="hint">Kolor pionków drużyny. Pozostałe barwy (spodenki, buty, libero) ustawisz w modelu 3D.</div></details>';
+    h += '<details class="sub" open><summary>Zawodnicy</summary>' + [1, 2, 3, 4, 5, 6, 7].map(function (n) {
+      var r = roster[t][n], col = tm.jersey;
+      return '<div class="rrow" data-n="' + n + '"><span class="rb" style="background:' + esc(col) + '">' + esc(r.num) + '</span>' +
+        '<select class="rn" aria-label="Numer">' + NUMS.map(function (v) { return '<option value="' + v + '"' + (v === String(r.num) ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
+        '<input class="rm" type="text" maxlength="20" placeholder="Imię / nazwisko" value="' + esc(r.name) + '" aria-label="Imię i nazwisko">' +
+        '<select class="rr" aria-label="Rola">' + ROLES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === r.role ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></div>';
+    }).join('') + '<div class="hint">R rozgrywający · A atakujący · P przyjmujący · Ś środkowy · L libero. Wyświetlanie na pionkach: sekcja „Etykiety” na górze menu.</div></details>';
+    return h;
+  }
+  function renderTeamsPanel() { $('tBox').innerHTML = teamsPanelHTML(); }
+  function teamsChanged() { saveTeams(); updateLegend(); render(); }
+  function loadLogo(t, file) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth || 256, h = img.naturalHeight || 256;
+        var k = file.type === 'image/svg+xml' ? 256 / Math.max(w, h) : Math.min(1, 256 / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        teams[t].logo = c.toDataURL('image/png'); teamsChanged(); renderTeamsPanel();
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  $('tBox').addEventListener('click', function (e) {
+    var sw = e.target.closest('.sw');
+    if (sw && sw.closest('#tSwatches')) { teams[teamTab].jersey = sw.dataset.c; teamsChanged(); renderTeamsPanel(); return; }
+    var b = e.target.closest('button'); if (!b) return;
+    var t = teamTab;
+    if (b.dataset.tab) { teamTab = b.dataset.tab; renderTeamsPanel(); }
+    else if (b.dataset.gender) { teams.a.gender = teams.b.gender = b.dataset.gender; saveTeams(); renderTeamsPanel(); }
+    else if (b.id === 'tLogoUp') $('tLogoFile').click();
+    else if (b.id === 'tLogoDel') { teams[t].logo = ''; teamsChanged(); renderTeamsPanel(); }
+    else if (b.id === 'tFloorLogo') { teams[t].floorLogo = teams[t].floorLogo === false; teamsChanged(); renderTeamsPanel(); }
+    else if (b.id === 'tResetColors') { COLOR_FIELDS.forEach(function (f) { teams[t][f[0]] = DEFAULT_SHARED_TEAMS[t][f[0]]; }); teamsChanged(); renderTeamsPanel(); }
+  });
+  $('tBox').addEventListener('input', function (e) {
+    var el_ = e.target, t = teamTab, row = el_.closest('.rrow');
+    if (el_.id === 'tName') { teams[t].name = el_.value; teamsChanged(); var tb = document.querySelector('#tTabs [data-tab="' + t + '"]'); if (tb) tb.textContent = el_.value || defName[t]; }
+    else if (el_.type === 'color') { teams[t][el_.dataset.key] = el_.value; teamsChanged(); }
+    else if (row && el_.classList.contains('rm')) { roster[t][row.dataset.n].name = el_.value; saveRoster(); render(); }
+  });
+  $('tBox').addEventListener('change', function (e) {
+    var el_ = e.target, t = teamTab, row = el_.closest('.rrow');
+    if (el_.id === 'tLogoFile') { var f = el_.files[0]; if (f) loadLogo(t, f); el_.value = ''; }
+    else if (row && (el_.classList.contains('rn') || el_.classList.contains('rr'))) {
+      var r = roster[t][row.dataset.n];
+      if (el_.classList.contains('rn')) r.num = el_.value; else r.role = el_.value;
+      saveRoster(); render(); renderTeamsPanel();
+    }
+  });
+
+  $('side').classList.add('dimTools');
+  $('sideToggle').addEventListener('click', function () { $('side').hidden = !$('side').hidden; });
+  // ---------- Przybliżanie / oddalanie (przyciski, kółko myszy, szczypanie; przesuwanie – przeciąganie tła) ----------
+  var FULL = { x: -100, y: -60, w: 640, h: 1020 }, view = { cx: FULL.x + FULL.w / 2, cy: FULL.y + FULL.h / 2, z: 1 }, ZMAX = 4;
+  function clampView() {
+    var w = FULL.w / view.z, h = FULL.h / view.z;
+    view.cx = Math.max(FULL.x + w / 2, Math.min(FULL.x + FULL.w - w / 2, view.cx));
+    view.cy = Math.max(FULL.y + h / 2, Math.min(FULL.y + FULL.h - h / 2, view.cy));
+  }
+  function applyView() {
+    clampView();
+    var w = FULL.w / view.z, h = FULL.h / view.z;
+    svg.setAttribute('viewBox', (view.cx - w / 2).toFixed(1) + ' ' + (view.cy - h / 2).toFixed(1) + ' ' + w.toFixed(1) + ' ' + h.toFixed(1));
+    var pct = document.getElementById('zoomReset'); if (pct) pct.textContent = Math.round(view.z * 100) + '%';
+  }
+  function zoomAt(clientX, clientY, factor) { // przybliża wokół punktu pod kursorem
+    var nz = Math.max(1, Math.min(ZMAX, view.z * factor)); if (nz === view.z) return;
+    var ctm = svg.getScreenCTM(), p = ctm ? ctm.inverse() : null;
+    var bx = p ? p.a * clientX + p.c * clientY + p.e : view.cx, by = p ? p.b * clientX + p.d * clientY + p.f : view.cy;
+    view.z = nz; applyView();
+    var c2 = svg.getScreenCTM(), p2 = c2 ? c2.inverse() : null;
+    if (p2) { view.cx += bx - (p2.a * clientX + p2.c * clientY + p2.e); view.cy += by - (p2.b * clientX + p2.d * clientY + p2.f); applyView(); }
+  }
+  function zoomCenter(factor) { var r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor); }
+  document.getElementById('zoomIn').addEventListener('click', function () { zoomCenter(1.25); });
+  document.getElementById('zoomOut').addEventListener('click', function () { zoomCenter(1 / 1.25); });
+  document.getElementById('zoomReset').addEventListener('click', function () { view.cx = FULL.x + FULL.w / 2; view.cy = FULL.y + FULL.h / 2; view.z = 1; applyView(); });
+  svg.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+  var ptrs = {};
+  svg.addEventListener('pointerdown', function (e) {
+    if (drawOn || e.target.closest('.pawn')) return;
+    ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+    try { svg.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  svg.addEventListener('pointermove', function (e) {
+    var p = ptrs[e.pointerId]; if (!p) return;
+    var ids = Object.keys(ptrs), scale = (svg.getScreenCTM() || { a: 1 }).a;
+    if (ids.length === 1) {
+      if (view.z > 1) { view.cx -= (e.clientX - p.x) / scale; view.cy -= (e.clientY - p.y) / scale; applyView(); }
+    } else if (ids.length === 2) {
+      var o = ids.filter(function (k) { return +k !== e.pointerId; })[0], q = ptrs[o];
+      var d0 = Math.hypot(p.x - q.x, p.y - q.y), d1 = Math.hypot(e.clientX - q.x, e.clientY - q.y);
+      if (d0 > 8 && d1 > 8) zoomAt((e.clientX + q.x) / 2, (e.clientY + q.y) / 2, d1 / d0);
+    }
+    p.x = e.clientX; p.y = e.clientY;
+  });
+  ['pointerup', 'pointercancel'].forEach(function (ev) { svg.addEventListener(ev, function (e) { delete ptrs[e.pointerId]; }); });
+
+  // ---------- Zrzut ekranu: PNG lub PDF (to, co widać na planszy – z bieżącym przybliżeniem) ----------
+  function boardImage(cb) {
+    var clone = svg.cloneNode(true);
+    var layers = Array.prototype.filter.call(clone.children, function (c) { return c.tagName === 'g' && c.getAttribute('pointer-events') === 'none'; });
+    layers.slice(1).forEach(function (g) { g.parentNode.removeChild(g); }); // bez uchwytów i podglądu rysowania
+    var cs = getComputedStyle(document.documentElement);
+    function v(n, d) { return (cs.getPropertyValue(n) || '').trim() || d; }
+    var style = document.createElementNS(NS, 'style');
+    style.textContent =
+      '.bgOuter{fill:' + v('--boardBg', '#2f6b8a') + '}.bgZone{fill:' + v('--boardZone', v('--boardBg', '#2f6b8a')) + '}' +
+      '.bench{fill:' + v('--benchFill', 'rgba(255,255,255,.14)') + ';stroke:' + v('--benchStroke', 'rgba(255,255,255,.45)') + ';stroke-width:1.5}.benchTxt{fill:' + v('--benchTxt', 'rgba(255,255,255,.75)') + '}' +
+      'text{font-family:"Exo 2",system-ui,Arial,sans-serif}' +
+      '.pawn text{fill:#fff;font-size:16px;font-weight:800;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:rgba(14,27,61,.65);stroke-width:3px;stroke-linejoin:round}' +
+      '.pawn text.plbl{font-size:11px;font-weight:600;stroke:none;fill:#dcebff}.pawn text.plbl.b{font-weight:800;fill:#fff}' +
+      '.pawn circle.ring{fill:none;stroke:rgba(14,27,61,.3);stroke-width:1}' +
+      '.teamLabel{font-size:18px;font-weight:800;font-style:italic;text-transform:uppercase;text-anchor:middle}';
+    clone.insertBefore(style, clone.firstChild);
+    var vb = svg.getAttribute('viewBox').split(/\s+/).map(Number), k = 2000 / Math.max(vb[2], vb[3]);
+    var W = Math.round(vb[2] * k), H = Math.round(vb[3] * k);
+    clone.setAttribute('xmlns', NS); clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    clone.setAttribute('width', W); clone.setAttribute('height', H); clone.removeAttribute('class');
+    var img = new Image();
+    img.onload = function () {
+      var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var g = cv.getContext('2d'); g.fillStyle = v('--boardBg', '#2f6b8a'); g.fillRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H);
+      cb(cv, W, H);
+    };
+    img.onerror = function () { alert('Nie udało się wykonać zrzutu.'); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  }
+  function downloadBlob(blob, name) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  function buildPdf(jpeg, w, h) { // minimalny PDF: jedna strona A4 z obrazem JPEG
+    var land = w > h, PW = land ? 842 : 595, PH = land ? 595 : 842, M = 28;
+    var sc = Math.min((PW - 2 * M) / w, (PH - 2 * M) / h), dw = w * sc, dh = h * sc, x = (PW - dw) / 2, y = (PH - dh) / 2;
+    var enc = new TextEncoder(), chunks = [], offsets = [], len = 0;
+    function push(b) { if (typeof b === 'string') b = enc.encode(b); chunks.push(b); len += b.length; }
+    function obj(n, body) { offsets[n] = len; push(n + ' 0 obj\n' + body + '\nendobj\n'); }
+    push('%PDF-1.4\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PW + ' ' + PH + '] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
+    var content = 'q ' + dw.toFixed(2) + ' 0 0 ' + dh.toFixed(2) + ' ' + x.toFixed(2) + ' ' + y.toFixed(2) + ' cm /Im0 Do Q';
+    obj(4, '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream');
+    offsets[5] = len;
+    push('5 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>\nstream\n');
+    push(jpeg); push('\nendstream\nendobj\n');
+    var xref = len; push('xref\n0 6\n0000000000 65535 f \n');
+    for (var i = 1; i <= 5; i++) push(('0000000000' + offsets[i]).slice(-10) + ' 00000 n \n');
+    push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+  // Po wybraniu PNG / PDF otwiera się okno z kadrowaniem; do zapisanego obrazu dodawany jest znak wodny „mPro Volley 3D”.
+  var WATERMARK = 'mPro Volley 3D', shotCv = null, shotKind = 'png', crop = { x: 0, y: 0, w: 0, h: 0 }, shotDisp = { w: 0, h: 0, k: 1 };
+  function exportBoard(kind) { boardImage(function (cv) { openShot(cv, kind); }); }
+  function wmFont(cropW) { return Math.max(20, Math.round(cropW * 0.045)); }
+  function drawWatermark(g, W, H) {
+    var fs = wmFont(W), pad = Math.round(fs * 0.7);
+    g.save();
+    g.font = 'italic 800 ' + fs + 'px "Exo 2", Arial, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'bottom';
+    g.lineJoin = 'round'; g.lineWidth = Math.max(3, fs * 0.2); g.strokeStyle = 'rgba(14,27,61,.8)';
+    g.strokeText(WATERMARK, W - pad, H - pad * 0.7);
+    g.fillStyle = 'rgba(255,255,255,.95)'; g.fillText(WATERMARK, W - pad, H - pad * 0.7);
+    g.restore();
+  }
+  function placeCrop() {
+    var b = $('cropBox'), k = shotDisp.k;
+    b.style.left = crop.x + 'px'; b.style.top = crop.y + 'px'; b.style.width = crop.w + 'px'; b.style.height = crop.h + 'px';
+    var wm = $('cropWm'); wm.style.fontSize = (wmFont(crop.w * k) / k) + 'px'; wm.style.right = (wmFont(crop.w * k) * 0.7 / k) + 'px'; wm.style.bottom = (wmFont(crop.w * k) * 0.55 / k) + 'px';
+    $('shotInfo').textContent = Math.round(crop.w * k) + ' × ' + Math.round(crop.h * k) + ' px';
+  }
+  function openShot(cv, kind) {
+    shotCv = cv; shotKind = kind;
+    var cvs = $('shotCanvas'); cvs.width = cv.width; cvs.height = cv.height; cvs.getContext('2d').drawImage(cv, 0, 0);
+    $('shotModal').hidden = false;
+    var maxW = Math.min(innerWidth * 0.88, 900), maxH = Math.max(160, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
+    shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
+    cvs.style.width = shotDisp.w + 'px'; cvs.style.height = shotDisp.h + 'px';
+    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px';
+    $('shotKind').textContent = kind.toUpperCase();
+    crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop();
+  }
+  function closeShot() { $('shotModal').hidden = true; shotCv = null; }
+  function saveShot() {
+    if (!shotCv) return;
+    var k = shotDisp.k, sx = Math.round(crop.x * k), sy = Math.round(crop.y * k);
+    var sw = Math.max(1, Math.min(shotCv.width - sx, Math.round(crop.w * k))), sh = Math.max(1, Math.min(shotCv.height - sy, Math.round(crop.h * k)));
+    var kind = shotKind, d = new Date();
+    var name = 'tablica-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    var fontsReady = (document.fonts && document.fonts.load) ? document.fonts.load('italic 800 24px "Exo 2"').catch(function () {}) : Promise.resolve();
+    fontsReady.then(function () {
+      var out = document.createElement('canvas'); out.width = sw; out.height = sh;
+      var g = out.getContext('2d'); g.drawImage(shotCv, sx, sy, sw, sh, 0, 0, sw, sh); drawWatermark(g, sw, sh);
+      if (kind === 'png') { out.toBlob(function (b) { downloadBlob(b, name + '.png'); closeShot(); }, 'image/png'); return; }
+      out.toBlob(function (b) {
+        var fr = new FileReader();
+        fr.onload = function () { downloadBlob(buildPdf(new Uint8Array(fr.result), sw, sh), name + '.pdf'); closeShot(); };
+        fr.readAsArrayBuffer(b);
+      }, 'image/jpeg', 0.93);
+    });
+  }
+  // przeciąganie ramki kadrowania (przesuwanie całej ramki lub jej narożników / krawędzi)
+  (function () {
+    var box = $('cropBox'), drag = null, MIN = 40;
+    box.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      drag = { h: e.target.dataset && e.target.dataset.h || 'move', px: e.clientX, py: e.clientY, c: { x: crop.x, y: crop.y, w: crop.w, h: crop.h } };
+      try { box.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    box.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.px, dy = e.clientY - drag.py, c = drag.c, W = shotDisp.w, H = shotDisp.h, h = drag.h;
+      var x0 = c.x, y0 = c.y, x1 = c.x + c.w, y1 = c.y + c.h;
+      if (h === 'move') { x0 = Math.max(0, Math.min(W - c.w, c.x + dx)); y0 = Math.max(0, Math.min(H - c.h, c.y + dy)); x1 = x0 + c.w; y1 = y0 + c.h; }
+      else {
+        if (h.indexOf('w') >= 0) x0 = Math.max(0, Math.min(x1 - MIN, c.x + dx));
+        if (h.indexOf('e') >= 0) x1 = Math.min(W, Math.max(x0 + MIN, c.x + c.w + dx));
+        if (h.indexOf('n') >= 0) y0 = Math.max(0, Math.min(y1 - MIN, c.y + dy));
+        if (h.indexOf('s') >= 0) y1 = Math.min(H, Math.max(y0 + MIN, c.y + c.h + dy));
+      }
+      crop = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; placeCrop();
+    });
+    ['pointerup', 'pointercancel'].forEach(function (ev) { box.addEventListener(ev, function () { drag = null; }); });
+  })();
+  $('shotAll').addEventListener('click', function () { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); });
+  $('shotCancel').addEventListener('click', closeShot);
+  $('shotClose').addEventListener('click', closeShot);
+  $('shotSave').addEventListener('click', saveShot);
+  $('shotModal').addEventListener('mousedown', function (e) { if (e.target === $('shotModal')) closeShot(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('shotModal').hidden) closeShot(); });
+  document.querySelectorAll('#shotSeg [data-shot]').forEach(function (b) { b.addEventListener('click', function () { exportBoard(b.dataset.shot); }); });
+  // ---------- Rotacje i ustawienie drużyny ----------
+  // Logika jak w modelu 3D: rotacja = strefa rozgrywającego (P1…P6), ustawienie = bazowo / przyjęcie / obrona.
+  // Środkowi (sloty 3 i 6 w składzie) schodzą z tylnej linii na ławkę, a ich miejsce zajmuje libero.
+  var FORM_KEY = 'mpv:tablica:form:v1';
+  var formState = { fteam: 'a', rot: { a: 1, b: 1 }, mode: { a: 'base', b: 'base' } };
+  try {
+    var sf = JSON.parse(localStorage.getItem(FORM_KEY) || 'null');
+    if (sf) {
+      if (sf.fteam === 'a' || sf.fteam === 'b') formState.fteam = sf.fteam;
+      ['a', 'b'].forEach(function (t) {
+        if (sf.rot && sf.rot[t] >= 1 && sf.rot[t] <= 6) formState.rot[t] = +sf.rot[t];
+        if (sf.mode && /^(base|recv|def)$/.test(sf.mode[t])) formState.mode[t] = sf.mode[t];
+      });
+    }
+  } catch (e) {}
+  function saveForm() { try { localStorage.setItem(FORM_KEY, JSON.stringify(formState)); } catch (e) {} }
+
+  function computeFormation(team, rot, mode) { // → { 1..7: [x, y] } (7 = libero)
+    var out = {}, zones = {}, n;
+    for (n = 1; n <= 6; n++) zones[n] = zoneFor(rot, n - 1);
+    if (mode === 'base') {
+      for (n = 1; n <= 6; n++) out[n] = toBoard(mirror(team, ZONE_A[zones[n]]));
+      out[7] = benchPos(team, 'libero');
+      return out;
+    }
+    var backMB = [3, 6].filter(function (k) { return [1, 5, 6].indexOf(zones[k]) >= 0; })[0] || 0;
+    if (mode === 'recv') {
+      var tpl = RECEPTION[rot].pos;
+      for (n = 1; n <= 6; n++) out[n] = n === backMB ? benchPos(team, 'mb') : toBoard(mirror(team, tpl[zones[n]]));
+      out[7] = backMB ? toBoard(mirror(team, tpl[zones[backMB]])) : benchPos(team, 'libero');
+      return out;
+    }
+    // obrona: blok z przodu, tył w obronie; libero w strefie 5, przyjmujący w 6, drugi z tylnej linii w 1
+    var zd = {}, others = [];
+    for (n = 1; n <= 6; n++) { zd[n] = zones[n]; if (n !== backMB && [1, 5, 6].indexOf(zones[n]) >= 0) others.push(n); }
+    var backP = others.filter(function (k) { return roster[team][k].role === 'P'; })[0] || others[0];
+    var backRA = others.filter(function (k) { return k !== backP; })[0];
+    if (backP) zd[backP] = 6;
+    if (backRA) zd[backRA] = 1;
+    for (n = 1; n <= 6; n++) out[n] = n === backMB ? benchPos(team, 'mb') : toBoard(mirror(team, DEFENSE[zd[n]]));
+    out[7] = backMB ? toBoard(mirror(team, DEFENSE[5])) : benchPos(team, 'libero');
+    return out;
+  }
+
+  var tween = null;
+  function animateTo(target, dur) {
+    var from = {};
+    pawns.forEach(function (g) { from[g.dataset.team + g.dataset.num] = g.__pos.slice(); });
+    var t0 = performance.now(), id = tween = {};
+    function step(now) {
+      if (tween !== id) return;
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      pawns.forEach(function (g) {
+        var f = from[g.dataset.team + g.dataset.num], to = target[g.dataset.team][g.dataset.num];
+        var x = f[0] + (to[0] - f[0]) * e, y = f[1] + (to[1] - f[1]) * e;
+        g.__pos = [x, y]; g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+      });
+      layoutLabels();
+      if (k < 1) requestAnimationFrame(step); else { tween = null; savePositions(); }
+    }
+    requestAnimationFrame(step);
+  }
+  function applyFormation(team, rot, mode) {
+    formState.rot[team] = rot; formState.mode[team] = mode; saveForm();
+    var map = { a: {}, b: {} };
+    ['a', 'b'].forEach(function (t) {
+      if (t === team) { map[t] = computeFormation(team, rot, mode); return; }
+      map[t] = currentPositions()[t];
+      pawns.forEach(function (g) { if (g.dataset.team === t) map[t][g.dataset.num] = g.__pos.slice(); });
+    });
+    animateTo(resolveMap(map), 600);
+    syncFormUI();
+  }
+  function syncFormUI() {
+    var t = formState.fteam;
+    $('rotCur').textContent = 'P' + formState.rot[t];
+    document.querySelectorAll('#rotGrid button').forEach(function (b) { b.classList.toggle('on', +b.dataset.rotn === formState.rot[t]); });
+    document.querySelectorAll('#fModeSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.fmode === formState.mode[t]); });
+    document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.fteam === t); b.querySelector('.full').textContent = teams[b.dataset.fteam].name || defName[b.dataset.fteam];
+    });
+  }
+  [1, 6, 5, 4, 3, 2].forEach(function (r) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = 'P' + r; b.dataset.rotn = r;
+    b.addEventListener('click', function () { applyFormation(formState.fteam, r, formState.mode[formState.fteam]); });
+    $('rotGrid').appendChild(b);
+  });
+  $('rotNext').addEventListener('click', function () { var t = formState.fteam; applyFormation(t, ((formState.rot[t] - 2 + 6) % 6) + 1, formState.mode[t]); });
+  $('rotPrev').addEventListener('click', function () { var t = formState.fteam; applyFormation(t, (formState.rot[t] % 6) + 1, formState.mode[t]); });
+  document.querySelectorAll('#fModeSeg button').forEach(function (b) {
+    b.addEventListener('click', function () { var t = formState.fteam; applyFormation(t, formState.rot[t], b.dataset.fmode); });
+  });
+  document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
+    b.addEventListener('click', function () { formState.fteam = b.dataset.fteam; saveForm(); syncFormUI(); });
+  });
+
+  $('hdrMore').addEventListener('click', function () { var o = document.querySelector('header').classList.toggle('open'); $('hdrMore').setAttribute('aria-expanded', o); });
+  // rysowanie na telefonie: karta narzędzi przenosi się do paska u dołu (zamiast paska rotacji), włącza ją przycisk ✏️ w nagłówku
+  var mqPhone = matchMedia('(max-width: 820px)');
+  function placeDrawCard() { if (mqPhone.matches) $('drawDock').appendChild($('drawCard')); else $('side').insertBefore($('drawCard'), $('side').firstChild); setRotH(); }
+  if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeDrawCard); else mqPhone.addListener(placeDrawCard);
+  $('hdrDraw').addEventListener('click', function () { $('drawBtn').click(); if (drawOn) $('side').hidden = true; setRotH(); });
+  // pasek rotacji na telefonie: zwinięty (drużyna, rotacja, ustawienie) / rozwinięty (P1–P6 i reset)
+  $('rbMore').addEventListener('click', function () { var o = $('rotBar').classList.toggle('open'); $('rbMore').setAttribute('aria-expanded', o); setRotH(); });
+  function setRotH() { document.documentElement.style.setProperty('--rotH', $('rotBar').offsetHeight + 'px'); }
+  if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotBar')); else addEventListener('resize', setRotH);
+  if (matchMedia('(max-width: 820px)').matches) $('side').hidden = true; // na telefonie menu boczne otwiera przycisk ☰ Panel
+  setRotH(); placeDrawCard();
+  // ---------- Gotowe kolory (zamiast wpisywania hex) ----------
+  var PALETTE = ['#ff3b30', '#ff9500', '#ffd60a', '#34c759', '#00c7be', '#0a84ff', '#af52de', '#ff2d92', '#ffffff', '#1c1c1e'];
+  var TEAM_PALETTE = ['#d94848', '#f08a24', '#f2c230', '#2fa84f', '#1fa2a6', '#3b7ddd', '#1d3f8f', '#8e44ad', '#e0529c', '#f2f2f2', '#6b7280', '#222831'];
+  function swatchHTML(c, on) { return '<span class="sw' + (on ? ' on' : '') + '" role="button" tabindex="0" data-c="' + c + '" style="background:' + c + '" title="' + c + '"></span>'; }
+  function teamSwatches(cur) {
+    var c = String(cur || '').toLowerCase(), list = TEAM_PALETTE.slice();
+    if (list.indexOf(c) < 0 && c) list.unshift(c); // własny kolor zapisany wcześniej / w modelu 3D
+    return list.map(function (x) { return swatchHTML(x, x === c); }).join('');
+  }
+  var drSw = $('drSwatches');
+  drSw.innerHTML = PALETTE.map(function (c) { return swatchHTML(c, false); }).join('');
+  function syncSwatches() { var v = $('drColor').value.toLowerCase(); drSw.querySelectorAll('.sw').forEach(function (s) { s.classList.toggle('on', s.dataset.c === v); }); }
+  function pickDrawColor(s) { $('drColor').value = s.dataset.c; $('drColor').dispatchEvent(new Event('input')); syncSwatches(); }
+  drSw.addEventListener('click', function (e) { var s = e.target.closest('.sw'); if (s) pickDrawColor(s); });
+  drSw.addEventListener('keydown', function (e) { var s = e.target.closest('.sw'); if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickDrawColor(s); } });
+  syncSwatches();
+  // ---------- Cofnij / Ponów (ruchy pionków, rotacje i rysunki) ----------
+  var hist = [], histIdx = -1, histReady = false, restoring = false, HIST_MAX = 100;
+  function stateNow() { return JSON.stringify({ pos: positionsNow(), ann: annots, form: { rot: formState.rot, mode: formState.mode } }); }
+  function syncHistUI() { $('undoBtn').disabled = histIdx <= 0; $('redoBtn').disabled = histIdx >= hist.length - 1; }
+  function pushHistory() {
+    if (!histReady || restoring) return;
+    var s = stateNow(); if (hist[histIdx] === s) return;
+    hist = hist.slice(0, histIdx + 1); hist.push(s);
+    if (hist.length > HIST_MAX) hist.shift();
+    histIdx = hist.length - 1; syncHistUI();
+  }
+  function restoreHist(i) {
+    if (i < 0 || i >= hist.length) return;
+    var s = JSON.parse(hist[i]); restoring = true; histIdx = i;
+    saved = s.pos; annots = s.ann; drawSel = -1; drawTri = null; drawCur = null; drawDrag = null; drawHover = null;
+    formState.rot = s.form.rot; formState.mode = s.form.mode; saveForm();
+    try { localStorage.setItem(POS_KEY, JSON.stringify(saved)); } catch (e) {}
+    saveAnnots();
+    render(); syncFormUI(); restoring = false; syncHistUI();
+  }
+  function undo() { restoreHist(histIdx - 1); }
+  function redo() { restoreHist(histIdx + 1); }
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+  document.addEventListener('keydown', function (e) {
+    var tg = e.target && e.target.tagName;
+    if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || !(e.ctrlKey || e.metaKey)) return;
+    var k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+  });
+  // tło poza boiskiem: parkiet (niebieskozielone) albo jasne
+  function syncBg() { var b = document.documentElement.getAttribute('data-bg') || 'floor'; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.bg === b); }); }
+  document.querySelectorAll('#bgSeg button').forEach(function (x) {
+    x.addEventListener('click', function () { document.documentElement.setAttribute('data-bg', x.dataset.bg); try { localStorage.setItem('mpv:tablica:bg', x.dataset.bg); } catch (e) {} syncBg(); });
+  });
+  syncBg();
+  updateLegend(); renderTeamsPanel(); syncFormUI(); render();
+  histReady = true; pushHistory(); syncHistUI();
+})();
+</script>
+</body>
+</html>
