@@ -274,7 +274,7 @@ function saveSharedTeams(teamsObj) {
   <h1>📋 Tablica Taktyczna</h1>
   <div class="hdr-extra">
     <span class="hl">Na pionku</span>
-    <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button></span>
+    <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span>
     <span class="hl">Etykieta</span>
     <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span>
     <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">Zrzut PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">Zrzut PDF</button></span>
@@ -500,7 +500,7 @@ function saveSharedTeams(teamsObj) {
     var g = el('g', { class: 'pawn', 'data-team': team, 'data-num': num, transform: 'translate(' + pos[0] + ',' + pos[1] + ')' });
     el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, g);
     el('circle', { r: 18, class: 'ring' }, g);
-    el('text', { x: 0, y: 1 }, g).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer albo pierwsza litera pozycji
+    if (labels.pawn !== 'none') el('text', { x: 0, y: 1 }, g).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer / pierwsza litera pozycji / nic
     // etykieta (nazwisko i/lub pozycja) – jej miejsce wybiera layoutLabels(), żeby nie zasłaniała pionków
     var pill = pillInfo(team, num);
     if (pill) {
@@ -1225,6 +1225,14 @@ function saveSharedTeams(teamsObj) {
     var backRA = others.filter(function (k) { return k !== backP; })[0];
     if (backP) zd[backP] = 6;
     if (backRA) zd[backRA] = 1;
+    // pierwsza linia (blok) wg pozycji: po prawej rozgrywający lub atakujący, na środku środkowy, po lewej przyjmujący
+    var front = [], used = {};
+    for (n = 1; n <= 6; n++) if (n !== backMB && [2, 3, 4].indexOf(zones[n]) >= 0) front.push(n);
+    function take(roleList) { for (var i = 0; i < front.length; i++) { var k = front[i]; if (!used[k] && roleList.indexOf(roster[team][k].role) >= 0) { used[k] = true; return k; } } return 0; }
+    var fr = take(['R', 'A']), fm = take(['Ś']), fl = take(['P']), free = [];
+    if (!fr) free.push(2); if (!fm) free.push(3); if (!fl) free.push(4);
+    if (fr) zd[fr] = 2; if (fm) zd[fm] = 3; if (fl) zd[fl] = 4;
+    front.filter(function (k) { return !used[k]; }).forEach(function (k, i) { zd[k] = free[i]; }); // gdy skład ma inne role – reszta wypełnia wolne miejsca
     for (n = 1; n <= 6; n++) out[n] = n === backMB ? benchPos(team, 'mb') : toBoard(mirror(team, DEFENSE[zd[n]]));
     out[7] = backMB ? toBoard(mirror(team, DEFENSE[5])) : benchPos(team, 'libero');
     return out;
