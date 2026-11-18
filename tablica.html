@@ -400,8 +400,8 @@ function saveSharedTeams(teamsObj) {
         <span id="cropWm">mPro Volley 3D</span>
       </div>
     </div>
-    <div class="shotHint">Przeciągnij ramkę lub jej uchwyty, aby wykadrować. Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.</div>
-    <div class="shotBtns"><button type="button" id="shotAll">Cały obraz</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
+    <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony). Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.</div>
+    <div class="shotBtns"><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
   </div>
 </div>
 <div id="drawDock"></div>
@@ -523,11 +523,11 @@ function saveSharedTeams(teamsObj) {
       ['a', 'b'].forEach(function (tm) {
         for (var z = 1; z <= 6; z++) {
           var zp = toBoard(mirror(tm, zc[z]));
-          el('text', { x: zp[0], y: zp[1], 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 64, 'font-weight': 800, 'font-style': 'italic',
-            fill: 'rgba(255,255,255,.4)', stroke: 'rgba(14,27,61,.18)', 'stroke-width': 2, 'paint-order': 'stroke' }).textContent = z;
+          el('text', { x: zp[0], y: zp[1], 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 56, 'font-weight': 700, 'font-style': 'italic',
+            fill: 'rgba(255,255,255,.2)' }).textContent = z;
         }
       });
-      el('line', { x1: CX, y1: 90, x2: CX, y2: 810, stroke: '#fff', 'stroke-width': 3, 'stroke-dasharray': '14,9', opacity: .9 });
+      el('line', { x1: CX, y1: 90, x2: CX, y2: 810, stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '14,9', opacity: .4 });
     }
     el('text', { x: 250, y: 14, class: 'teamLabel', fill: '#fff', stroke: teams.b.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.b.name || defName.b;
     el('text', { x: 250, y: 886, class: 'teamLabel', fill: '#fff', stroke: teams.a.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.a.name || defName.a;
@@ -1135,7 +1135,9 @@ function saveSharedTeams(teamsObj) {
       '.pawn circle.ring{fill:none;stroke:rgba(14,27,61,.3);stroke-width:1}' +
       '.teamLabel{font-size:18px;font-weight:800;font-style:italic;text-transform:uppercase;text-anchor:middle}';
     clone.insertBefore(style, clone.firstChild);
-    var vb = svg.getAttribute('viewBox').split(/\s+/).map(Number), k = 2000 / Math.max(vb[2], vb[3]);
+    // zawsze cały parkiet (z marginesem) – ramką kadrowania wybierasz potem dowolny fragment, także oddalony
+    var vb = [FULL.x, FULL.y, FULL.w, FULL.h], k = 2000 / Math.max(FULL.w, FULL.h);
+    clone.setAttribute('viewBox', vb.join(' '));
     var W = Math.round(vb[2] * k), H = Math.round(vb[3] * k);
     clone.setAttribute('xmlns', NS); clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
     clone.setAttribute('width', W); clone.setAttribute('height', H); clone.removeAttribute('class');
@@ -1196,12 +1198,17 @@ function saveSharedTeams(teamsObj) {
     shotCv = cv; shotKind = kind;
     var cvs = $('shotCanvas'); cvs.width = cv.width; cvs.height = cv.height; cvs.getContext('2d').drawImage(cv, 0, 0);
     $('shotModal').hidden = false;
-    var maxW = Math.min(innerWidth * 0.88, 900), maxH = Math.max(160, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
+    var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
     shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
     cvs.style.width = shotDisp.w + 'px'; cvs.style.height = shotDisp.h + 'px';
     $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px';
     $('shotKind').textContent = kind.toUpperCase();
-    crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop();
+    screenCrop();
+  }
+  function wholeCrop() { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); }
+  function screenCrop() { // ramka = fragment widoczny teraz na ekranie (przy przybliżeniu 100% – cały parkiet)
+    var w = FULL.w / view.z, h = FULL.h / view.z, sx = shotDisp.w / FULL.w, sy = shotDisp.h / FULL.h;
+    crop = { x: (view.cx - w / 2 - FULL.x) * sx, y: (view.cy - h / 2 - FULL.y) * sy, w: w * sx, h: h * sy }; placeCrop();
   }
   function closeShot() { $('shotModal').hidden = true; shotCv = null; }
   function saveShot() {
@@ -1245,7 +1252,8 @@ function saveSharedTeams(teamsObj) {
     });
     ['pointerup', 'pointercancel'].forEach(function (ev) { box.addEventListener(ev, function () { drag = null; }); });
   })();
-  $('shotAll').addEventListener('click', function () { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); });
+  $('shotAll').addEventListener('click', wholeCrop);
+  $('shotView').addEventListener('click', screenCrop);
   $('shotCancel').addEventListener('click', closeShot);
   $('shotClose').addEventListener('click', closeShot);
   $('shotSave').addEventListener('click', saveShot);
