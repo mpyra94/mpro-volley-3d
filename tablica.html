@@ -90,12 +90,11 @@
   #side .card > summary { display: none; }
   #side .card { display: none; }
   #side[data-open="teams"] #teamsCard, #side[data-open="draw"] #drawCard, #side[data-open="pawns"] #pawnsCard { display: block; }
-  #pawnTools { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: 6px; padding: 6px 8px;
-    background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 20px -10px rgba(7, 26, 82, .7); max-width: calc(100% - 90px); }
-  #pawnTools[hidden] { display: none; }
-  #pawnTools span { font-size: 12.5px; font-weight: 700; color: var(--text); padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #pawnTools button { font: inherit; font-weight: 800; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; min-width: 38px; padding: 6px 8px; cursor: pointer; }
-  #pawnTools button:hover { border-color: var(--accent); }
+  #trash { position: absolute; right: 12px; bottom: 12px; z-index: 5; width: 96px; height: 96px; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border: 3px dashed rgba(255, 255, 255, .75); border-radius: 18px; background: rgba(14, 27, 61, .55); color: #fff; font-size: 34px; line-height: 1; pointer-events: none; transition: transform .12s, background .12s; }
+  #trash small { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+  #trash.show { display: flex; }
+  #trash.hot { background: rgba(217, 72, 72, .9); border-style: solid; transform: scale(1.12); }
   #board.drawing .ballg { pointer-events: none; }
   @media (max-width: 820px) {
     #rail { position: fixed; left: 6px; top: 64px; margin: 0; padding: 4px; z-index: 12; }
@@ -368,7 +367,7 @@ function saveSharedTeams(teamsObj) {
 
     <details class="card" id="pawnsCard" open>
       <summary>Pionki</summary>
-      <div class="hint" style="margin-top:0">Kliknij pionek na boisku, aby go zaznaczyć – u góry pojawi się pasek z przyciskiem 🗑 (usunięcie pionka). Klawisze: Delete / Esc. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).</div>
+      <div class="hint" style="margin-top:0">Aby usunąć pionek, przeciągnij go do kosza, który pojawia się w prawym dolnym rogu planszy. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).</div>
       <div class="row"><b>Rozmiar wszystkich</b></div>
       <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset">100%</button></div>
       <div class="row"><button type="button" id="restoreGone" title="Przywróć pionki usunięte z boiska">Przywróć usunięte pionki <span id="goneN"></span></button></div>
@@ -382,11 +381,7 @@ function saveSharedTeams(teamsObj) {
   </aside>
 
   <main>
-    <div id="pawnTools" hidden>
-      <span id="pawnToolsLbl"></span>
-      <button type="button" id="pawnDel" title="Usuń pionek z boiska (Delete)">🗑</button>
-      <button type="button" id="pawnDesel" title="Odznacz (Esc)">✕</button>
-    </div>
+    <div id="trash" aria-hidden="true">🗑<small>USUŃ</small></div>
     <div id="zoomCtl" role="group" aria-label="Przybliżenie">
       <button type="button" id="zoomIn" title="Przybliż (kółko myszy / szczypanie)">+</button>
       <button type="button" id="zoomReset" title="Przywróć widok całego boiska">100%</button>
@@ -576,18 +571,15 @@ function saveSharedTeams(teamsObj) {
   function pawnScale(t, n) { return pst.gs || 1; } // rozmiar zmienia się tylko dla wszystkich pionków naraz
   function isGone(t, n) { var o = pst.ps[t] && pst.ps[t][n]; return !!(o && o.gone); }
   function goneCount() { var c = 0; ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (isGone(t, n)) c++; }); return c; }
-  var selPawn = null; // { team, n }
   function commit() { savePst(); render(); savePositions(); } // zmiana stanu pionków: zapis + przerysowanie + wpis do historii
 
   var pawns = [];
   function makePawn(team, num, pos) {
     var r = roster[team][num], col = teams[team].jersey, s = pawnScale(team, num);
-    var sel = selPawn && selPawn.team === team && selPawn.n === num;
     var g = el('g', { class: 'pawn', 'data-team': team, 'data-num': num, transform: 'translate(' + pos[0] + ',' + pos[1] + ')' });
     var ig = el('g', { transform: 'scale(' + s + ')' }, g);
     el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, ig);
     el('circle', { r: 18, class: 'ring' }, ig);
-    if (sel) el('circle', { r: 23, fill: 'none', stroke: '#ffd60a', 'stroke-width': 3, class: 'selring' }, ig);
     if (labels.pawn !== 'none') el('text', { x: 0, y: 1 }, ig).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer / pierwsza litera pozycji / nic
     // etykieta (nazwisko i/lub pozycja) – jej miejsce wybiera layoutLabels(), żeby nie zasłaniała pionków
     var pill = pillInfo(team, num);
@@ -669,25 +661,13 @@ function saveSharedTeams(teamsObj) {
     ['pointerup', 'pointercancel'].forEach(function (ev) { g.addEventListener(ev, function () { if (drag) { drag = null; savePst(); pushHistory(); } }); });
   }
 
-  // pasek zaznaczonego pionka: rozmiar − / + i usunięcie
-  function syncPawnTools() {
-    var bar = document.getElementById('pawnTools'); if (!bar) return;
-    var ok = selPawn && !drawOn && !isGone(selPawn.team, selPawn.n);
-    bar.hidden = !ok; if (!ok) return;
-    var r = roster[selPawn.team][selPawn.n];
-    document.getElementById('pawnToolsLbl').textContent = (teams[selPawn.team].name || defName[selPawn.team]) + ' · ' + r.num + (r.role ? ' (' + (ROLE_NAME[r.role] || r.role) + ')' : '') +
-      ''; 
-  }
   function syncPawnsPanel() {
     var el_ = document.getElementById('gsVal'); if (el_) el_.textContent = Math.round(pst.gs * 100) + '%';
     var n = document.getElementById('goneN'); if (n) n.textContent = goneCount() ? '(' + goneCount() + ')' : '';
     var rb = document.getElementById('restoreGone'); if (rb) rb.disabled = !goneCount();
     var bb = document.querySelector('#rail [data-act="ball"]'); if (bb) bb.classList.toggle('on', !!pst.ball.on);
   }
-  function selectPawn(team, n) { selPawn = (selPawn && selPawn.team === team && selPawn.n === n) ? null : { team: team, n: n }; render(); }
-  function removePawn() {
-    if (!selPawn) return; pawnOwn(selPawn.team, selPawn.n).gone = true; selPawn = null; commit();
-  }
+  function removePawn(team, n) { pawnOwn(team, n).gone = true; commit(); } // usuniecie pionka: przeciagniecie do kosza
 
   function render() {
     tween = null;
@@ -707,7 +687,7 @@ function saveSharedTeams(teamsObj) {
     attachDrag();
     layoutLabels();
     redrawAnnots();
-    syncPawnTools(); syncPawnsPanel();
+    syncPawnsPanel();
   }
 
   function positionsNow() { // pozycje wszystkich pionków (także drużyny ukrytej w widoku połowy)
@@ -723,6 +703,10 @@ function saveSharedTeams(teamsObj) {
   }
 
   // ---------- Przeciąganie ----------
+  function overTrash(cx, cy) {
+    var r = document.getElementById('trash').getBoundingClientRect();
+    return cx >= r.left - 8 && cx <= r.right + 8 && cy >= r.top - 8 && cy <= r.bottom + 8;
+  }
   function attachDrag() {
     var drag = null;
     function toLocal(evt) {
@@ -745,6 +729,7 @@ function saveSharedTeams(teamsObj) {
         if (!drag || drag.g !== g) return;
         if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 4) drag.moved = true;
         if (!drag.moved) return;
+        var tr = document.getElementById('trash'); tr.classList.add('show'); tr.classList.toggle('hot', overTrash(e.clientX, e.clientY)); // kosz pojawia się podczas przeciągania
         var loc = toLocal(e);
         var team = g.dataset.team, c = clampPos(team, loc[0] + drag.dx, loc[1] + drag.dy);
         var others = pawns.filter(function (o) { return o !== g; }).map(function (o) { return { x: o.__pos[0], y: o.__pos[1], pill: o.__pill, s: o.__s }; });
@@ -757,11 +742,13 @@ function saveSharedTeams(teamsObj) {
         layoutLabels();
       });
       ['pointerup', 'pointercancel'].forEach(function (ev) {
-        g.addEventListener(ev, function () {
+        g.addEventListener(ev, function (e) {
           if (!drag || drag.g !== g) return;
           var moved = drag.moved, team = g.dataset.team, n = +g.dataset.num;
+          var drop = ev === 'pointerup' && moved && overTrash(e.clientX, e.clientY); // upuszczenie nad koszem usuwa pionek
+          var tr = document.getElementById('trash'); tr.classList.remove('show', 'hot');
           g.classList.remove('dragging'); drag = null;
-          if (moved) savePositions(); else selectPawn(team, n); // przesunięcie zapisuje pozycję, samo kliknięcie zaznacza pionek
+          if (drop) removePawn(team, n); else if (moved) savePositions(); // samo kliknięcie nic nie robi
         });
       });
     });
@@ -770,7 +757,7 @@ function saveSharedTeams(teamsObj) {
   document.getElementById('resetBtn').addEventListener('click', function () {
     try { localStorage.removeItem(POS_KEY); } catch (e) {}
     saved = null;
-    pst = { ps: { a: {}, b: {} }, gs: 1, ball: { on: false, x: 250, y: 450 } }; selPawn = null; savePst(); // domyslne: rozmiary 100%, wszystkie pionki, piłka ukryta
+    pst = { ps: { a: {}, b: {} }, gs: 1, ball: { on: false, x: 250, y: 450 } }; savePst(); // domyslne: rozmiary 100%, wszystkie pionki, piłka ukryta
     formState.rot = { a: 1, b: 1 }; formState.mode = { a: 'base', b: 'base' }; saveForm(); syncFormUI();
     render();
     pushHistory();
@@ -991,7 +978,6 @@ function saveSharedTeams(teamsObj) {
   // tryb i narzędzia
   function setDraw(on) {
     drawOn = on;
-    if (on && selPawn) { selPawn = null; render(); }
     $('drawBtn').classList.toggle('on', on);
     $('side').classList.toggle('dimTools', !on);
     svg.classList.toggle('drawing', on);
@@ -1213,8 +1199,6 @@ function saveSharedTeams(teamsObj) {
     p.x = e.clientX; p.y = e.clientY;
   });
   ['pointerup', 'pointercancel'].forEach(function (ev) { svg.addEventListener(ev, function (e) {
-    var p = ptrs[e.pointerId]; // samo kliknięcie w tło odznacza pionek
-    if (p && ev === 'pointerup' && selPawn && Object.keys(ptrs).length === 1 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 5) { selPawn = null; delete ptrs[e.pointerId]; render(); return; }
     delete ptrs[e.pointerId];
   }); });
 
@@ -1223,7 +1207,6 @@ function saveSharedTeams(teamsObj) {
     var clone = svg.cloneNode(true);
     var layers = Array.prototype.filter.call(clone.children, function (c) { return c.tagName === 'g' && c.getAttribute('pointer-events') === 'none'; });
     layers.slice(1).forEach(function (g) { g.parentNode.removeChild(g); }); // bez uchwytów i podglądu rysowania
-    Array.prototype.forEach.call(clone.querySelectorAll('.selring'), function (n) { n.parentNode.removeChild(n); }); // bez obwódki zaznaczenia
     var cs = getComputedStyle(document.documentElement);
     function v(n, d) { return (cs.getPropertyValue(n) || '').trim() || d; }
     var style = document.createElementNS(NS, 'style');
@@ -1507,7 +1490,7 @@ function saveSharedTeams(teamsObj) {
   function restoreHist(i) {
     if (i < 0 || i >= hist.length) return;
     var s = JSON.parse(hist[i]); restoring = true; histIdx = i;
-    saved = s.pos; annots = s.ann; if (s.pst) { pst = s.pst; savePst(); } selPawn = null; drawSel = -1; drawTri = null; drawCur = null; drawDrag = null; drawHover = null;
+    saved = s.pos; annots = s.ann; if (s.pst) { pst = s.pst; savePst(); } drawSel = -1; drawTri = null; drawCur = null; drawDrag = null; drawHover = null;
     formState.rot = s.form.rot; formState.mode = s.form.mode; saveForm();
     try { localStorage.setItem(POS_KEY, JSON.stringify(saved)); } catch (e) {}
     saveAnnots();
@@ -1524,19 +1507,11 @@ function saveSharedTeams(teamsObj) {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
     else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
   });
-  // pionki: rozmiar / usuwanie zaznaczonego, rozmiar wszystkich, przywracanie usuniętych
-  $('pawnDel').addEventListener('click', removePawn);
-  $('pawnDesel').addEventListener('click', function () { selPawn = null; render(); });
+  // pionki: rozmiar wszystkich, przywracanie usuniętych (usuwanie – przeciągnięcie pionka do kosza)
   $('gsBigger').addEventListener('click', function () { pst.gs = Math.min(1.8, Math.round((pst.gs + 0.1) * 100) / 100); commit(); });
   $('gsSmaller').addEventListener('click', function () { pst.gs = Math.max(0.6, Math.round((pst.gs - 0.1) * 100) / 100); commit(); });
   $('gsReset').addEventListener('click', function () { pst.gs = 1; commit(); });
   $('restoreGone').addEventListener('click', function () { ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (isGone(t, n)) pawnOwn(t, n).gone = false; }); commit(); });
-  document.addEventListener('keydown', function (e) {
-    var tg = e.target && e.target.tagName;
-    if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA' || drawOn || !selPawn) return;
-    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removePawn(); }
-    else if (e.key === 'Escape') { selPawn = null; render(); }
-  });
   // tło poza boiskiem: parkiet (niebieskozielone) albo jasne
   function syncBg() { var b = document.documentElement.getAttribute('data-bg') || 'floor'; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.bg === b); }); }
   document.querySelectorAll('#bgSeg button').forEach(function (x) {
