@@ -51,6 +51,12 @@
   .sw:hover { transform: scale(1.12); }
   .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
   #zoomVal { min-width: 46px; text-align: center; font-weight: 700; font-size: 13px; }
+  /* ustawienia widoku: pływający pasek na dole – nie zajmuje miejsca w obszarze roboczym */
+  #viewBar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 25; display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+    background: var(--glass); border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 8px 22px -8px rgba(7, 26, 82, .65); }
+  #viewBar .lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #viewBar button { font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; }
+  #viewBar button:hover { border-color: var(--accent); }
 
   /* ---------- Scena ---------- */
   #stage { --s: 1; padding: 18px 12px 60px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
@@ -159,7 +165,7 @@
   #pop label { font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 2px; }
   #pop input { width: 100%; font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
   #pop button { font-size: 12px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; }
-  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 400; background: rgba(14, 27, 61, .92); color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  #toast { position: fixed; left: 50%; bottom: 62px; transform: translateX(-50%); z-index: 400; background: rgba(14, 27, 61, .92); color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
     max-width: min(92vw, 560px); text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
   #toast.show { opacity: 1; }
 
@@ -169,7 +175,7 @@
   @page { size: A4; margin: 0; }
   @media print {
     html, body { background: #fff !important; }
-    header, #tb, #pop, #toast, .pageNo, .ops, .addbar, .dRowOps, .noprint { display: none !important; }
+    header, #tb, #viewBar, #pop, #toast, .pageNo, .ops, .addbar, .dRowOps, .noprint { display: none !important; }
     #stage { padding: 0; gap: 0; display: block; }
     .pageWrap { width: 210mm !important; height: 296mm !important; margin: 0 !important; page-break-after: always; break-after: page; overflow: hidden; }
     .pageWrap:last-child { page-break-after: auto; break-after: auto; }
@@ -229,8 +235,9 @@ function loadSharedTeams() {
   </div>
   <div class="sep"></div>
   <div class="grp"><button type="button" id="themeBtn" title="Trzy kolory zespołu: paski i nagłówek, środek belki, dół belki">🎨 Kolory zespołu</button></div>
-  <div class="grp"><span class="lbl">Widok</span><button type="button" id="zoomOut">−</button><span id="zoomVal">100%</span><button type="button" id="zoomIn">+</button><button type="button" id="zoomFit">Dopasuj</button></div>
 </div>
+
+<div id="viewBar" role="group" aria-label="Widok"><span class="lbl">Widok</span><button type="button" id="zoomOut" title="Pomniejsz">−</button><span id="zoomVal">100%</span><button type="button" id="zoomIn" title="Powiększ">+</button><button type="button" id="zoomFit" title="Dopasuj stronę do szerokości okna">Dopasuj</button></div>
 
 <main id="stage"></main>
 
