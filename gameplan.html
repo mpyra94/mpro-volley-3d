@@ -97,6 +97,8 @@
   .row1 { display: flex; gap: 10px; padding: 8px 36px 6px 58px; height: 226px; }
   .fbox { position: relative; width: 272px; flex: none; border: 1.5px solid #14213d; }
   .fbox svg { display: block; width: 100%; height: 100%; }
+  .rotSel { font: inherit; font-size: 20px; font-weight: 800; line-height: 1.1; color: #14213d; border: 0; background: transparent; padding: 0 2px; cursor: pointer; -webkit-appearance: none; appearance: none; outline: none; }
+  body:not(.printing) .rotSel:hover, body:not(.printing) .rotSel:focus { background: rgba(255, 214, 10, .3); border-radius: 3px; }
   .rotLbl { position: absolute; left: 8px; bottom: 5px; font-size: 20px; font-weight: 800; background: rgba(255, 255, 255, .85); padding: 0 4px; line-height: 1.1; }
   .libBox { width: 134px; flex: none; border: 1.5px solid #14213d; font-size: 10px; display: flex; flex-direction: column; }
   .libBox .lb1 { padding: 5px 7px 6px; border-bottom: 1.5px solid #14213d; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -376,7 +378,7 @@ function loadSharedTeams() {
       '<div><div class="cbox">' + tx('meta.comp', 't1', 'Rozgrywki') + tx('meta.date', 't2', 'Data i godzina') + tx('meta.place', 't3', 'Miejsce') + '</div><div class="vs">vs.</div></div>' +
       '<div class="team">' + logoHTML('meta.oppLogo') + tx('meta.oppName', 'nm', 'Przeciwnik') + '</div></div>';
     h += '<div class="p1head"></div>' + barHTML('titles.t1', false);
-    h += '<div class="row1"><div class="fbox">' + courtSVG('top', 'p1.formation') + '<span class="rotLbl">' + tx('p1.rot', '', 'P1') + '</span></div>' +
+    h += '<div class="row1"><div class="fbox">' + courtSVG('top', 'p1.formation') + '<span class="rotLbl"><select class="rotSel" title="Rotacja przeciwnika (P1–P6)">' + ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map(function (r) { return '<option value="' + r + '"' + (p.rot === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></span></div>' +
       '<div class="libBox"><div class="lb1"><span class="h">Libero:</span>' + shIcon('p1.libNum', '#ffffff') + tx('p1.libName', '', 'NAZWISKO').replace('class="tx "', 'class="tx" style="font-weight:800;font-size:10px;text-transform:uppercase"') + '</div>' +
       '<div class="lb2"><div class="h">Zmiennicy:</div>' + rt('p1.subs', '', '#15 NAZWISKO – R') + '</div></div>' +
       '<div class="roleBox">' + rt('p1.role', '', 'Rola zagrywki…').replace('class="rt "', 'class="rt" style="font-size:10.5px"') + '</div></div>';
@@ -422,7 +424,20 @@ function loadSharedTeams() {
       (pg === 2 ? '<button type="button" class="addbtn" data-act="legend-add">+ dodaj legendę</button>' : '') + '</div>' + footHTML() + '</section>';
     return h;
   }
+  // Ustawienie przeciwnika (strona 1): sześć koszulek na stałych pozycjach schematu – edytujesz numer, nazwisko i kolor, ale nie położenie
+  var FORM_PATH = 'p1.formation', FORM_POS = [[45, 48], [125, 48], [205, 48], [45, 130], [125, 130], [205, 130]];
+  function isLocked(path, s) { return path === FORM_PATH && !!s && s.t === 'shirt'; }
+  function lockFormation() {
+    var all = doc.p1.formation || (doc.p1.formation = []), shirts = all.filter(function (s) { return s.t === 'shirt'; }).slice(0, 6), others = all.filter(function (s) { return s.t !== 'shirt'; });
+    for (var k = 0; k < 6; k++) {
+      if (!shirts[k]) shirts[k] = shirt(0, 0, String(k + 1), 'ZAWODNIK ' + (k + 1), '#ffffff');
+      shirts[k].x = FORM_POS[k][0]; shirts[k].y = FORM_POS[k][1];
+    }
+    doc.p1.formation = shirts.concat(others);
+    if (!/^P[1-6]$/.test(doc.p1.rot)) doc.p1.rot = 'P1'; // rotacja wybierana z listy P1–P6
+  }
   function renderAll() {
+    lockFormation();
     var st = ''; [p1HTML(), pnHTML(2), pnHTML(3)].forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z 3</span>' + h + '</div>'; });
     stage.innerHTML = st;
     applyTheme(); drawAll(); syncTb(); fit();
@@ -452,6 +467,9 @@ function loadSharedTeams() {
     var v = t.getAttribute('data-rich') ? clean(t.innerHTML) : t.innerText.replace(/[\r\n]+/g, ' ');
     setPath(doc, t.getAttribute('data-p'), v); commitSoon();
     if (t.matches('[data-ph]') && !v) { /* puste pole pokaże podpowiedź */ }
+  });
+  stage.addEventListener('change', function (e) { // rotacja przeciwnika z listy P1–P6
+    if (e.target.classList && e.target.classList.contains('rotSel')) { doc.p1.rot = e.target.value; commit(); }
   });
   stage.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.matches && e.target.matches('.tx, .cell, .n')) { e.preventDefault(); e.target.blur(); }
@@ -565,7 +583,8 @@ function loadSharedTeams() {
       if (hd && sel) { cur = { svg: svg, path: path, mode: 'v', i: sel.i, k: +hd.getAttribute('data-k') }; }
       else if (g) {
         var i = +g.getAttribute('data-i'), now = Date.now(), dbl = lastTap && lastTap.path === path && lastTap.i === i && now - lastTap.t < 380; lastTap = { path: path, i: i, t: now };
-        var same = sel && sel.path === path && sel.i === i; sel = { path: path, i: i }; cur = { svg: svg, path: path, mode: 'm', i: i, last: p, moved: false };
+        var same = sel && sel.path === path && sel.i === i; sel = { path: path, i: i };
+        cur = isLocked(path, shapes[i]) ? null : { svg: svg, path: path, mode: 'm', i: i, last: p, moved: false }; // koszulki w schemacie ustawienia nie są przesuwane
         if (!same) redrawPath(path);
         var sh0 = shapes[i]; if (dbl && sh0 && sh0.t === 'shirt') { cur = null; openShirtEditor(svg, i); e.preventDefault(); return; } if (dbl && sh0 && sh0.t === 'text') { cur = null; openTextEditor(svg, i); e.preventDefault(); return; }
       }
@@ -573,6 +592,7 @@ function loadSharedTeams() {
       try { svg.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); return;
     }
     e.preventDefault();
+    if (tool === 'shirt' && path === FORM_PATH) { toast('W ustawieniu przeciwnika pozycje zawodników są stałe – edytuj numer i nazwisko (dwuklik na koszulce).'); return; }
     if (tool === 'shirt') { addShape(path, shirt(p[0], p[1], '', '', color === '#ffffff' ? '#ffffff' : color)); openShirtEditor(svg, sel.i); return; }
     if (tool === 'text') { addShape(path, { t: 'text', x: p[0], y: p[1], text: '', color: color === '#ffffff' ? '#14213d' : color, size: 11 }); openTextEditor(svg, sel.i); return; }
     if (tool === 'arrow') { cur = { svg: svg, path: path, mode: 'arrow', a: p, b: p }; try { svg.setPointerCapture(e.pointerId); } catch (x) {} drawPreview(); return; }
@@ -632,6 +652,7 @@ function loadSharedTeams() {
     pop.innerHTML = '<div><label>Numer</label><input id="pNum" maxlength="3" value="' + esc(s.num) + '"></div><div><label>Nazwisko (pod koszulką)</label><input id="pName" maxlength="22" value="' + esc(s.name) + '"></div>' +
       '<div><label>Kolor koszulki</label><div class="sws" id="pSws"></div></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">🗑 Usuń</button><button type="button" id="pOk">Gotowe</button></div>';
     popAt(svg, s.x, s.y);
+    if (isLocked(path, s)) $('pDel').style.display = 'none'; // koszulek w schemacie ustawienia nie usuwamy
     var sw = $('pSws'); PAL.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw' + (c === s.color ? ' on' : ''); d.style.background = c; d.dataset.c = c; sw.appendChild(d); });
     function live() { s.num = $('pNum').value; s.name = $('pName').value; drawCanvas(svg); }
     $('pNum').addEventListener('input', live); $('pName').addEventListener('input', live);
@@ -728,6 +749,7 @@ function loadSharedTeams() {
     if (!activePath) { toast('Kliknij boisko, do którego chcesz wkleić.'); return; }
     var arr = shapesOf(activePath), off = activePath === clipSrc ? 10 : 0, first = arr.length;
     clone(clip).forEach(function (s) {
+      if (activePath === FORM_PATH && s.t === 'shirt') return; // koszulek nie wklejamy do schematu ustawienia
       if (off) { if (s.pts) s.pts = s.pts.map(function (q) { return [q[0] + off, q[1] + off]; }); else { s.x += off; s.y += off; } }
       arr.push(s);
     });
@@ -742,10 +764,11 @@ function loadSharedTeams() {
     if (c || t) { var a = document.activeElement; if (a && a.getAttribute && a.getAttribute('data-rich')) { setPath(doc, a.getAttribute('data-p'), clean(a.innerHTML)); commitSoon(); } }
   });
   $('delShape').addEventListener('click', delSel);
-  function delSel() { if (!sel) return; shapesOf(sel.path).splice(sel.i, 1); var p = sel.path; sel = null; redrawPath(p); commit(); }
+  function delSel() { if (!sel) return; if (isLocked(sel.path, shapesOf(sel.path)[sel.i])) { toast('Koszulek w schemacie ustawienia przeciwnika nie usuwamy.'); return; } shapesOf(sel.path).splice(sel.i, 1); var p = sel.path; sel = null; redrawPath(p); commit(); }
   $('clearCanvas').addEventListener('click', function () {
     if (!activePath) { toast('Najpierw kliknij diagram, który chcesz wyczyścić.'); return; }
-    if (!shapesOf(activePath).length) return; setPath(doc, activePath, []); sel = null; redrawPath(activePath); commit();
+    var keep = activePath === FORM_PATH ? shapesOf(activePath).filter(function (s) { return s.t === 'shirt'; }) : []; // w schemacie ustawienia koszulki zostają
+    if (shapesOf(activePath).length === keep.length) return; setPath(doc, activePath, keep); sel = null; redrawPath(activePath); commit();
   });
   document.addEventListener('keydown', function (e) {
     var tg = e.target && e.target.tagName, editing = e.target && (e.target.isContentEditable || tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA');
