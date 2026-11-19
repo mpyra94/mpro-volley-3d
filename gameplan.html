@@ -82,7 +82,8 @@
   .hdr { display: grid; grid-template-columns: 1fr 240px 1fr; align-items: start; padding: 20px 36px 0 58px; height: 62px; }
   .hdr .team { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
   .hdr .team .logo { width: 104px; height: 88px; display: grid; place-items: center; cursor: pointer; border-radius: 8px; }
-  .hdr .team .logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .hdr .team .logo { overflow: hidden; padding: 3px; }
+  .hdr .team .logo img, .foot img { display: block; width: 100%; height: 100%; object-fit: contain; } /* logo zawsze mieści się w ramce i nie wchodzi na tekst */
   .hdr .team .nm { font-size: 13px; font-weight: 800; text-align: center; text-transform: uppercase; min-width: 80px; }
   .logo.empty { border: 2px dashed #b9c4d8; color: #9aa6bd; font-size: 10px; font-weight: 700; text-align: center; line-height: 1.2; }
   .cbox { background: var(--bar); color: #fff; text-align: center; border-radius: 3px; padding: 8px 6px 7px; margin-top: 28px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
@@ -140,7 +141,7 @@
   .addbar { padding: 6px 36px 0 58px; display: flex; gap: 6px; flex-wrap: wrap; }
   .dRowOps { display: flex; gap: 4px; position: absolute; right: 36px; top: 2px; }
   .foot { position: absolute; right: 34px; bottom: 20px; width: 92px; height: 66px; display: grid; place-items: center; cursor: pointer; }
-  .foot img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .foot { overflow: hidden; }
   .foot.empty { border: 2px dashed #c3cce0; border-radius: 8px; color: #b2bbd0; font-size: 9px; font-weight: 700; text-align: center; }
 
   /* rysunki na boisku (SVG) */
@@ -215,7 +216,7 @@ function loadSharedTeams() {
     <button type="button" data-tool="text" title="Napis – kliknij miejsce">T Napis</button>
   </div>
   <div class="grp"><div class="sws" id="sws"></div></div>
-  <div class="grp"><button type="button" id="delShape" title="Usuń zaznaczony element (Delete)">🗑 Usuń</button><button type="button" id="clearCanvas" title="Wyczyść cały aktywny diagram">Wyczyść diagram</button></div>
+  <div class="grp"><button type="button" id="copyBtn" title="Kopiuj zaznaczony kształt (bez zaznaczenia – wszystkie kształty aktywnego diagramu), Ctrl+C">⧉ Kopiuj</button><button type="button" id="pasteBtn" title="Wklej skopiowane kształty do aktywnego diagramu (Ctrl+V)">⎘ Wklej</button><button type="button" id="delShape" title="Usuń zaznaczony element (Delete)">🗑 Usuń</button><button type="button" id="clearCanvas" title="Wyczyść cały aktywny diagram">Wyczyść diagram</button></div>
   <div class="sep"></div>
   <div class="grp"><span class="lbl">Tekst</span>
     <button type="button" data-cmd="bold" title="Pogrubienie (zaznacz tekst w polu notatek)"><b>B</b></button>
@@ -224,7 +225,7 @@ function loadSharedTeams() {
     <span class="sws" id="tsws"></span>
   </div>
   <div class="sep"></div>
-  <div class="grp"><span class="lbl">Kolory</span><span class="sws" id="barSws" title="Kolor pasków sekcji"></span></div>
+  <div class="grp"><button type="button" id="themeBtn" title="Trzy kolory zespołu: paski i nagłówek, środek belki, dół belki">🎨 Kolory zespołu</button></div>
   <div class="grp"><span class="lbl">Widok</span><button type="button" id="zoomOut">−</button><span id="zoomVal">100%</span><button type="button" id="zoomIn">+</button><button type="button" id="zoomFit">Dopasuj</button></div>
 </div>
 
@@ -236,11 +237,12 @@ function loadSharedTeams() {
 <script>
 (function () {
   'use strict';
-  var NS = 'http://www.w3.org/2000/svg', KEY = 'mpv:gameplan:doc:v1';
+  var NS = 'http://www.w3.org/2000/svg', KEY = 'mpv:gameplan:doc:v2';
   var PAL = ['#d62828', '#f08a24', '#f2c230', '#7bbf6a', '#4a74c9', '#9ec5ea', '#222222', '#ffffff'];
-  var BARS = ['#243a7c', '#0c3fd0', '#1b8cff', '#d62828', '#0b8a5a', '#6a3fb5', '#222831'];
-  var BANDS = { '#243a7c': ['#243a7c', '#dc2429', '#fcea1e'], '#0c3fd0': ['#0c3fd0', '#ff8a00', '#ffd60a'], '#1b8cff': ['#1b8cff', '#0c3fd0', '#ffd60a'],
-    '#d62828': ['#d62828', '#222831', '#ffd60a'], '#0b8a5a': ['#0b8a5a', '#243a7c', '#ffd60a'], '#6a3fb5': ['#6a3fb5', '#ff2d92', '#ffd60a'], '#222831': ['#222831', '#d62828', '#ffd60a'] };
+  // szata graficzna: trzy kolory zespołu (c1 – paski sekcji i ramka nagłówka, c2 i c3 – środek i dół belki z lewej)
+  var THEME_PAL = ['#243a7c', '#0c3fd0', '#1b8cff', '#00a6c7', '#0b8a5a', '#7bbf3a', '#fcea1e', '#ffb000', '#f08a24', '#dc2429', '#ff2d92', '#6a3fb5', '#222831', '#8b95a8'];
+  var THEME_SETS = [['#243a7c', '#dc2429', '#fcea1e'], ['#0c3fd0', '#ff8a00', '#ffd60a'], ['#1b8cff', '#0c3fd0', '#ffd60a'], ['#d62828', '#222831', '#ffd60a'],
+    ['#0b8a5a', '#243a7c', '#ffd60a'], ['#6a3fb5', '#ff2d92', '#ffd60a'], ['#222831', '#d62828', '#ffd60a']];
   var SHIRT_D = 'M-18 -10 L-8 -17 Q0 -11 8 -17 L18 -10 L13 -1 L9 -3 L9 15 L-9 15 L-9 -3 L-13 -1 Z';
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('stage');
@@ -258,19 +260,29 @@ function loadSharedTeams() {
   function shirt(x, y, num, name, color) { return { t: 'shirt', x: x, y: y, num: num || '', name: name || '', color: color || '#9ec5ea' }; }
   function blockers(color) { return [shirt(70, 150, '', '', color || '#9ec5ea'), shirt(120, 160, '', '', color || '#9ec5ea'), shirt(172, 150, '', '', color || '#9ec5ea')]; }
   function distCard() { return { title: '', cells: ['', '', '', '', '', ''], hi: [0, 0, 0, 0, 0, 0], notes: '' }; }
-  function atkCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: blockers('#9ec5ea'), notes: '' }; }
-  function srvCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: blockers('#e0584f'), notes: '' }; }
+  function cone(a, b, c, color) { return { t: 'cone', pts: [a, b, c], color: color || '#d62828' }; }
+  // schematy ataku (widok zza naszej linii końcowej: góra = siatka, wierzchołek stożka = miejsce ataku)
+  var ATK = {
+    left:   { sub: 'lewe skrzydło', shapes: function () { return [cone([58, 18], [34, 176], [112, 176])]; } },
+    right2: { sub: 'prawe skrzydło – II strefa', shapes: function () { return [cone([182, 18], [206, 176], [128, 176])]; } },
+    right1: { sub: 'prawe skrzydło – I strefa', shapes: function () { return [cone([172, 70], [206, 176], [132, 176])]; } },
+    middle: { sub: 'środek', shapes: function () { return [cone([120, 18], [86, 176], [154, 176])]; } }
+  };
+  function atkCard(n, kind) { var d = ATK[kind || 'left']; return { k: 'card', num: String(n), name: '', sub: d.sub, shapes: d.shapes().concat(blockers('#9ec5ea')), notes: '' }; }
+  // zagrywka: stożek zza strefy I rywala (po lewej stronie diagramu) w stronę naszego przyjęcia
+  function srvCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: [cone([74, 8], [38, 176], [134, 176])].concat(blockers('#e0584f')), notes: '' }; }
   var LEGEND = '<b>LEGENDA:</b><br><br><b>2 ball</b> – otwarta prosta (skaczemy skos)<br><b>1 ball</b> – jedna piłka między antenką a rękoma (łapka)<br><b>0 ball</b> – zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma<br><br><b>Q</b> – quick<br><b>HB</b> – wysoka<br><b>B3</b> – blok potrójny<br><b>K1</b> – krótka przy sobie<br><b>K7</b> – suw';
   function defaultDoc() {
     var sh = loadSharedTeams() || {}, a = sh.a || {}, b = sh.b || {}, i;
     var f = [shirt(45, 48, '1', 'ZAWODNIK 1', '#ffffff'), shirt(125, 48, '2', 'ZAWODNIK 2', '#ffffff'), shirt(205, 48, '3', 'ZAWODNIK 3', '#ffffff'),
       shirt(45, 130, '4', 'ZAWODNIK 4', '#ffffff'), shirt(125, 130, '5', 'ZAWODNIK 5', '#ffffff'), shirt(205, 130, '6', 'ZAWODNIK 6', '#ffffff')];
     var p2 = [], p3 = [];
-    for (i = 1; i <= 8; i++) p2.push(atkCard(i));
+    // 1. rząd: atak z lewego skrzydła; 2. rząd: prawe skrzydło – II i I strefa osobno (+ legenda); 3. rząd: atak ze środka
+    ['left', 'left', 'left', 'right2', 'right1', 'middle', 'middle', 'middle'].forEach(function (k, n) { p2.push(atkCard(n + 1, k)); });
     p2.splice(5, 0, { k: 'legend', html: LEGEND });
     for (i = 1; i <= 9; i++) p3.push(srvCard(i));
     return {
-      v: 1, bar: '#243a7c',
+      v: 2, colors: { c1: THEME_SETS[0][0], c2: THEME_SETS[0][1], c3: THEME_SETS[0][2] },
       meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
       titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
       p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: '', role: '<b>Rola zagrywki:</b><br><br>', dist: [
@@ -283,6 +295,7 @@ function loadSharedTeams() {
   var doc = null;
   try { doc = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { doc = null; }
   if (!doc || !doc.p1 || !doc.p2 || !doc.p3) doc = defaultDoc();
+  if (!doc.colors) doc.colors = { c1: THEME_SETS[0][0], c2: THEME_SETS[0][1], c3: THEME_SETS[0][2] }; // starsze zapisy bez kolorów zespołu
 
   // bezpieczne HTML notatek (tylko pogrubienie, kursywa, podkreślenie, kolor, łamanie linii)
   function clean(html) {
@@ -375,7 +388,7 @@ function loadSharedTeams() {
       return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div>' + rt(base + '.html', '', 'Legenda…') + '</div>';
     }
     h += '<div class="card" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div><div class="chead">' + shIcon(base + '.num', '#ffffff') +
-      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + (pg === 3 ? '<span class="sub">' + tx(base + '.sub', '', 'typ zagrywki') + '</span>' : '') + '</div></div>';
+      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + '<span class="sub">' + tx(base + '.sub', '', pg === 3 ? 'typ zagrywki' : 'schemat ataku') + '</span></div></div>';
     h += courtSVG('persp', base + '.shapes');
     h += '<div class="cnotes' + (pg === 3 ? ' ctr' : '') + '">' + rt(base + '.notes', '', pg === 3 ? 'uwagi do zagrywki' : '- blok / obrona / uwagi').replace('class="rt ', 'class="rt ') + '</div></div>';
     return h;
@@ -394,9 +407,11 @@ function loadSharedTeams() {
   function renderAll() {
     var st = ''; [p1HTML(), pnHTML(2), pnHTML(3)].forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z 3</span>' + h + '</div>'; });
     stage.innerHTML = st;
-    var cols = BANDS[doc.bar] || BANDS['#243a7c'];
-    Array.prototype.forEach.call(stage.querySelectorAll('.page'), function (pg) { pg.style.setProperty('--bar', doc.bar); pg.style.setProperty('--c1', cols[0]); pg.style.setProperty('--c2', cols[1]); pg.style.setProperty('--c3', cols[2]); });
-    drawAll(); syncTb(); fit();
+    applyTheme(); drawAll(); syncTb(); fit();
+  }
+  function applyTheme() {
+    var c = doc.colors;
+    Array.prototype.forEach.call(stage.querySelectorAll('.page'), function (pg) { pg.style.setProperty('--bar', c.c1); pg.style.setProperty('--c1', c.c1); pg.style.setProperty('--c2', c.c2); pg.style.setProperty('--c3', c.c3); });
   }
 
   // ---------- Historia i zapis ----------
@@ -480,7 +495,12 @@ function loadSharedTeams() {
     var path = svg.getAttribute('data-path'), sg = svg.querySelector('.shapes'), ug = svg.querySelector('.ui'), shapes = shapesOf(path);
     while (sg.firstChild) sg.removeChild(sg.firstChild); while (ug.firstChild) ug.removeChild(ug.firstChild);
     svg.classList.toggle('act', path === activePath);
-    shapes.forEach(function (s, i) {
+    // rysunki (strzałki, stożki, napisy) zawsze pod zawodnikami: najpierw wszystko poza koszulkami, na wierzchu koszulki
+    var order = [];
+    shapes.forEach(function (s, i) { if (s.t !== 'shirt') order.push(i); });
+    shapes.forEach(function (s, i) { if (s.t === 'shirt') order.push(i); });
+    order.forEach(function (i) {
+      var s = shapes[i];
       var g = el('g', { class: 'sp', 'data-i': i }, sg);
       if (s.t === 'shirt') {
         g.setAttribute('transform', 'translate(' + s.x + ',' + s.y + ')');
@@ -587,7 +607,7 @@ function loadSharedTeams() {
 
   // okienka edycji koszulki / napisu
   function popAt(svg, x, y) { var c = svg.getScreenCTM(), px = c.a * x + c.e, py = c.d * y + c.f, pop = $('pop'); pop.classList.add('show'); pop.style.left = Math.min(innerWidth - 220, Math.max(8, px + 14)) + 'px'; pop.style.top = Math.min(innerHeight - 190, Math.max(8, py - 10)) + 'px'; }
-  function closePop() { $('pop').classList.remove('show'); }
+  function closePop() { $('pop').classList.remove('show'); $('pop').onclick = null; }
   function openShirtEditor(svg, i) {
     var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
     var pop = $('pop');
@@ -625,18 +645,54 @@ function loadSharedTeams() {
   function syncTb() {
     Array.prototype.forEach.call($('tools').querySelectorAll('[data-tool]'), function (b) { b.classList.toggle('on', b.dataset.tool === tool); });
     Array.prototype.forEach.call($('sws').children, function (s) { s.classList.toggle('on', s.dataset.c === color); });
-    Array.prototype.forEach.call($('barSws').children, function (s) { s.classList.toggle('on', s.dataset.c === doc.bar); });
   }
   PAL.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.c = c; d.title = 'Kolor rysowania'; $('sws').appendChild(d); });
   ['#14213d', '#d62828', '#0c3fd0', '#0b8a5a', '#f08a24', '#6a3fb5'].forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.tc = c; d.title = 'Kolor tekstu (zaznacz tekst w notatce)'; $('tsws').appendChild(d); });
-  BARS.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.c = c; $('barSws').appendChild(d); });
   $('tools').addEventListener('click', function (e) { var b = e.target.closest('[data-tool]'); if (!b) return; tool = b.dataset.tool; conePts = null; clearPreview(); syncTb(); });
   $('sws').addEventListener('click', function (e) {
     var s = e.target.closest('.sw'); if (!s) return; color = s.dataset.c;
     if (sel) { var sh = shapesOf(sel.path)[sel.i]; if (sh) { sh.color = color; redrawPath(sel.path); commit(); } }
     syncTb();
   });
-  $('barSws').addEventListener('click', function (e) { var s = e.target.closest('.sw'); if (!s) return; doc.bar = s.dataset.c; renderAll(); commit(); });
+  // trzy kolory zespołu: wybór z gotowych kolorów albo z gotowych zestawów
+  var THEME_ROWS = [['c1', '1 · paski sekcji i ramka nagłówka'], ['c2', '2 · belka z lewej – środek'], ['c3', '3 · belka z lewej – dół']];
+  function openThemePop() {
+    var pop = $('pop'), h = '<div style="font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Kolory zespołu</div>';
+    h += '<div><label>Gotowe zestawy</label><div style="display:flex;flex-wrap:wrap;gap:6px" id="thSets">' + THEME_SETS.map(function (s, i) {
+      return '<span class="thset" data-i="' + i + '" title="Zestaw ' + (i + 1) + '" style="display:inline-flex;width:54px;height:22px;border-radius:6px;overflow:hidden;border:2px solid var(--line);cursor:pointer"><i style="flex:1;background:' + s[0] + '"></i><i style="flex:1;background:' + s[1] + '"></i><i style="flex:1;background:' + s[2] + '"></i></span>';
+    }).join('') + '</div></div>';
+    THEME_ROWS.forEach(function (r) {
+      h += '<div><label>' + r[1] + '</label><div class="sws" style="flex-wrap:wrap;max-width:300px" data-row="' + r[0] + '">' + THEME_PAL.map(function (c) { return '<span class="sw' + (doc.colors[r[0]] === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '"></span>'; }).join('') + '</div></div>';
+    });
+    h += '<div style="display:flex;justify-content:flex-end"><button type="button" id="thOk">Gotowe</button></div>';
+    pop.innerHTML = h; pop.classList.add('show');
+    var r0 = $('themeBtn').getBoundingClientRect(); pop.style.left = Math.min(innerWidth - 340, Math.max(8, r0.left)) + 'px'; pop.style.top = (r0.bottom + 8) + 'px';
+    pop.onclick = function (e) {
+      var sw = e.target.closest('.sw'), set = e.target.closest('.thset');
+      if (sw) { var row = sw.parentNode.getAttribute('data-row'); doc.colors[row] = sw.dataset.c; applyTheme(); commit(); openThemePop(); }
+      else if (set) { var t = THEME_SETS[+set.dataset.i]; doc.colors = { c1: t[0], c2: t[1], c3: t[2] }; applyTheme(); commit(); openThemePop(); }
+      else if (e.target.id === 'thOk') { closePop(); pop.onclick = null; }
+    };
+  }
+  $('themeBtn').addEventListener('click', openThemePop);
+  // kopiowanie kształtów między boiskami: zaznaczony kształt albo (bez zaznaczenia) wszystkie kształty aktywnego diagramu
+  var clip = null, clipSrc = null;
+  function copyShapes() {
+    if (sel && shapesOf(sel.path)[sel.i]) { clip = [clone(shapesOf(sel.path)[sel.i])]; clipSrc = sel.path; toast('Skopiowano zaznaczony kształt. Kliknij inne boisko i wklej (Ctrl+V).'); }
+    else if (activePath && shapesOf(activePath).length) { clip = clone(shapesOf(activePath)); clipSrc = activePath; toast('Skopiowano wszystkie kształty (' + clip.length + ') z diagramu. Kliknij inne boisko i wklej.'); }
+    else toast('Zaznacz kształt albo kliknij diagram, z którego chcesz kopiować.');
+  }
+  function pasteShapes() {
+    if (!clip || !clip.length) { toast('Schowek jest pusty – najpierw skopiuj kształty.'); return; }
+    if (!activePath) { toast('Kliknij boisko, do którego chcesz wkleić.'); return; }
+    var arr = shapesOf(activePath), off = activePath === clipSrc ? 10 : 0, first = arr.length;
+    clone(clip).forEach(function (s) {
+      if (off) { if (s.pts) s.pts = s.pts.map(function (q) { return [q[0] + off, q[1] + off]; }); else { s.x += off; s.y += off; } }
+      arr.push(s);
+    });
+    sel = { path: activePath, i: arr.length - 1 }; redrawPath(activePath); commit(); toast('Wklejono ' + (arr.length - first) + ' kształt(y).');
+  }
+  $('copyBtn').addEventListener('click', copyShapes); $('pasteBtn').addEventListener('click', pasteShapes);
   // formatowanie tekstu: przyciski nie odbierają fokusu z edytowanego pola
   $('tb').addEventListener('mousedown', function (e) { if (e.target.closest('[data-cmd], [data-tc]')) e.preventDefault(); });
   $('tb').addEventListener('click', function (e) {
@@ -655,6 +711,8 @@ function loadSharedTeams() {
     if ((e.ctrlKey || e.metaKey) && !editing) {
       var k = e.key.toLowerCase();
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); $('undoBtn').click(); } else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); $('redoBtn').click(); }
+      else if (k === 'c' && !String(window.getSelection()).length) { e.preventDefault(); copyShapes(); }
+      else if (k === 'v') { e.preventDefault(); pasteShapes(); }
       return;
     }
     if (editing) return;
