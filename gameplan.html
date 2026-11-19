@@ -3,27 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Gameplan – mPro Volley</title>
-<!-- © 2026 Michał Pyra · mPro Volley. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
+<title>Gameplan – mPro Volley 3D</title>
+<!-- © 2026 Michał Pyra · mPro Volley 3D. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
+<script>(function(){var t='light';try{t=localStorage.getItem('mpv:theme')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
 <style>
   :root {
+    color-scheme: light;
+    --bg: #e9eff8; --glass: rgba(255, 255, 255, 0.96); --line: #d3dff0; --text: #0e1b3d; --muted: #5a6b88;
+    --accent: #ff8a00; --field: #ffffff;
+    --font: "Exo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #0f1720; --glass: rgba(15, 22, 31, 0.9); --line: #2a3644;
-    --text: #e6edf3; --muted: #8b98a5; --accent: #f2b33d;
+    --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --line: #27364d; --text: #e6edf7; --muted: #93a3bd; --field: #1a2638;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
-    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  body { display: flex; align-items: center; justify-content: center; padding: 16px; }
-  .box { background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
-    padding: 40px 32px; max-width: 420px; text-align: center; }
-  .ico { font-size: 44px; margin-bottom: 6px; }
-  h1 { font-size: 20px; margin: 4px 0 8px; }
-  p { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 0 0 22px; }
-  button { font: inherit; color: var(--text); background: #1c2633; border: 1px solid var(--line);
-    border-radius: 7px; padding: 8px 14px; cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  a { text-decoration: none; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 var(--font); }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  button { font: inherit; font-weight: 600; cursor: pointer; }
+
+  /* ---------- Pasek aplikacji ---------- */
+  header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; flex-wrap: wrap; color: #fff;
+    background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); box-shadow: 0 8px 20px -12px rgba(7, 26, 82, .8); }
+  header h1 { font-size: 19px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .02em; flex: 1; min-width: 140px; }
+  header a { text-decoration: none; }
+  header button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); border-radius: 9px; padding: 6px 12px; }
+  header button:hover:not(:disabled) { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
+  header button:disabled { opacity: .4; cursor: default; }
+  header button.primary { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+
+  /* ---------- Pasek narzędzi ---------- */
+  #tb { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 14px;
+    background: var(--glass); border-bottom: 1px solid var(--line); box-shadow: 0 6px 16px -12px rgba(7, 26, 82, .7); }
+  #tb .grp { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  #tb .sep { width: 1px; height: 26px; background: var(--line); }
+  #tb .lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #tb button, #tb select { font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+  #tb button:hover:not(:disabled) { border-color: var(--accent); }
+  #tb button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #tb button:disabled { opacity: .4; cursor: default; }
+  #activeLbl { font-size: 12.5px; font-weight: 700; color: var(--text); padding: 3px 9px; border-radius: 999px; background: var(--field); border: 1px dashed var(--line); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sws { display: flex; gap: 4px; align-items: center; }
+  .sw { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); flex: none; }
+  .sw:hover { transform: scale(1.12); }
+  .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
+  #zoomVal { min-width: 46px; text-align: center; font-weight: 700; font-size: 13px; }
+
+  /* ---------- Scena ---------- */
+  #stage { --s: 1; padding: 18px 12px 60px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .pageWrap { width: calc(794px * var(--s)); height: calc(1123px * var(--s)); flex: none; position: relative; }
+  .pageNo { position: absolute; left: 0; top: -17px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  /* ---------- Strona A4 (zawsze jasna) ---------- */
+  .page { position: absolute; left: 0; top: 0; width: 794px; height: 1123px; background: #fff; color: #14213d; overflow: hidden;
+    font-family: var(--font); box-shadow: 0 12px 34px -12px rgba(7, 26, 82, .55); transform: scale(var(--s)); transform-origin: 0 0;
+    --c1: #243a7c; --c2: #dc2429; --c3: #fcea1e; --bar: #243a7c; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .band { position: absolute; left: 22px; top: 62px; bottom: 62px; width: 24px; display: flex; flex-direction: column; }
+  .band i { display: block; }
+  .band i:nth-child(1) { flex: 56; background: var(--c1); } .band i:nth-child(2) { flex: 30; background: var(--c2); } .band i:nth-child(3) { flex: 14; background: var(--c3); }
+  .bar { position: relative; margin: 0 0 0 22px; height: 26px; width: 700px; background: var(--bar); color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .02em;
+    clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 100%, 0 100%); display: flex; align-items: center; padding-left: 80px; }
+  .bar.first { margin-top: 62px; }
+  .body { padding: 8px 36px 0 58px; }
+
+  /* tekst edytowalny */
+  [contenteditable] { outline: none; }
+  .tx:empty::before, .rt:empty::before, .cell:empty::before { content: attr(data-ph); color: #9aa6bd; font-weight: 500; font-style: italic; }
+  body:not(.printing) [contenteditable]:hover { background: rgba(255, 214, 10, .14); }
+  body:not(.printing) [contenteditable]:focus { background: rgba(255, 214, 10, .22); box-shadow: 0 0 0 2px rgba(255, 138, 0, .55); border-radius: 3px; }
+  .rt { font-size: 9.5px; line-height: 1.35; min-height: 14px; word-break: break-word; }
+  .rt b { font-weight: 800; }
+  .rt div, .rt p { margin: 0; }
+
+  /* nagłówek meczu */
+  .hdr { display: grid; grid-template-columns: 1fr 240px 1fr; align-items: start; padding: 20px 36px 0 58px; height: 62px; }
+  .hdr .team { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
+  .hdr .team .logo { width: 104px; height: 88px; display: grid; place-items: center; cursor: pointer; border-radius: 8px; }
+  .hdr .team .logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .hdr .team .nm { font-size: 13px; font-weight: 800; text-align: center; text-transform: uppercase; min-width: 80px; }
+  .logo.empty { border: 2px dashed #b9c4d8; color: #9aa6bd; font-size: 10px; font-weight: 700; text-align: center; line-height: 1.2; }
+  .cbox { background: var(--bar); color: #fff; text-align: center; border-radius: 3px; padding: 8px 6px 7px; margin-top: 28px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .cbox .t1 { font-size: 14px; font-weight: 800; } .cbox .t2 { font-size: 13px; font-weight: 500; } .cbox .t3 { font-size: 9.5px; font-weight: 500; }
+  .cbox [contenteditable]:hover, .cbox [contenteditable]:focus { background: rgba(255, 255, 255, .18); }
+  .vs { text-align: center; font-size: 12px; font-weight: 800; margin-top: 8px; }
+
+  /* strona 1 */
+  .p1head { height: 92px; }
+  .row1 { display: flex; gap: 10px; padding: 8px 36px 6px 58px; height: 226px; }
+  .fbox { position: relative; width: 272px; flex: none; border: 1.5px solid #14213d; }
+  .fbox svg { display: block; width: 100%; height: 100%; }
+  .rotLbl { position: absolute; left: 8px; bottom: 5px; font-size: 20px; font-weight: 800; background: rgba(255, 255, 255, .85); padding: 0 4px; line-height: 1.1; }
+  .libBox { width: 134px; flex: none; border: 1.5px solid #14213d; font-size: 10px; display: flex; flex-direction: column; }
+  .libBox .lb1 { padding: 5px 7px 6px; border-bottom: 1.5px solid #14213d; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .libBox .lb1 .h { align-self: flex-start; font-weight: 600; }
+  .libBox .lb2 { padding: 6px 7px; flex: 1; }
+  .libBox .lb2 .h { font-weight: 600; margin-bottom: 4px; }
+  .roleBox { flex: 1; border: 1.5px solid #14213d; background: #fffbe3; padding: 8px 10px; font-size: 10.5px; line-height: 1.4; }
+  .sh { position: relative; width: 38px; height: 34px; display: grid; place-items: center; background: no-repeat center / contain; }
+  .sh .n { font-size: 12px; font-weight: 800; min-width: 14px; text-align: center; margin-top: 2px; }
+  .shLg { width: 44px; height: 40px; }
+
+  /* dystrybucja */
+  .distRow { padding: 2px 36px 4px 58px; position: relative; }
+  .dHead { display: flex; align-items: baseline; gap: 14px; margin: 6px 0 4px; }
+  .dHead .dt { font-size: 18px; font-weight: 500; text-align: left; min-width: 120px; }
+  .dHead .dn { font-size: 14px; font-weight: 600; color: #d62828; text-align: left; }
+  .dCards { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+  .dCard { position: relative; width: 158px; border: 2px solid #14213d; background: #fff; }
+  .dCard .ct { font-size: 10.5px; font-weight: 800; color: #d62828; text-align: center; min-height: 15px; border-bottom: 1px solid #14213d; padding: 1px 2px; }
+  .dGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px; background: #fff; }
+  .tx.nm { display: block; }
+  .cell { display: block; border: 1px solid #aab3c6; text-align: center; font-size: 10px; font-weight: 600; padding: 5px 0; min-height: 25px; background: #fff; }
+  .cell.hi { border: 2.5px solid #d62828; }
+  .dNet { height: 7px; border-top: 3px solid #14213d; border-bottom: 1px solid #aab3c6; margin: 2px 0; }
+  .dCard .dn2 { border-top: 2px solid #14213d; padding: 4px 5px; min-height: 50px; }
+  .dNote { flex: 1; min-width: 150px; font-size: 13px; font-weight: 500; align-self: center; padding: 6px 10px; }
+
+  /* karty zawodników (atak / zagrywka) */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 14px; padding: 12px 36px 0 58px; }
+  .card { position: relative; }
+  .chead { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 2px; }
+  .chead .nm { font-size: 13px; font-weight: 700; text-transform: uppercase; flex: 1; text-align: left; }
+  .chead .sub { display: block; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #3b4b6b; }
+  .court { display: block; width: 100%; height: auto; border: 0; }
+  .cnotes { border: 1px solid #aab3c6; border-top: 1.5px solid #14213d; padding: 5px 6px; min-height: 92px; }
+  .cnotes.ctr { text-align: center; text-transform: uppercase; font-weight: 700; font-size: 8.8px; border: 0; border-top: 2px solid #14213d; border-bottom: 2px solid #14213d; min-height: 56px; }
+  .legend { border: 1.5px solid #14213d; padding: 8px 10px; font-size: 9.5px; line-height: 1.4; align-self: center; }
+  .legend .rt { font-size: 9.2px; }
+  .ops { position: absolute; right: 0; top: -2px; display: none; gap: 2px; z-index: 5; }
+  .card:hover .ops, .dCard:hover .ops, .dRowOps { display: flex; }
+  .ops button, .addbtn, .dRowOps button { font-size: 11px; font-weight: 700; color: #14213d; background: #fff; border: 1px solid #aab3c6; border-radius: 6px; padding: 1px 6px; cursor: pointer; }
+  .ops button:hover, .addbtn:hover, .dRowOps button:hover { border-color: #ff8a00; background: #fff3dc; }
+  .addbar { padding: 6px 36px 0 58px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .dRowOps { display: flex; gap: 4px; position: absolute; right: 36px; top: 2px; }
+  .foot { position: absolute; right: 34px; bottom: 20px; width: 92px; height: 66px; display: grid; place-items: center; cursor: pointer; }
+  .foot img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .foot.empty { border: 2px dashed #c3cce0; border-radius: 8px; color: #b2bbd0; font-size: 9px; font-weight: 700; text-align: center; }
+
+  /* rysunki na boisku (SVG) */
+  svg.court .sp text { pointer-events: none; user-select: none; }
+  svg.court { touch-action: none; }
+  svg.court.act { outline: 2px solid rgba(255, 138, 0, .75); outline-offset: 1px; }
+
+  /* okienka */
+  #pop { position: fixed; z-index: 300; display: none; background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 8px; gap: 6px; flex-direction: column;
+    box-shadow: 0 12px 30px -8px rgba(7, 26, 82, .6); min-width: 190px; }
+  #pop.show { display: flex; }
+  #pop label { font-size: 11px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 2px; }
+  #pop input { width: 100%; font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+  #pop button { font-size: 12px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 400; background: rgba(14, 27, 61, .92); color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    max-width: min(92vw, 560px); text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  #toast.show { opacity: 1; }
+
+  @media (max-width: 820px) { header h1 { font-size: 16px; } #tb { padding: 6px 8px; } }
+
+  /* ---------- Wydruk / PDF ---------- */
+  @page { size: A4; margin: 0; }
+  @media print {
+    html, body { background: #fff !important; }
+    header, #tb, #pop, #toast, .pageNo, .ops, .addbar, .dRowOps, .noprint { display: none !important; }
+    #stage { padding: 0; gap: 0; display: block; }
+    .pageWrap { width: 210mm !important; height: 296mm !important; margin: 0 !important; page-break-after: always; break-after: page; overflow: hidden; }
+    .pageWrap:last-child { page-break-after: auto; break-after: auto; }
+    .page { transform: none !important; box-shadow: none !important; width: 794px; height: 1122px; }
+    [data-ph]:empty::before { content: '' !important; }
+    .foot.empty, .logo.empty { visibility: hidden; }
+    svg.court .ui { display: none; }
+    svg.court.act { outline: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
@@ -38,20 +190,516 @@ function loadSharedTeams() {
   try { return JSON.parse(localStorage.getItem(SHARED_TEAMS_KEY) || 'null'); }
   catch (e) { return null; }
 }
-function saveSharedTeams(teamsObj) {
-  var out = {};
-  ['a', 'b'].forEach(function (t) {
-    out[t] = {};
-    TEAM_SHARED_FIELDS.forEach(function (k) { out[t][k] = teamsObj[t][k]; });
-  });
-  try { localStorage.setItem(SHARED_TEAMS_KEY, JSON.stringify(out)); } catch (e) {}
-}
 </script>
-<div class="box">
-  <div class="ico">📄</div>
-  <h1>Gameplan</h1>
-  <p>Generator planu meczu w PDF jest w przygotowaniu. Wkrótce znajdziesz tu tę funkcję.</p>
-  <a href="index.html" target="_blank" rel="noopener"><button type="button">⬅️ Powrót do menu głównego</button></a>
+
+<header>
+  <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span> Menu</span></button></a>
+  <h1>📄 Gameplan</h1>
+  <button type="button" id="undoBtn" title="Cofnij (Ctrl+Z)" disabled>↶</button>
+  <button type="button" id="redoBtn" title="Ponów (Ctrl+Y)" disabled>↷</button>
+  <button type="button" id="newBtn" title="Nowy, pusty gameplan">Nowy</button>
+  <button type="button" id="saveBtn" title="Zapisz gameplan do pliku .json (np. żeby przenieść na inny komputer)">Zapisz plik</button>
+  <button type="button" id="loadBtn" title="Wczytaj gameplan z pliku .json">Wczytaj plik</button>
+  <button type="button" id="printBtn" class="primary" title="Drukuj lub zapisz jako PDF (3 strony A4)">⤓ PDF / Drukuj</button>
+  <input type="file" id="loadFile" accept=".json,application/json" hidden>
+  <input type="file" id="logoFile" accept="image/*" hidden>
+</header>
+
+<div id="tb">
+  <div class="grp"><span class="lbl">Boisko</span><span id="activeLbl">kliknij diagram, aby go wybrać</span></div>
+  <div class="grp" id="tools">
+    <button type="button" data-tool="select" class="on" title="Zaznacz i przesuwaj elementy (dwuklik na koszulce lub napisie – edycja)">↖ Zaznacz</button>
+    <button type="button" data-tool="arrow" title="Strzałka – przeciągnij od początku do końca">➜ Strzałka</button>
+    <button type="button" data-tool="cone" title="Stożek ataku / zagrywki – kliknij 3 punkty: wierzchołek i dwa końce podstawy">◣ Stożek</button>
+    <button type="button" data-tool="shirt" title="Koszulka z numerem i nazwiskiem – kliknij miejsce">👕 Koszulka</button>
+    <button type="button" data-tool="text" title="Napis – kliknij miejsce">T Napis</button>
+  </div>
+  <div class="grp"><div class="sws" id="sws"></div></div>
+  <div class="grp"><button type="button" id="delShape" title="Usuń zaznaczony element (Delete)">🗑 Usuń</button><button type="button" id="clearCanvas" title="Wyczyść cały aktywny diagram">Wyczyść diagram</button></div>
+  <div class="sep"></div>
+  <div class="grp"><span class="lbl">Tekst</span>
+    <button type="button" data-cmd="bold" title="Pogrubienie (zaznacz tekst w polu notatek)"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="Kursywa"><i>I</i></button>
+    <button type="button" data-cmd="underline" title="Podkreślenie"><u>U</u></button>
+    <span class="sws" id="tsws"></span>
+  </div>
+  <div class="sep"></div>
+  <div class="grp"><span class="lbl">Kolory</span><span class="sws" id="barSws" title="Kolor pasków sekcji"></span></div>
+  <div class="grp"><span class="lbl">Widok</span><button type="button" id="zoomOut">−</button><span id="zoomVal">100%</span><button type="button" id="zoomIn">+</button><button type="button" id="zoomFit">Dopasuj</button></div>
 </div>
+
+<main id="stage"></main>
+
+<div id="pop" role="dialog"></div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg', KEY = 'mpv:gameplan:doc:v1';
+  var PAL = ['#d62828', '#f08a24', '#f2c230', '#7bbf6a', '#4a74c9', '#9ec5ea', '#222222', '#ffffff'];
+  var BARS = ['#243a7c', '#0c3fd0', '#1b8cff', '#d62828', '#0b8a5a', '#6a3fb5', '#222831'];
+  var BANDS = { '#243a7c': ['#243a7c', '#dc2429', '#fcea1e'], '#0c3fd0': ['#0c3fd0', '#ff8a00', '#ffd60a'], '#1b8cff': ['#1b8cff', '#0c3fd0', '#ffd60a'],
+    '#d62828': ['#d62828', '#222831', '#ffd60a'], '#0b8a5a': ['#0b8a5a', '#243a7c', '#ffd60a'], '#6a3fb5': ['#6a3fb5', '#ff2d92', '#ffd60a'], '#222831': ['#222831', '#d62828', '#ffd60a'] };
+  var SHIRT_D = 'M-18 -10 L-8 -17 Q0 -11 8 -17 L18 -10 L13 -1 L9 -3 L9 15 L-9 15 L-9 -3 L-13 -1 Z';
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $('stage');
+  var CE = (function () { var d = document.createElement('div'); try { d.contentEditable = 'plaintext-only'; } catch (e) {} return d.contentEditable === 'plaintext-only' ? 'plaintext-only' : 'true'; })();
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function getPath(o, p) { var a = p.split('.'); for (var i = 0; i < a.length; i++) { if (o == null) return undefined; o = o[a[i]]; } return o; }
+  function setPath(o, p, v) { var a = p.split('.'); for (var i = 0; i < a.length - 1; i++) o = o[a[i]]; o[a[a.length - 1]] = v; }
+  function el(name, attrs, parent) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function lum(hex) { var h = String(hex).replace('#', ''); if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 4200); }
+
+  // ---------- Dane (domyślny gameplan) ----------
+  function shirt(x, y, num, name, color) { return { t: 'shirt', x: x, y: y, num: num || '', name: name || '', color: color || '#9ec5ea' }; }
+  function blockers(color) { return [shirt(70, 150, '', '', color || '#9ec5ea'), shirt(120, 160, '', '', color || '#9ec5ea'), shirt(172, 150, '', '', color || '#9ec5ea')]; }
+  function distCard() { return { title: '', cells: ['', '', '', '', '', ''], hi: [0, 0, 0, 0, 0, 0], notes: '' }; }
+  function atkCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: blockers('#9ec5ea'), notes: '' }; }
+  function srvCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: blockers('#e0584f'), notes: '' }; }
+  var LEGEND = '<b>LEGENDA:</b><br><br><b>2 ball</b> – otwarta prosta (skaczemy skos)<br><b>1 ball</b> – jedna piłka między antenką a rękoma (łapka)<br><b>0 ball</b> – zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma<br><br><b>Q</b> – quick<br><b>HB</b> – wysoka<br><b>B3</b> – blok potrójny<br><b>K1</b> – krótka przy sobie<br><b>K7</b> – suw';
+  function defaultDoc() {
+    var sh = loadSharedTeams() || {}, a = sh.a || {}, b = sh.b || {}, i;
+    var f = [shirt(45, 48, '1', 'ZAWODNIK 1', '#ffffff'), shirt(125, 48, '2', 'ZAWODNIK 2', '#ffffff'), shirt(205, 48, '3', 'ZAWODNIK 3', '#ffffff'),
+      shirt(45, 130, '4', 'ZAWODNIK 4', '#ffffff'), shirt(125, 130, '5', 'ZAWODNIK 5', '#ffffff'), shirt(205, 130, '6', 'ZAWODNIK 6', '#ffffff')];
+    var p2 = [], p3 = [];
+    for (i = 1; i <= 8; i++) p2.push(atkCard(i));
+    p2.splice(5, 0, { k: 'legend', html: LEGEND });
+    for (i = 1; i <= 9; i++) p3.push(srvCard(i));
+    return {
+      v: 1, bar: '#243a7c',
+      meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
+      titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
+      p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: '', role: '<b>Rola zagrywki:</b><br><br>', dist: [
+        { title: 'P1 P6 P5', note: '', cards: [distCard(), distCard()] },
+        { title: 'WSZYSTKIE USTAWIENIA ŁĄCZNIE:', note: '', cards: [distCard(), distCard(), distCard(), distCard()] } ] },
+      p2: { items: p2 }, p3: { items: p3 }
+    };
+  }
+
+  var doc = null;
+  try { doc = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { doc = null; }
+  if (!doc || !doc.p1 || !doc.p2 || !doc.p3) doc = defaultDoc();
+
+  // bezpieczne HTML notatek (tylko pogrubienie, kursywa, podkreślenie, kolor, łamanie linii)
+  function clean(html) {
+    var d = new DOMParser().parseFromString('<div>' + String(html || '') + '</div>', 'text/html'), out = document.createElement('div');
+    (function walk(src, dst) {
+      Array.prototype.forEach.call(src.childNodes, function (n) {
+        if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); return; }
+        if (n.nodeType !== 1) return;
+        var t = n.tagName.toLowerCase();
+        if (['b', 'strong', 'i', 'em', 'u', 'br', 'div', 'p', 'span', 'font'].indexOf(t) < 0) { walk(n, dst); return; }
+        var c = document.createElement(t === 'strong' ? 'b' : t === 'em' ? 'i' : (t === 'font' ? 'span' : t));
+        var col = (t === 'font' && n.getAttribute('color')) || (n.style && n.style.color);
+        if (col && /^(#[0-9a-f]{3,8}|rgb\([\d\s,.]+\)|[a-z]+)$/i.test(col)) c.style.color = col;
+        if (n.style) {
+          if (n.style.fontWeight === 'bold' || +n.style.fontWeight >= 600) c.style.fontWeight = '700';
+          if (n.style.fontStyle === 'italic') c.style.fontStyle = 'italic';
+          if (/underline/.test(n.style.textDecoration || '')) c.style.textDecoration = 'underline';
+        }
+        dst.appendChild(c); if (t !== 'br') walk(n, c);
+      });
+    })(d.body.firstChild, out);
+    return out.innerHTML;
+  }
+
+  // ---------- Elementy HTML stron ----------
+  function tx(p, cls, ph) { return '<span class="tx ' + (cls || '') + '" contenteditable="' + CE + '" spellcheck="false" data-p="' + p + '" data-ph="' + esc(ph || '') + '">' + esc(getPath(doc, p)) + '</span>'; }
+  function rt(p, cls, ph) { return '<div class="rt ' + (cls || '') + '" contenteditable="true" spellcheck="false" data-p="' + p + '" data-rich="1" data-ph="' + esc(ph || '') + '">' + clean(getPath(doc, p)) + '</div>'; }
+  function shirtBg(color) { return "url('data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -19 40 36"><path d="' + SHIRT_D + '" fill="' + color + '" stroke="#27406e" stroke-width="1.3" stroke-linejoin="round"/></svg>') + "')"; }
+  function shIcon(numPath, color) {
+    return '<span class="sh" style="background-image:' + shirtBg(color || '#ffffff') + '"><span class="n" contenteditable="' + CE + '" spellcheck="false" data-p="' + numPath + '" data-ph="#">' + esc(getPath(doc, numPath)) + '</span></span>';
+  }
+  function bandHTML() { return '<div class="band"><i></i><i></i><i></i></div>'; }
+  function barHTML(tp, first) { return '<div class="bar' + (first ? ' first' : '') + '">' + tx(tp, '', 'Tytuł sekcji') + '</div>'; }
+  function footHTML() {
+    var f = doc.meta.footLogo;
+    return '<div class="foot' + (f ? '' : ' empty') + '" data-logo="meta.footLogo" title="Logo w stopce (kliknij, aby wgrać)">' + (f ? '<img alt="" src="' + esc(f) + '">' : 'logo<br>stopki') + '</div>';
+  }
+  function logoHTML(path) {
+    var v = getPath(doc, path);
+    return '<div class="logo' + (v ? '' : ' empty') + '" data-logo="' + path + '" title="Kliknij, aby wgrać logo">' + (v ? '<img alt="" src="' + esc(v) + '">' : 'logo<br>drużyny') + '</div>';
+  }
+  function courtBG(kind) {
+    if (kind === 'top') {
+      return '<rect width="250" height="190" fill="#5fcfd2"/><rect x="14" y="10" width="222" height="170" fill="#e7b98a" stroke="#fff" stroke-width="2"/>' +
+        '<line x1="14" y1="64" x2="236" y2="64" stroke="#fff" stroke-width="1.6" stroke-dasharray="6 5"/><line x1="125" y1="10" x2="125" y2="180" stroke="#fff" stroke-width="1" stroke-dasharray="2 5" opacity=".7"/>';
+    }
+    return '<polygon points="52,14 188,14 236,184 4,184" fill="#fff" stroke="#222" stroke-width="1.6"/>' +
+      '<line x1="38.4" y1="56" x2="201.6" y2="56" stroke="#222" stroke-width="1.2"/><line x1="26.6" y1="98" x2="213.4" y2="98" stroke="#222" stroke-width="1.2"/>' +
+      '<line x1="14.8" y1="140" x2="225.2" y2="140" stroke="#222" stroke-width="1.2"/><line x1="120" y1="14" x2="120" y2="184" stroke="#4a74c9" stroke-width="1.2" stroke-dasharray="3 3"/>';
+  }
+  function courtSVG(kind, path) {
+    var w = kind === 'top' ? 250 : 240;
+    return '<svg class="court" data-kind="' + kind + '" data-path="' + path + '" viewBox="0 0 ' + w + ' 190" preserveAspectRatio="xMidYMid meet">' + courtBG(kind) + '<g class="shapes"></g><g class="ui"></g></svg>';
+  }
+
+  function p1HTML() {
+    var m = doc.meta, p = doc.p1, h = '';
+    h += '<section class="page" data-page="1">' + bandHTML();
+    h += '<div class="hdr"><div class="team">' + logoHTML('meta.ourLogo') + tx('meta.ourName', 'nm', 'Nasz zespół') + '</div>' +
+      '<div><div class="cbox">' + tx('meta.comp', 't1', 'Rozgrywki') + tx('meta.date', 't2', 'Data i godzina') + tx('meta.place', 't3', 'Miejsce') + '</div><div class="vs">vs.</div></div>' +
+      '<div class="team">' + logoHTML('meta.oppLogo') + tx('meta.oppName', 'nm', 'Przeciwnik') + '</div></div>';
+    h += '<div class="p1head"></div>' + barHTML('titles.t1', false);
+    h += '<div class="row1"><div class="fbox">' + courtSVG('top', 'p1.formation') + '<span class="rotLbl">' + tx('p1.rot', '', 'P1') + '</span></div>' +
+      '<div class="libBox"><div class="lb1"><span class="h">Libero:</span>' + shIcon('p1.libNum', '#ffffff') + tx('p1.libName', '', 'NAZWISKO').replace('class="tx "', 'class="tx" style="font-weight:800;font-size:10px;text-transform:uppercase"') + '</div>' +
+      '<div class="lb2"><div class="h">Zmiennicy:</div>' + rt('p1.subs', '', '#15 NAZWISKO – R') + '</div></div>' +
+      '<div class="roleBox">' + rt('p1.role', '', 'Rola zagrywki…').replace('class="rt "', 'class="rt" style="font-size:10.5px"') + '</div></div>';
+    h += barHTML('titles.t2', false);
+    p.dist.forEach(function (row, ri) {
+      h += '<div class="distRow" data-ri="' + ri + '"><div class="dRowOps"><button type="button" data-act="dist-add" data-ri="' + ri + '" title="Dodaj kartę dystrybucji">+ karta</button><button type="button" data-act="dist-row-del" data-ri="' + ri + '" title="Usuń cały wiersz">✕ wiersz</button></div>';
+      h += '<div class="dHead">' + tx('p1.dist.' + ri + '.title', 'dt', 'Tytuł wiersza') + tx('p1.dist.' + ri + '.note', 'dn', 'adnotacja (np. nasza szansa!)') + '</div><div class="dCards">';
+      row.cards.forEach(function (c, ci) {
+        var base = 'p1.dist.' + ri + '.cards.' + ci;
+        h += '<div class="dCard"><div class="ops"><button type="button" data-act="dist-del" data-ri="' + ri + '" data-ci="' + ci + '" title="Usuń kartę">✕</button></div>' + tx(base + '.title', 'ct', '#1 P1 #+').replace('<span class="tx ct"', '<span class="tx ct" style="display:block"');
+        h += '<div class="dGrid">';
+        for (var k = 0; k < 6; k++) {
+          if (k === 3) h += '</div><div class="dNet"></div><div class="dGrid">';
+          h += '<span class="cell' + (c.hi[k] ? ' hi' : '') + '" contenteditable="' + CE + '" spellcheck="false" data-p="' + base + '.cells.' + k + '" data-hi="' + base + '.hi.' + k + '" data-ph="%" title="Dwuklik – zaznacz / odznacz czerwoną ramkę">' + esc(c.cells[k]) + '</span>';
+        }
+        h += '</div><div class="dn2">' + rt(base + '.notes', '', '- notatka') + '</div></div>';
+      });
+      h += '</div></div>';
+    });
+    h += '<div class="addbar"><button type="button" class="addbtn" data-act="dist-row-add">+ dodaj wiersz dystrybucji</button></div>';
+    h += footHTML() + '</section>';
+    return h;
+  }
+  function cardHTML(pg, items, i) {
+    var c = items[i], base = 'p' + pg + '.items.' + i, h = '';
+    if (c.k === 'legend') {
+      return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div>' + rt(base + '.html', '', 'Legenda…') + '</div>';
+    }
+    h += '<div class="card" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div><div class="chead">' + shIcon(base + '.num', '#ffffff') +
+      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + (pg === 3 ? '<span class="sub">' + tx(base + '.sub', '', 'typ zagrywki') + '</span>' : '') + '</div></div>';
+    h += courtSVG('persp', base + '.shapes');
+    h += '<div class="cnotes' + (pg === 3 ? ' ctr' : '') + '">' + rt(base + '.notes', '', pg === 3 ? 'uwagi do zagrywki' : '- blok / obrona / uwagi').replace('class="rt ', 'class="rt ') + '</div></div>';
+    return h;
+  }
+  function opsBtns(pg, i) {
+    return '<button type="button" data-act="card-left" data-pg="' + pg + '" data-i="' + i + '" title="Przesuń wcześniej">◀</button><button type="button" data-act="card-right" data-pg="' + pg + '" data-i="' + i + '" title="Przesuń później">▶</button>' +
+      '<button type="button" data-act="card-del" data-pg="' + pg + '" data-i="' + i + '" title="Usuń kartę">✕</button>';
+  }
+  function pnHTML(pg) {
+    var items = doc['p' + pg].items, h = '<section class="page" data-page="' + pg + '">' + bandHTML() + barHTML(pg === 2 ? 'titles.t3' : 'titles.t4', true) + '<div class="grid">';
+    items.forEach(function (c, i) { h += cardHTML(pg, items, i); });
+    h += '</div><div class="addbar"><button type="button" class="addbtn" data-act="card-add" data-pg="' + pg + '">+ dodaj kartę zawodnika</button>' +
+      (pg === 2 ? '<button type="button" class="addbtn" data-act="legend-add">+ dodaj legendę</button>' : '') + '</div>' + footHTML() + '</section>';
+    return h;
+  }
+  function renderAll() {
+    var st = ''; [p1HTML(), pnHTML(2), pnHTML(3)].forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z 3</span>' + h + '</div>'; });
+    stage.innerHTML = st;
+    var cols = BANDS[doc.bar] || BANDS['#243a7c'];
+    Array.prototype.forEach.call(stage.querySelectorAll('.page'), function (pg) { pg.style.setProperty('--bar', doc.bar); pg.style.setProperty('--c1', cols[0]); pg.style.setProperty('--c2', cols[1]); pg.style.setProperty('--c3', cols[2]); });
+    drawAll(); syncTb(); fit();
+  }
+
+  // ---------- Historia i zapis ----------
+  var hist = [], hi = -1, histOn = false, saveT = null;
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(doc)); } catch (e) {} }
+  function syncHist() { $('undoBtn').disabled = hi <= 0; $('redoBtn').disabled = hi >= hist.length - 1; }
+  function commit() {
+    persist(); if (!histOn) return;
+    var s = JSON.stringify(doc); if (hist[hi] === s) return;
+    hist = hist.slice(0, hi + 1); hist.push(s); if (hist.length > 120) hist.shift(); hi = hist.length - 1; syncHist();
+  }
+  function commitSoon() { persist(); clearTimeout(saveT); saveT = setTimeout(commit, 600); }
+  function restore(i) { if (i < 0 || i >= hist.length) return; hi = i; doc = JSON.parse(hist[i]); sel = null; persist(); renderAll(); syncHist(); }
+  $('undoBtn').addEventListener('click', function () { clearTimeout(saveT); commit(); restore(hi - 1); });
+  $('redoBtn').addEventListener('click', function () { restore(hi + 1); });
+
+  // ---------- Edycja tekstu (wiązanie pól z danymi) ----------
+  stage.addEventListener('input', function (e) {
+    var t = e.target.closest('[data-p]'); if (!t) return;
+    var v = t.getAttribute('data-rich') ? clean(t.innerHTML) : t.innerText.replace(/[\r\n]+/g, ' ');
+    setPath(doc, t.getAttribute('data-p'), v); commitSoon();
+    if (t.matches('[data-ph]') && !v) { /* puste pole pokaże podpowiedź */ }
+  });
+  stage.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.matches && e.target.matches('.tx, .cell, .n')) { e.preventDefault(); e.target.blur(); }
+  });
+  stage.addEventListener('paste', function (e) { // wklejanie jako czysty tekst (bez obcego formatowania)
+    var t = e.target.closest && e.target.closest('[contenteditable]'); if (!t) return;
+    e.preventDefault(); var txt = (e.clipboardData || window.clipboardData).getData('text/plain');
+    if (t.getAttribute('data-rich')) document.execCommand('insertText', false, txt); else document.execCommand('insertText', false, txt.replace(/[\r\n]+/g, ' '));
+  });
+  stage.addEventListener('dblclick', function (e) { // dwuklik na komórce dystrybucji – czerwona ramka
+    var c = e.target.closest('.cell'); if (!c) return;
+    var p = c.getAttribute('data-hi'); setPath(doc, p, getPath(doc, p) ? 0 : 1); c.classList.toggle('hi'); commit();
+  });
+
+  // ---------- Operacje strukturalne (karty, wiersze) ----------
+  stage.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (b) { act(b); return; }
+    var lg = e.target.closest('[data-logo]'); if (lg) { logoTarget = lg.getAttribute('data-logo'); $('logoFile').value = ''; $('logoFile').click(); }
+  });
+  function act(b) {
+    var a = b.getAttribute('data-act'), pg = +b.getAttribute('data-pg'), i = +b.getAttribute('data-i'), ri = +b.getAttribute('data-ri'), ci = +b.getAttribute('data-ci');
+    var items = pg ? doc['p' + pg].items : null;
+    if (a === 'card-add') { items.push(pg === 2 ? atkCard(items.length + 1) : srvCard(items.length + 1)); }
+    else if (a === 'legend-add') { doc.p2.items.push({ k: 'legend', html: LEGEND }); }
+    else if (a === 'card-del') { items.splice(i, 1); }
+    else if (a === 'card-left' && i > 0) { var t1 = items[i]; items[i] = items[i - 1]; items[i - 1] = t1; }
+    else if (a === 'card-right' && i < items.length - 1) { var t2 = items[i]; items[i] = items[i + 1]; items[i + 1] = t2; }
+    else if (a === 'dist-add') { if (doc.p1.dist[ri].cards.length < 5) doc.p1.dist[ri].cards.push(distCard()); else toast('Maksymalnie 5 kart w wierszu.'); }
+    else if (a === 'dist-del') { doc.p1.dist[ri].cards.splice(ci, 1); }
+    else if (a === 'dist-row-del') { doc.p1.dist.splice(ri, 1); }
+    else if (a === 'dist-row-add') { doc.p1.dist.push({ title: '', note: '', cards: [distCard(), distCard()] }); }
+    sel = null; renderAll(); commit();
+  }
+
+  // ---------- Logo ----------
+  var logoTarget = null;
+  $('logoFile').addEventListener('change', function () {
+    var f = this.files[0]; if (!f || !logoTarget) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth || 256, h = img.naturalHeight || 256, k = f.type === 'image/svg+xml' ? 320 / Math.max(w, h) : Math.min(1, 320 / Math.max(w, h));
+        var cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        setPath(doc, logoTarget, cv.toDataURL('image/png')); renderAll(); commit();
+      };
+      img.onerror = function () { toast('Nie udało się wczytać obrazu.'); };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(f);
+  });
+
+  // ---------- Diagramy boiska (koszulki, strzałki, stożki, napisy) ----------
+  var tool = 'select', color = '#d62828', activePath = null, sel = null; // sel: { path, i }
+  function shapesOf(path) { return getPath(doc, path) || []; }
+  function drawAll() { Array.prototype.forEach.call(stage.querySelectorAll('svg.court'), drawCanvas); }
+  function drawCanvas(svg) {
+    var path = svg.getAttribute('data-path'), sg = svg.querySelector('.shapes'), ug = svg.querySelector('.ui'), shapes = shapesOf(path);
+    while (sg.firstChild) sg.removeChild(sg.firstChild); while (ug.firstChild) ug.removeChild(ug.firstChild);
+    svg.classList.toggle('act', path === activePath);
+    shapes.forEach(function (s, i) {
+      var g = el('g', { class: 'sp', 'data-i': i }, sg);
+      if (s.t === 'shirt') {
+        g.setAttribute('transform', 'translate(' + s.x + ',' + s.y + ')');
+        el('path', { d: SHIRT_D, fill: s.color, stroke: '#27406e', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }, g);
+        el('text', { x: 0, y: 5, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 800, fill: lum(s.color) < 0.55 ? '#fff' : '#14213d' }, g).textContent = s.num;
+        if (s.name) el('text', { x: 0, y: 28, 'text-anchor': 'middle', 'font-size': 9.5, 'font-weight': 800, fill: '#14213d', stroke: kind(svg) === 'top' ? 'rgba(255,255,255,.55)' : 'none', 'stroke-width': 2.5, 'paint-order': 'stroke' }, g).textContent = s.name;
+      } else if (s.t === 'arrow') {
+        var a = s.pts[0], b = s.pts[1], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, hl = Math.min(L, 11), bx = b[0] - ux * hl, by = b[1] - uy * hl;
+        el('line', { x1: a[0], y1: a[1], x2: bx, y2: by, stroke: s.color, 'stroke-width': 2.6, 'stroke-linecap': 'round' }, g);
+        el('polygon', { points: b[0] + ',' + b[1] + ' ' + (bx - uy * 5) + ',' + (by + ux * 5) + ' ' + (bx + uy * 5) + ',' + (by - ux * 5), fill: s.color }, g);
+        el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: 'transparent', 'stroke-width': 10 }, g); // szersze pole kliknięcia
+      } else if (s.t === 'cone') {
+        el('polygon', { points: s.pts.map(function (q) { return q[0] + ',' + q[1]; }).join(' '), fill: s.color, 'fill-opacity': 0.78, stroke: s.color, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }, g);
+      } else if (s.t === 'text') {
+        el('text', { x: s.x, y: s.y, 'text-anchor': 'middle', 'font-size': s.size || 11, 'font-weight': 800, fill: s.color }, g).textContent = s.text;
+      }
+    });
+    if (sel && sel.path === path && shapes[sel.i]) {
+      var s2 = shapes[sel.i];
+      if (s2.pts) s2.pts.forEach(function (q, k) { el('circle', { cx: q[0], cy: q[1], r: 4.5, fill: '#ffd84a', stroke: '#14213d', 'stroke-width': 1.4, class: 'hd', 'data-k': k, style: 'cursor:move' }, ug); });
+      else { var bb = sg.querySelector('g.sp[data-i="' + sel.i + '"]').getBBox(); el('rect', { x: bb.x - 3, y: bb.y - 3, width: bb.width + 6, height: bb.height + 6, fill: 'none', stroke: '#ff8a00', 'stroke-width': 1.5, 'stroke-dasharray': '4 3', 'pointer-events': 'none' }, ug); }
+    }
+  }
+  function kind(svg) { return svg.getAttribute('data-kind'); }
+  function redrawPath(path) { Array.prototype.forEach.call(stage.querySelectorAll('svg.court'), function (s) { if (s.getAttribute('data-path') === path) drawCanvas(s); }); }
+  function svgPt(svg, e) { var c = svg.getScreenCTM(); if (!c) return [0, 0]; var i = c.inverse(); return [Math.round((i.a * e.clientX + i.c * e.clientY + i.e) * 10) / 10, Math.round((i.b * e.clientX + i.d * e.clientY + i.f) * 10) / 10]; }
+  function clampPt(svg, p) { var w = kind(svg) === 'top' ? 250 : 240; return [Math.max(0, Math.min(w, p[0])), Math.max(0, Math.min(190, p[1]))]; }
+  function activeName() {
+    if (!activePath) return 'kliknij diagram, aby go wybrać';
+    if (activePath === 'p1.formation') return 'Ustawienie przeciwnika';
+    var m = activePath.match(/^p(\d)\.items\.(\d+)\.shapes$/); if (!m) return activePath;
+    var c = doc['p' + m[1]].items[+m[2]]; return (m[1] === '2' ? 'Atak' : 'Zagrywka') + ' – ' + (c.name || ('karta ' + (+m[2] + 1)));
+  }
+  function setActive(path) { if (activePath === path) return; activePath = path; $('activeLbl').textContent = activeName(); drawAll(); }
+  var cur = null, preview = null, conePts = null, lastTap = null; // trwające rysowanie
+  function addShape(path, s) { shapesOf(path).push(s); sel = { path: path, i: shapesOf(path).length - 1 }; redrawPath(path); commit(); }
+
+  stage.addEventListener('pointerdown', function (e) {
+    var svg = e.target.closest && e.target.closest('svg.court'); if (!svg) return;
+    var path = svg.getAttribute('data-path'); setActive(path); closePop();
+    var p = clampPt(svg, svgPt(svg, e)), shapes = shapesOf(path);
+    if (tool === 'select') {
+      var hd = e.target.closest('.hd'), g = e.target.closest('g.sp');
+      if (hd && sel) { cur = { svg: svg, path: path, mode: 'v', i: sel.i, k: +hd.getAttribute('data-k') }; }
+      else if (g) {
+        var i = +g.getAttribute('data-i'), now = Date.now(), dbl = lastTap && lastTap.path === path && lastTap.i === i && now - lastTap.t < 380; lastTap = { path: path, i: i, t: now };
+        var same = sel && sel.path === path && sel.i === i; sel = { path: path, i: i }; cur = { svg: svg, path: path, mode: 'm', i: i, last: p, moved: false };
+        if (!same) redrawPath(path);
+        var sh0 = shapes[i]; if (dbl && sh0 && sh0.t === 'shirt') { cur = null; openShirtEditor(svg, i); e.preventDefault(); return; } if (dbl && sh0 && sh0.t === 'text') { cur = null; openTextEditor(svg, i); e.preventDefault(); return; }
+      }
+      else { sel = null; redrawPath(path); return; }
+      try { svg.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); return;
+    }
+    e.preventDefault();
+    if (tool === 'shirt') { addShape(path, shirt(p[0], p[1], '', '', color === '#ffffff' ? '#ffffff' : color)); openShirtEditor(svg, sel.i); return; }
+    if (tool === 'text') { addShape(path, { t: 'text', x: p[0], y: p[1], text: '', color: color === '#ffffff' ? '#14213d' : color, size: 11 }); openTextEditor(svg, sel.i); return; }
+    if (tool === 'arrow') { cur = { svg: svg, path: path, mode: 'arrow', a: p, b: p }; try { svg.setPointerCapture(e.pointerId); } catch (x) {} drawPreview(); return; }
+    if (tool === 'cone') {
+      if (!conePts || conePts.path !== path) conePts = { path: path, pts: [] };
+      conePts.pts.push(p);
+      if (conePts.pts.length === 3) { var pts = conePts.pts; conePts = null; preview = null; addShape(path, { t: 'cone', pts: pts, color: color === '#ffffff' ? '#cccccc' : color }); }
+      else { cur = { svg: svg, path: path, mode: 'cone' }; drawPreview(); }
+    }
+  });
+  stage.addEventListener('pointermove', function (e) {
+    var svg = e.target.closest && e.target.closest('svg.court');
+    if (cur && cur.svg) svg = cur.svg;
+    if (!svg) return;
+    var p = clampPt(svg, svgPt(svg, e));
+    if (cur && (cur.mode === 'm' || cur.mode === 'v')) {
+      var s = shapesOf(cur.path)[cur.i]; if (!s) return;
+      if (cur.mode === 'v') s.pts[cur.k] = p;
+      else {
+        var dx = p[0] - cur.last[0], dy = p[1] - cur.last[1];
+        if (s.pts) s.pts = s.pts.map(function (q) { return [q[0] + dx, q[1] + dy]; }); else { s.x += dx; s.y += dy; }
+        cur.last = p;
+      }
+      cur.moved = true; drawCanvas(svg); return;
+    }
+    if (cur && cur.mode === 'arrow') { cur.b = p; drawPreview(); return; }
+    if (conePts && conePts.path === svg.getAttribute('data-path')) { conePts.hover = p; cur = cur || { svg: svg, path: conePts.path, mode: 'cone' }; drawPreview(); }
+  });
+  function endPointer(e) {
+    if (!cur) return;
+    var c = cur;
+    if (c.mode === 'm' || c.mode === 'v') { cur = null; if (c.moved || c.mode === 'v') commit(); return; }
+    if (c.mode === 'arrow') { cur = null; clearPreview(); if (Math.hypot(c.b[0] - c.a[0], c.b[1] - c.a[1]) > 6) addShape(c.path, { t: 'arrow', pts: [c.a, c.b], color: color === '#ffffff' ? '#222222' : color }); return; }
+    if (c.mode === 'cone') { cur = null; }
+  }
+  stage.addEventListener('pointerup', endPointer); stage.addEventListener('pointercancel', endPointer);
+  function clearPreview() { Array.prototype.forEach.call(stage.querySelectorAll('svg.court .pv'), function (n) { n.parentNode.removeChild(n); }); }
+  function drawPreview() {
+    clearPreview();
+    var path = (cur && cur.path) || (conePts && conePts.path); if (!path) return;
+    var svg = (cur && cur.svg) || stage.querySelector('svg.court[data-path="' + path + '"]'); if (!svg) return; var ug = svg.querySelector('.ui');
+    if (cur && cur.mode === 'arrow') el('line', { x1: cur.a[0], y1: cur.a[1], x2: cur.b[0], y2: cur.b[1], stroke: color, 'stroke-width': 2.6, 'stroke-dasharray': '4 3', class: 'pv' }, ug);
+    if (conePts) {
+      var pts = conePts.pts.slice(); if (conePts.hover) pts.push(conePts.hover);
+      if (pts.length >= 3) el('polygon', { points: pts.map(function (q) { return q.join(','); }).join(' '), fill: color, 'fill-opacity': .35, stroke: color, 'stroke-dasharray': '4 3', class: 'pv' }, ug);
+      else if (pts.length === 2) el('line', { x1: pts[0][0], y1: pts[0][1], x2: pts[1][0], y2: pts[1][1], stroke: color, 'stroke-dasharray': '4 3', class: 'pv' }, ug);
+      conePts.pts.forEach(function (q) { el('circle', { cx: q[0], cy: q[1], r: 3.5, fill: '#fff', stroke: color, class: 'pv' }, ug); });
+    }
+  }
+
+  // okienka edycji koszulki / napisu
+  function popAt(svg, x, y) { var c = svg.getScreenCTM(), px = c.a * x + c.e, py = c.d * y + c.f, pop = $('pop'); pop.classList.add('show'); pop.style.left = Math.min(innerWidth - 220, Math.max(8, px + 14)) + 'px'; pop.style.top = Math.min(innerHeight - 190, Math.max(8, py - 10)) + 'px'; }
+  function closePop() { $('pop').classList.remove('show'); }
+  function openShirtEditor(svg, i) {
+    var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
+    var pop = $('pop');
+    pop.innerHTML = '<div><label>Numer</label><input id="pNum" maxlength="3" value="' + esc(s.num) + '"></div><div><label>Nazwisko (pod koszulką)</label><input id="pName" maxlength="22" value="' + esc(s.name) + '"></div>' +
+      '<div><label>Kolor koszulki</label><div class="sws" id="pSws"></div></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">🗑 Usuń</button><button type="button" id="pOk">Gotowe</button></div>';
+    popAt(svg, s.x, s.y);
+    var sw = $('pSws'); PAL.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw' + (c === s.color ? ' on' : ''); d.style.background = c; d.dataset.c = c; sw.appendChild(d); });
+    function live() { s.num = $('pNum').value; s.name = $('pName').value; drawCanvas(svg); }
+    $('pNum').addEventListener('input', live); $('pName').addEventListener('input', live);
+    $('pNum').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('pName').focus(); }); $('pName').addEventListener('keydown', function (e) { if (e.key === 'Enter') done(); });
+    sw.addEventListener('click', function (e) { var d = e.target.closest('.sw'); if (!d) return; s.color = d.dataset.c; Array.prototype.forEach.call(sw.children, function (x) { x.classList.toggle('on', x === d); }); drawCanvas(svg); });
+    function done() { closePop(); commit(); } $('pOk').addEventListener('click', done);
+    $('pDel').addEventListener('click', function () { shapesOf(path).splice(i, 1); sel = null; closePop(); redrawPath(path); commit(); });
+    setTimeout(function () { $('pNum').focus(); $('pNum').select(); }, 0);
+  }
+  function openTextEditor(svg, i) {
+    var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
+    var pop = $('pop'); pop.innerHTML = '<div><label>Napis</label><input id="pTxt" maxlength="40" value="' + esc(s.text) + '"></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">🗑 Usuń</button><button type="button" id="pOk">Gotowe</button></div>';
+    popAt(svg, s.x, s.y);
+    $('pTxt').addEventListener('input', function () { s.text = $('pTxt').value; drawCanvas(svg); });
+    function done() { if (!s.text.trim()) shapesOf(path).splice(i, 1), sel = null; closePop(); redrawPath(path); commit(); }
+    $('pTxt').addEventListener('keydown', function (e) { if (e.key === 'Enter') done(); }); $('pOk').addEventListener('click', done);
+    $('pDel').addEventListener('click', function () { shapesOf(path).splice(i, 1); sel = null; closePop(); redrawPath(path); commit(); });
+    setTimeout(function () { $('pTxt').focus(); }, 0);
+  }
+  stage.addEventListener('dblclick', function (e) {
+    var svg = e.target.closest && e.target.closest('svg.court'); if (!svg) return;
+    var g = e.target.closest('g.sp'); if (!g) return; var i = +g.getAttribute('data-i'), s = shapesOf(svg.getAttribute('data-path'))[i];
+    if (!s) return; sel = { path: svg.getAttribute('data-path'), i: i };
+    if (s.t === 'shirt') openShirtEditor(svg, i); else if (s.t === 'text') openTextEditor(svg, i);
+  });
+  document.addEventListener('mousedown', function (e) { if ($('pop').classList.contains('show') && !e.target.closest('#pop') && !e.target.closest('svg.court')) closePop(); });
+
+  // ---------- Pasek narzędzi ----------
+  function syncTb() {
+    Array.prototype.forEach.call($('tools').querySelectorAll('[data-tool]'), function (b) { b.classList.toggle('on', b.dataset.tool === tool); });
+    Array.prototype.forEach.call($('sws').children, function (s) { s.classList.toggle('on', s.dataset.c === color); });
+    Array.prototype.forEach.call($('barSws').children, function (s) { s.classList.toggle('on', s.dataset.c === doc.bar); });
+  }
+  PAL.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.c = c; d.title = 'Kolor rysowania'; $('sws').appendChild(d); });
+  ['#14213d', '#d62828', '#0c3fd0', '#0b8a5a', '#f08a24', '#6a3fb5'].forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.tc = c; d.title = 'Kolor tekstu (zaznacz tekst w notatce)'; $('tsws').appendChild(d); });
+  BARS.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw'; d.style.background = c; d.dataset.c = c; $('barSws').appendChild(d); });
+  $('tools').addEventListener('click', function (e) { var b = e.target.closest('[data-tool]'); if (!b) return; tool = b.dataset.tool; conePts = null; clearPreview(); syncTb(); });
+  $('sws').addEventListener('click', function (e) {
+    var s = e.target.closest('.sw'); if (!s) return; color = s.dataset.c;
+    if (sel) { var sh = shapesOf(sel.path)[sel.i]; if (sh) { sh.color = color; redrawPath(sel.path); commit(); } }
+    syncTb();
+  });
+  $('barSws').addEventListener('click', function (e) { var s = e.target.closest('.sw'); if (!s) return; doc.bar = s.dataset.c; renderAll(); commit(); });
+  // formatowanie tekstu: przyciski nie odbierają fokusu z edytowanego pola
+  $('tb').addEventListener('mousedown', function (e) { if (e.target.closest('[data-cmd], [data-tc]')) e.preventDefault(); });
+  $('tb').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-cmd]'), t = e.target.closest('[data-tc]');
+    if (c) document.execCommand(c.dataset.cmd, false, null); else if (t) document.execCommand('foreColor', false, t.dataset.tc);
+    if (c || t) { var a = document.activeElement; if (a && a.getAttribute && a.getAttribute('data-rich')) { setPath(doc, a.getAttribute('data-p'), clean(a.innerHTML)); commitSoon(); } }
+  });
+  $('delShape').addEventListener('click', delSel);
+  function delSel() { if (!sel) return; shapesOf(sel.path).splice(sel.i, 1); var p = sel.path; sel = null; redrawPath(p); commit(); }
+  $('clearCanvas').addEventListener('click', function () {
+    if (!activePath) { toast('Najpierw kliknij diagram, który chcesz wyczyścić.'); return; }
+    if (!shapesOf(activePath).length) return; setPath(doc, activePath, []); sel = null; redrawPath(activePath); commit();
+  });
+  document.addEventListener('keydown', function (e) {
+    var tg = e.target && e.target.tagName, editing = e.target && (e.target.isContentEditable || tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA');
+    if ((e.ctrlKey || e.metaKey) && !editing) {
+      var k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); $('undoBtn').click(); } else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); $('redoBtn').click(); }
+      return;
+    }
+    if (editing) return;
+    if ((e.key === 'Delete' || e.key === 'Backspace') && sel) { e.preventDefault(); delSel(); }
+    else if (e.key === 'Escape') { sel = null; conePts = null; cur = null; clearPreview(); closePop(); drawAll(); }
+  });
+
+  // ---------- Widok (zoom) ----------
+  var zoom = 0; // 0 = dopasuj
+  function fit() {
+    var avail = Math.max(280, stage.clientWidth - 24), s = zoom || Math.min(1, avail / 794);
+    stage.style.setProperty('--s', s.toFixed(3)); $('zoomVal').textContent = Math.round(s * 100) + '%';
+  }
+  $('zoomIn').addEventListener('click', function () { var s = parseFloat(stage.style.getPropertyValue('--s')) || 1; zoom = Math.min(2, Math.round((s + 0.1) * 100) / 100); fit(); });
+  $('zoomOut').addEventListener('click', function () { var s = parseFloat(stage.style.getPropertyValue('--s')) || 1; zoom = Math.max(0.3, Math.round((s - 0.1) * 100) / 100); fit(); });
+  $('zoomFit').addEventListener('click', function () { zoom = 0; fit(); });
+  addEventListener('resize', function () { if (!zoom) fit(); });
+
+  // ---------- Plik, nowy, PDF ----------
+  $('newBtn').addEventListener('click', function () {
+    if (!confirm('Utworzyć nowy, pusty gameplan? Bieżący zostanie zastąpiony (cofnięcie: Ctrl+Z).')) return;
+    doc = defaultDoc(); sel = null; activePath = null; $('activeLbl').textContent = activeName(); renderAll(); commit();
+  });
+  $('saveBtn').addEventListener('click', function () {
+    var d = new Date(), name = 'gameplan-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '.json';
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(doc)], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast('Zapisano plik ' + name);
+  });
+  $('loadBtn').addEventListener('click', function () { $('loadFile').value = ''; $('loadFile').click(); });
+  $('loadFile').addEventListener('change', function () {
+    var f = this.files[0]; if (!f) return; var fr = new FileReader();
+    fr.onload = function () {
+      try { var d = JSON.parse(fr.result); if (!d || !d.p1 || !d.p2 || !d.p3 || !d.meta) throw new Error('bad'); doc = d; sel = null; renderAll(); commit(); toast('Wczytano gameplan.'); }
+      catch (e) { toast('To nie jest poprawny plik gameplanu.'); }
+    };
+    fr.readAsText(f);
+  });
+  $('printBtn').addEventListener('click', function () {
+    toast('W oknie drukowania wybierz „Zapisz jako PDF”, papier A4, marginesy: brak.');
+    setTimeout(function () { document.body.classList.add('printing'); var a = document.activeElement; if (a && a.blur) a.blur(); window.print(); document.body.classList.remove('printing'); }, 350);
+  });
+
+  renderAll();
+  hist = [JSON.stringify(doc)]; hi = 0; histOn = true; syncHist();
+})();
+</script>
 </body>
 </html>
