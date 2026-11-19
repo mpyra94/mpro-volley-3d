@@ -278,7 +278,7 @@ function loadSharedTeams() {
   var PAL = ['#d62828', '#f08a24', '#f2c230', '#7bbf6a', '#4a74c9', '#9ec5ea', '#222222', '#ffffff'];
   // szata graficzna: trzy kolory zespołu (c1 – paski sekcji i ramka nagłówka, c2 i c3 – środek i dół belki z lewej)
   // kolory wpisujesz jako hex; własne zestawy zapisują się w przeglądarce, a nowy gameplan startuje z ostatnio zapisanego
-  var DEFAULT_THEME = ['#243a7c', '#dc2429', '#fcea1e'], THEMES_KEY = 'mpv:gameplan:themes:v1';
+  var DEFAULT_THEME = ['#0c3fd0', '#ff8a00', '#ffd60a'], OLD_DEFAULT_THEME = ['#243a7c', '#dc2429', '#fcea1e'], THEMES_KEY = 'mpv:gameplan:themes:v1';
   function themeObj(t) { return { c1: t[0], c2: t[1], c3: t[2] }; }
   function loadThemes() { try { var l = JSON.parse(localStorage.getItem(THEMES_KEY) || '[]'); return Array.isArray(l) ? l.filter(function (s) { return Array.isArray(s) && s.length === 3 && s.every(function (c) { return /^#[0-9a-f]{6}$/i.test(c); }); }) : []; } catch (e) { return []; } }
   function saveThemes(l) { try { localStorage.setItem(THEMES_KEY, JSON.stringify(l)); } catch (e) {} }
@@ -324,7 +324,7 @@ function loadSharedTeams() {
     p2.splice(5, 0, { k: 'legend', html: LEGEND });
     for (i = 1; i <= 9; i++) p3.push(srvCard(i));
     return {
-      v: 3, colors: themeObj(startTheme()),
+      v: 4, colors: themeObj(startTheme()),
       meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
       titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
       p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: [{ num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }], role: '<b>Rola zagrywki:</b><br><br>', dist: [
@@ -349,7 +349,11 @@ function loadSharedTeams() {
     });
     doc.v = 3;
   }
-  if (!doc.colors) doc.colors = themeObj(DEFAULT_THEME); // starsze zapisy bez kolorów zespołu
+  if (!doc.colors) doc.colors = themeObj(DEFAULT_THEME);
+  if ((doc.v || 1) < 4) { // v4: nietknięte stare kolory domyślne zamieniamy na kolory strony głównej
+    if (doc.colors.c1 === OLD_DEFAULT_THEME[0] && doc.colors.c2 === OLD_DEFAULT_THEME[1] && doc.colors.c3 === OLD_DEFAULT_THEME[2]) doc.colors = themeObj(DEFAULT_THEME);
+    doc.v = 4;
+  } // starsze zapisy bez kolorów zespołu
 
   // bezpieczne HTML notatek (tylko pogrubienie, kursywa, podkreślenie, kolor, łamanie linii)
   function clean(html) {
@@ -414,7 +418,7 @@ function loadSharedTeams() {
     while (out.length < 3) out.push({ num: '', name: '', pos: '' });
     doc.p1.subs = out.slice(0, 6);
   }
-  function bandHTML() { return '<div class="band"><i></i><i></i><i></i></div>'; }
+  function bandHTML(top) { return '<div class="band" style="top:' + (top || 62) + 'px"><i></i><i></i><i></i></div>'; } // belka boczna zaczyna się na wysokości pierwszego paska sekcji
   function barHTML(tp, first) { return '<div class="bar' + (first ? ' first' : '') + '">' + tx(tp, '', 'Tytuł sekcji') + '</div>'; }
   function footHTML() {
     var f = doc.meta.footLogo;
@@ -440,7 +444,7 @@ function loadSharedTeams() {
 
   function p1HTML() {
     var m = doc.meta, p = doc.p1, h = '';
-    h += '<section class="page" data-page="1">' + bandHTML();
+    h += '<section class="page" data-page="1">' + bandHTML(154); // strona 1: belka od paska „Ustawienie przeciwnika” w dół
     h += '<div class="hdr"><div class="team">' + logoHTML('meta.ourLogo') + tx('meta.ourName', 'nm', 'Nasz zespół') + '</div>' +
       '<div><div class="cbox">' + tx('meta.comp', 't1', 'Rozgrywki') + tx('meta.date', 't2', 'Data i godzina') + tx('meta.place', 't3', 'Miejsce') + '</div><div class="vs">vs.</div></div>' +
       '<div class="team">' + logoHTML('meta.oppLogo') + tx('meta.oppName', 'nm', 'Przeciwnik') + '</div></div>';
@@ -637,6 +641,42 @@ function loadSharedTeams() {
     sel = null; renderAll(); commit();
   }
 
+  // ---------- Kolory zespołu z logo ----------
+  // Z małej kopii logo zbieramy najczęstsze, wyraziste kolory (pomijamy tło, biel i szarości), wybieramy trzy wyraźnie różne
+  // i układamy: 1 – najciemniejszy (paski z białym napisem), 2 – najbardziej nasycony z reszty, 3 – pozostały.
+  function hex2(n) { return ('0' + Math.round(n).toString(16)).slice(-2); }
+  function mixBlack(c, k) { return [c[0] * (1 - k), c[1] * (1 - k), c[2] * (1 - k)]; }
+  function themeFromCanvas(src) {
+    try {
+      var W = 64, k = Math.min(1, W / Math.max(src.width, src.height)), w = Math.max(1, Math.round(src.width * k)), h = Math.max(1, Math.round(src.height * k));
+      var cv = document.createElement('canvas'); cv.width = w; cv.height = h; var g = cv.getContext('2d'); g.drawImage(src, 0, 0, w, h);
+      var d = g.getImageData(0, 0, w, h).data, bins = {}, i;
+      for (i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 128) continue;
+        var r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), sat = mx ? (mx - mn) / mx : 0, l = (0.299 * r + 0.587 * gg + 0.114 * b) / 255;
+        if (l > 0.93 || (sat < 0.12 && (l > 0.8 || l < 0.12))) continue; // biel, tło i czerń/szarości pomijamy
+        var key = (r >> 4) + ',' + (gg >> 4) + ',' + (b >> 4), e = bins[key] || (bins[key] = { n: 0, r: 0, g: 0, b: 0 });
+        e.n++; e.r += r; e.g += gg; e.b += b;
+      }
+      var list = Object.keys(bins).map(function (q) { var e = bins[q]; return { n: e.n, c: [e.r / e.n, e.g / e.n, e.b / e.n] }; }).sort(function (a, b) { return b.n - a.n; });
+      var picked = [];
+      list.forEach(function (e) {
+        if (picked.length >= 3) return;
+        var far = picked.every(function (p) { return Math.hypot(p[0] - e.c[0], p[1] - e.c[1], p[2] - e.c[2]) > 90; });
+        if (far) picked.push(e.c);
+      });
+      if (!picked.length) return null;
+      var def = DEFAULT_THEME.map(function (h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; });
+      while (picked.length < 3) picked.push(def[picked.length]);
+      function L(c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+      function S(c) { var mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]); return mx ? (mx - mn) / mx : 0; }
+      picked.sort(function (a, b) { return L(a) - L(b); });
+      var c1 = picked[0], rest = picked.slice(1).sort(function (a, b) { return S(b) - S(a); });
+      if (L(c1) > 0.5) c1 = mixBlack(c1, 0.42); // paski mają biały napis – kolor musi być dość ciemny
+      return [c1, rest[0], rest[1]].map(function (c) { return '#' + hex2(c[0]) + hex2(c[1]) + hex2(c[2]); });
+    } catch (e) { return null; } // np. logo z innej domeny blokuje odczyt pikseli
+  }
+
   // ---------- Logo ----------
   var logoTarget = null;
   $('logoFile').addEventListener('change', function () {
@@ -648,7 +688,11 @@ function loadSharedTeams() {
         var w = img.naturalWidth || 256, h = img.naturalHeight || 256, k = f.type === 'image/svg+xml' ? 320 / Math.max(w, h) : Math.min(1, 320 / Math.max(w, h));
         var cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        setPath(doc, logoTarget, cv.toDataURL('image/png')); renderAll(); commit();
+        setPath(doc, logoTarget, cv.toDataURL('image/png'));
+        if (logoTarget === 'meta.ourLogo') { // logo naszego zespołu: kolory zespołu wyliczamy z logo (poprawisz je w „Kolory zespołu”)
+          var th = themeFromCanvas(cv); if (th) { doc.colors = themeObj(th); toast('Kolory zespołu ustawiono na podstawie logo. Zmienisz je w „🎨 Kolory zespołu”.'); }
+        }
+        renderAll(); commit();
       };
       img.onerror = function () { toast('Nie udało się wczytać obrazu.'); };
       img.src = fr.result;

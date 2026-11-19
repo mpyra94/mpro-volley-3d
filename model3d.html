@@ -923,7 +923,7 @@ function bandTexture() {
   const c = document.createElement('canvas'); c.width = 4096; c.height = 32;
   const g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, 4096, 32);
   g.fillStyle = 'rgba(30,40,70,0.10)'; g.font = 'bold 18px system-ui, sans-serif'; g.textBaseline = 'middle';
-  const parts = ['Michał Pyra', 'mPro']; let x = 20, i = 0;
+  const parts = ['mPro Volley 3D', 'mPro Volley 3D']; let x = 20, i = 0;
   while (x < 4096) { const t = parts[i % 2]; g.fillText(t, x, 17); x += g.measureText(t).width + 60; i++; }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
@@ -1057,7 +1057,7 @@ function buildBoards() {
   };
   const boardMat = [
     new THREE.MeshStandardMaterial({ map: boardTex('', '#1f4fa3', '#ffffff'), roughness: .6 }),
-    new THREE.MeshStandardMaterial({ map: boardTex('mPro', '#e8e8e8', '#1f4fa3', 'Michał Pyra'), roughness: .6 }),
+    new THREE.MeshStandardMaterial({ map: boardTex('mPro Volley 3D', '#e8e8e8', '#1f4fa3'), roughness: .6 }),
   ];
   for (let i = 0; i < 12; i++) for (const s of [-1, 1]) {
     const bw = 36.2 / 12; // bandy przylegają do krawędzi parkietu (36 x 24 m) - bez przerwy
@@ -2203,7 +2203,7 @@ function renderLegendTeams() {
 toggleBtn('zonesBtn', on => { zoneLabels.visible = prefs.zones = on; savePrefs(); });
 toggleBtn('teamBBtn', on => { syncFloorLogoVisible('b'); benchGroups.b.visible = on; players.filter(p => p.team === 'b').forEach(p => p.group.visible = on); if (!on && selected?.team === 'b') select(null); rebuildTrails(); shadowSig = ''; });
 toggleBtn('trailsBtn', on => { trails.visible = on; rebuildTrails(); });
-toggleBtn('arenaBtn', on => { prefs.arena = on; setArena(on); savePrefs(); });
+toggleBtn('arenaBtn', on => { prefs.arena = on; prefs.arenaSet = true; setArena(on); savePrefs(); }); // arenaSet: użytkownik sam wybrał – wtedy nie narzucamy domyślnych trybun
 const LABEL_MODES = ['full', 'names', 'off'];
 const LABEL_TXT = { full: 'Etykiety: pełne', names: 'Etykiety: nazwiska', off: 'Etykiety: wył.' };
 function refreshLabels() { const k = (labelMode === 'full' ? FULL_LABEL_K : 1) * (appMode === 'free' ? FREE_LABEL_K : 1); for (const p of players) { p.sprite.scale.set(1.05 * k, 0.66 * k, 1); p.sprite.material.map?.dispose(); p.sprite.material.map = labelTexture(p); p.sprite.material.needsUpdate = true; } }
@@ -3259,6 +3259,7 @@ showRot(); refreshSaves(); renderFrames();
 Object.assign(prefs, store.get('volley3d:prefs') || {});
 applySens();
 setCastShadows(!!prefs.castShadows);
+if (prefs.arenaSet ? prefs.arena : true) $('arenaBtn').click(); // trybuny (hala) włączone domyślnie, dopóki sam ich nie wyłączysz
 if (prefs.shadow) $('shadowBtn').click();
 if (!prefs.zones) $('zonesBtn').click();
 if (prefs.ballTrack) $('ballTrackBtn').click();
