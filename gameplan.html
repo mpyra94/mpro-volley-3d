@@ -241,9 +241,12 @@ function loadSharedTeams() {
   var NS = 'http://www.w3.org/2000/svg', KEY = 'mpv:gameplan:doc:v2';
   var PAL = ['#d62828', '#f08a24', '#f2c230', '#7bbf6a', '#4a74c9', '#9ec5ea', '#222222', '#ffffff'];
   // szata graficzna: trzy kolory zespołu (c1 – paski sekcji i ramka nagłówka, c2 i c3 – środek i dół belki z lewej)
-  var THEME_PAL = ['#243a7c', '#0c3fd0', '#1b8cff', '#00a6c7', '#0b8a5a', '#7bbf3a', '#fcea1e', '#ffb000', '#f08a24', '#dc2429', '#ff2d92', '#6a3fb5', '#222831', '#8b95a8'];
-  var THEME_SETS = [['#243a7c', '#dc2429', '#fcea1e'], ['#0c3fd0', '#ff8a00', '#ffd60a'], ['#1b8cff', '#0c3fd0', '#ffd60a'], ['#d62828', '#222831', '#ffd60a'],
-    ['#0b8a5a', '#243a7c', '#ffd60a'], ['#6a3fb5', '#ff2d92', '#ffd60a'], ['#222831', '#d62828', '#ffd60a']];
+  // kolory wpisujesz jako hex; własne zestawy zapisują się w przeglądarce, a nowy gameplan startuje z ostatnio zapisanego
+  var DEFAULT_THEME = ['#243a7c', '#dc2429', '#fcea1e'], THEMES_KEY = 'mpv:gameplan:themes:v1';
+  function themeObj(t) { return { c1: t[0], c2: t[1], c3: t[2] }; }
+  function loadThemes() { try { var l = JSON.parse(localStorage.getItem(THEMES_KEY) || '[]'); return Array.isArray(l) ? l.filter(function (s) { return Array.isArray(s) && s.length === 3 && s.every(function (c) { return /^#[0-9a-f]{6}$/i.test(c); }); }) : []; } catch (e) { return []; } }
+  function saveThemes(l) { try { localStorage.setItem(THEMES_KEY, JSON.stringify(l)); } catch (e) {} }
+  function startTheme() { var l = loadThemes(); return l.length ? l[l.length - 1] : DEFAULT_THEME; }
   var SHIRT_D = 'M-18 -10 L-8 -17 Q0 -11 8 -17 L18 -10 L13 -1 L9 -3 L9 15 L-9 15 L-9 -3 L-13 -1 Z';
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('stage');
@@ -285,7 +288,7 @@ function loadSharedTeams() {
     p2.splice(5, 0, { k: 'legend', html: LEGEND });
     for (i = 1; i <= 9; i++) p3.push(srvCard(i));
     return {
-      v: 3, colors: { c1: THEME_SETS[0][0], c2: THEME_SETS[0][1], c3: THEME_SETS[0][2] },
+      v: 3, colors: themeObj(startTheme()),
       meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
       titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
       p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: '', role: '<b>Rola zagrywki:</b><br><br>', dist: [
@@ -310,7 +313,7 @@ function loadSharedTeams() {
     });
     doc.v = 3;
   }
-  if (!doc.colors) doc.colors ={ c1: THEME_SETS[0][0], c2: THEME_SETS[0][1], c3: THEME_SETS[0][2] }; // starsze zapisy bez kolorów zespołu
+  if (!doc.colors) doc.colors = themeObj(DEFAULT_THEME); // starsze zapisy bez kolorów zespołu
 
   // bezpieczne HTML notatek (tylko pogrubienie, kursywa, podkreślenie, kolor, łamanie linii)
   function clean(html) {
@@ -622,7 +625,7 @@ function loadSharedTeams() {
 
   // okienka edycji koszulki / napisu
   function popAt(svg, x, y) { var c = svg.getScreenCTM(), px = c.a * x + c.e, py = c.d * y + c.f, pop = $('pop'); pop.classList.add('show'); pop.style.left = Math.min(innerWidth - 220, Math.max(8, px + 14)) + 'px'; pop.style.top = Math.min(innerHeight - 190, Math.max(8, py - 10)) + 'px'; }
-  function closePop() { $('pop').classList.remove('show'); $('pop').onclick = null; }
+  function closePop() { var p = $('pop'); p.classList.remove('show'); p.onclick = null; p.oninput = null; }
   function openShirtEditor(svg, i) {
     var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
     var pop = $('pop');
@@ -669,24 +672,47 @@ function loadSharedTeams() {
     if (sel) { var sh = shapesOf(sel.path)[sel.i]; if (sh) { sh.color = color; redrawPath(sel.path); commit(); } }
     syncTb();
   });
-  // trzy kolory zespołu: wybór z gotowych kolorów albo z gotowych zestawów
+  // trzy kolory zespołu: wpisywane jako hex (lub z próbnika), z możliwością zapisania własnego zestawu
   var THEME_ROWS = [['c1', '1 · paski sekcji i ramka nagłówka'], ['c2', '2 · belka z lewej – środek'], ['c3', '3 · belka z lewej – dół']];
+  var HEX_RE = /^#[0-9a-f]{6}$/i;
+  function themeChip(s, i) {
+    return '<span class="thset" data-i="' + i + '" title="Użyj tego zestawu" style="display:inline-flex;align-items:center;gap:4px;border:2px solid var(--line);border-radius:8px;padding:2px 4px;cursor:pointer">' +
+      '<span style="display:inline-flex;width:48px;height:18px;border-radius:5px;overflow:hidden"><i style="flex:1;background:' + s[0] + '"></i><i style="flex:1;background:' + s[1] + '"></i><i style="flex:1;background:' + s[2] + '"></i></span>' +
+      '<b class="thdel" data-i="' + i + '" title="Usuń zestaw" style="font-size:11px;color:var(--muted);padding:0 3px">✕</b></span>';
+  }
   function openThemePop() {
-    var pop = $('pop'), h = '<div style="font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Kolory zespołu</div>';
-    h += '<div><label>Gotowe zestawy</label><div style="display:flex;flex-wrap:wrap;gap:6px" id="thSets">' + THEME_SETS.map(function (s, i) {
-      return '<span class="thset" data-i="' + i + '" title="Zestaw ' + (i + 1) + '" style="display:inline-flex;width:54px;height:22px;border-radius:6px;overflow:hidden;border:2px solid var(--line);cursor:pointer"><i style="flex:1;background:' + s[0] + '"></i><i style="flex:1;background:' + s[1] + '"></i><i style="flex:1;background:' + s[2] + '"></i></span>';
-    }).join('') + '</div></div>';
+    var pop = $('pop'), saved = loadThemes(), h = '<div style="font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Kolory zespołu</div>';
     THEME_ROWS.forEach(function (r) {
-      h += '<div><label>' + r[1] + '</label><div class="sws" style="flex-wrap:wrap;max-width:300px" data-row="' + r[0] + '">' + THEME_PAL.map(function (c) { return '<span class="sw' + (doc.colors[r[0]] === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '"></span>'; }).join('') + '</div></div>';
+      var v = doc.colors[r[0]];
+      h += '<div><label>' + r[1] + '</label><div style="display:flex;gap:6px;align-items:center"><input type="color" class="thc" data-row="' + r[0] + '" value="' + esc(v) + '" style="width:44px;height:32px;padding:2px;cursor:pointer;flex:none">' +
+        '<input type="text" class="thx" data-row="' + r[0] + '" value="' + esc(v) + '" maxlength="7" spellcheck="false" placeholder="#RRGGBB" style="font-family:ui-monospace,Consolas,monospace"></div></div>';
     });
+    h += '<div><button type="button" id="thSave" title="Zapisz bieżące trzy kolory jako swój zestaw – nowy gameplan startuje z ostatnio zapisanego">💾 Zapisz mój zestaw</button></div>';
+    if (saved.length) h += '<div><label>Moje zestawy (kliknij, aby użyć)</label><div id="thSets" style="display:flex;flex-wrap:wrap;gap:6px;max-width:300px">' + saved.map(themeChip).join('') + '</div></div>';
     h += '<div style="display:flex;justify-content:flex-end"><button type="button" id="thOk">Gotowe</button></div>';
     pop.innerHTML = h; pop.classList.add('show');
     var r0 = $('themeBtn').getBoundingClientRect(); pop.style.left = Math.min(innerWidth - 340, Math.max(8, r0.left)) + 'px'; pop.style.top = (r0.bottom + 8) + 'px';
+    pop.oninput = function (e) { // zmiana koloru na żywo
+      var t = e.target, row = t.getAttribute('data-row'); if (!row) return;
+      var v = t.value.trim();
+      if (t.classList.contains('thx')) {
+        if (v && v[0] !== '#') v = '#' + v;
+        if (!HEX_RE.test(v)) { t.style.borderColor = '#d62828'; return; }
+        t.style.borderColor = ''; pop.querySelector('.thc[data-row="' + row + '"]').value = v.toLowerCase();
+      } else { var tx = pop.querySelector('.thx[data-row="' + row + '"]'); tx.value = v; tx.style.borderColor = ''; }
+      doc.colors[row] = v.toLowerCase(); applyTheme(); commitSoon();
+    };
     pop.onclick = function (e) {
-      var sw = e.target.closest('.sw'), set = e.target.closest('.thset');
-      if (sw) { var row = sw.parentNode.getAttribute('data-row'); doc.colors[row] = sw.dataset.c; applyTheme(); commit(); openThemePop(); }
-      else if (set) { var t = THEME_SETS[+set.dataset.i]; doc.colors = { c1: t[0], c2: t[1], c3: t[2] }; applyTheme(); commit(); openThemePop(); }
-      else if (e.target.id === 'thOk') { closePop(); pop.onclick = null; }
+      var l, c = doc.colors;
+      if (e.target.id === 'thSave') {
+        l = loadThemes(); var cur = [c.c1, c.c2, c.c3];
+        l = l.filter(function (s) { return s.join() !== cur.join(); }); l.push(cur); if (l.length > 8) l.shift(); saveThemes(l);
+        toast('Zapisano zestaw kolorów. Nowe gameplany będą startować z tego zestawu.'); openThemePop();
+      } else if (e.target.closest('.thdel')) {
+        l = loadThemes(); l.splice(+e.target.closest('.thdel').dataset.i, 1); saveThemes(l); openThemePop();
+      } else if (e.target.closest('.thset')) {
+        var t = loadThemes()[+e.target.closest('.thset').dataset.i]; if (t) { doc.colors = themeObj(t); applyTheme(); commit(); openThemePop(); }
+      } else if (e.target.id === 'thOk') { commit(); closePop(); }
     };
   }
   $('themeBtn').addEventListener('click', openThemePop);
