@@ -226,13 +226,13 @@ function saveSharedTeams(teamsObj) {
 <!-- Pasek sekcji -->
 <nav id="rail" class="glass">
   <div class="logo" title="Volley 3D">🏐</div>
+  <a href="index.html" target="_blank" rel="noopener" class="railHome" title="Powrót do menu głównego aplikacji" style="text-decoration:none;display:contents"><button type="button"><span>🏠</span><small>Menu</small></button></a>
   <div id="undoBar">
     <button id="undoBtn" title="Cofnij (Ctrl+Z)" aria-label="Cofnij" disabled>↶</button>
     <button id="redoBtn" title="Ponów (Ctrl+Y lub Ctrl+Shift+Z)" aria-label="Ponów" disabled>↷</button>
   </div>
   <button id="resetPosBtn" title="Resetuj pozycje zawodników i piłkę"><span>↺</span><small>Reset pozycji</small></button>
   <button data-sec="view" title="Kamera i widoki"><span>🎥</span><small>Kamera</small></button>
-  <button data-sec="players" data-freehide title="Rotacje i postawy"><span>🔄</span><small>Rotacje</small></button>
   <button data-sec="seq" data-need="seq" title="Sekwencja klatek"><span>🎬</span><small>Sekwencja</small></button>
   <button data-sec="kits" title="Personalizacja drużyn"><span>👥</span><small>Drużyny</small></button>
   <button data-sec="draw" data-need="draw" title="Rysowanie na boisku"><span>✏️</span><small>Rysuj</small></button>
@@ -2181,19 +2181,19 @@ $('secClose').addEventListener('click', () => openSection(null));
 function syncProxies() { document.querySelectorAll('[data-proxy]').forEach(b => b.classList.toggle('on', $(b.dataset.proxy).classList.contains('on'))); }
 document.querySelectorAll('[data-proxy]').forEach(b => b.addEventListener('click', () => $(b.dataset.proxy).click()));
 // legenda
-function setLegend(on) {
-  prefs.legend = on; savePrefs();
+function setLegend(on, byUser) {
+  prefs.legend = on; if (byUser) prefs.legendSet = true; savePrefs(); // legendSet: użytkownik sam zdecydował – wtedy nie narzucamy domyślnego ukrycia na telefonie
   $('legend').classList.toggle('hidden', !on); $('legendTab').classList.toggle('show', !on); setToggle('legendBtn', on);
 }
-$('legendBtn').addEventListener('click', () => setLegend(!prefs.legend));
+$('legendBtn').addEventListener('click', () => setLegend(!prefs.legend, true));
 $('quickCollapse').addEventListener('click', () => {
   const c = $('quick').classList.toggle('collapsed');
   $('quickCollapse').textContent = c ? '▸' : '▾';
   try { localStorage.setItem('volley3d:quickCollapsed', c ? '1' : '0'); } catch (e) {}
 });
 if (localStorage.getItem('volley3d:quickCollapsed') === '1') { $('quick').classList.add('collapsed'); $('quickCollapse').textContent = '▸'; }
-$('legendHide').addEventListener('click', () => setLegend(false));
-$('legendTab').addEventListener('click', () => setLegend(true));
+$('legendHide').addEventListener('click', () => setLegend(false, true));
+$('legendTab').addEventListener('click', () => setLegend(true, true));
 buildPoseUI();
 function renderLegendTeams() {
   const sw = c => `<i class="sw" style="background:${c}"></i>`;
@@ -3266,11 +3266,11 @@ if (prefs.ballTrack) $('ballTrackBtn').click();
 applyFloorStyle(prefs.floorStyle === 'pro' ? 'pro' : 'plain'); // zapisany styl 'wood' (usunięty) wraca do jednolitego
 setLabelMode(prefs.labelMode || (prefs.labels === false ? 'off' : 'full'));
 setLang(prefs.lang || 'pl');
-setLegend(prefs.legend !== false);
+setLegend(prefs.legendSet ? prefs.legend !== false : !matchMedia('(max-width: 760px)').matches); // na telefonie legenda domyślnie ukryta
 
 applyPlan(true);
 refreshLabels();
-if (prefs.section && prefs.section !== 'attack' && (prefs.section !== 'seq' || can('seq')) && (prefs.section !== 'draw' || can('draw')) && (prefs.section !== 'players' || appMode !== 'free') && document.querySelector(`#secPanel .sec[data-sec="${prefs.section}"]`)) openSection(prefs.section);
+if (prefs.section && prefs.section !== 'attack' && (prefs.section !== 'seq' || can('seq')) && (prefs.section !== 'draw' || can('draw')) && prefs.section !== 'players' && document.querySelector(`#secPanel .sec[data-sec="${prefs.section}"]`)) openSection(prefs.section);
 syncProxies();
 const auto = store.get('volley3d:auto'); if (auto?.version >= 2) deserialize(auto, 0.01);
 markChange(); updateUndoUI(); // pierwszy krok historii = stan startowy

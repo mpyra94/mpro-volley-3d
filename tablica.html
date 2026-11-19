@@ -97,7 +97,7 @@
   #trash.hot { background: rgba(217, 72, 72, .9); border-style: solid; transform: scale(1.12); }
   #board.drawing .ballg { pointer-events: none; }
   @media (max-width: 820px) {
-    #rail { position: fixed; left: 6px; top: 64px; margin: 0; padding: 4px; z-index: 12; }
+    #rail { position: fixed; left: 6px; top: calc(var(--hdrH, 56px) + 8px); margin: 0; padding: 4px; z-index: 12; }
     #rail .logo, #rail button.rb small { display: none; }
     #rail .undoRow { flex-direction: column; }
     #rail button.rb { width: 36px; padding: 6px 0; }
@@ -189,15 +189,21 @@
   }
   /* ---------- Nagłówek: pulpit / telefon ---------- */
   .hdr-extra { display: contents; }
+  .hgrp { display: inline-flex; align-items: center; gap: 6px; }
   #hdrMore { display: none; }
   @media (max-width: 820px) {
     header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
     header h1 { font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     header button { padding: 6px 10px; }
     .hide-m { display: none; }
-    #hdrMore { display: inline-block; font-size: 16px; padding: 4px 12px; }
+    #hdrMore { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; }
     .hdr-extra { display: none; }
-    header.open .hdr-extra { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, .25); }
+    /* rozwinięte menu: grupy filtrów jedna pod drugą, podpis grupy nad przyciskami */
+    header.open .hdr-extra { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 100%; gap: 10px 14px; padding: 8px 0 4px 54px; border-top: 1px solid rgba(255, 255, 255, .25); }
+    header.open .hgrp { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+    header.open .hgrp .seg { max-width: 100%; }
+    header.open .hgrp:nth-child(3) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+    header.open .hgrp:nth-child(3) .hl { flex: 1 1 100%; }
     header.open #hdrMore { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
   }
   #drawDock { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
@@ -238,19 +244,23 @@
     body.drawing #rotBar { display: none; }
     #drawDock .card { border: 0; background: transparent; padding: 0; margin: 0; border-radius: 0; }
     #drawDock .card > summary, #drawDock .hint, #drawDock .card > .row:first-of-type { display: none; }
-    #drawDock #drawTools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    #drawDock #drTools { display: flex; flex: 1 1 100%; overflow-x: auto; gap: 6px; margin-top: 0; padding-bottom: 2px; }
-    #drawDock #drTools button { flex: none; white-space: nowrap; padding: 7px 11px; }
+    /* narzędzia rysowania na telefonie: wszystko widoczne bez przewijania – narzędzia w siatce 4×2, kolory w jednej linii */
+    #drawDock #drawTools { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+    #drawDock #drTools { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1 1 100%; gap: 5px; margin-top: 0; }
+    #drawDock #drTools button { min-width: 0; white-space: nowrap; padding: 7px 2px; font-size: 12.5px; }
     #drawDock #drawTools .row { display: contents; }
-    #drawDock select { max-width: 118px; }
+    #drawDock .swatches { flex: 1 1 100%; flex-wrap: nowrap; gap: 0; justify-content: space-between; }
+    #drawDock .sw { width: min(8vw, 30px); height: min(8vw, 30px); }
+    #drawDock select { flex: 1 1 0; min-width: 0; max-width: none; padding: 6px 4px; font-size: 12.5px; }
+    #drawDock #drFill, #drawDock #drDel, #drawDock #drClear { padding: 6px 8px; font-size: 12.5px; white-space: nowrap; }
     #drawDock input[type=color] { width: 44px; }
-    #drawDock input[type=range] { width: 70px; }
+    #drawDock input[type=range] { width: 64px; }
+    #drawDock .alpha { flex: 1 1 auto; }
   }
   .swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .sw { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
   .sw:hover { transform: scale(1.1); }
   .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
-  @media (max-width: 820px) { #drawDock .swatches { flex: 1 1 100%; justify-content: space-between; } #drawDock .sw { width: 30px; height: 30px; } }
   #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 4px;
     background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); }
   #zoomCtl button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px;
@@ -307,16 +317,18 @@ function saveSharedTeams(teamsObj) {
   <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="hide-m"> Menu</span></button></a>
   <h1>📋 Tablica Taktyczna</h1>
   <div class="hdr-extra">
-    <span class="hl">Na pionku</span>
-    <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span>
-    <span class="hl">Etykieta</span>
-    <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span>
-    <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
-    <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">Zrzut PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">Zrzut PDF</button></span>
-    <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span>
+    <div class="hgrp"><span class="hl">Na pionku</span>
+      <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span></div>
+    <div class="hgrp"><span class="hl">Etykieta</span>
+      <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
+    <div class="hgrp"><span class="hl">Filtry</span>
+      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
+      <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span></div>
+    <div class="hgrp"><span class="hl">Zrzut</span>
+      <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button></span></div>
   </div>
   <button type="button" id="hdrDraw" title="Rysowanie na boisku">✏️</button>
-  <button type="button" id="hdrMore" title="Etykiety i tło" aria-expanded="false">⋯</button>
+  <button type="button" id="hdrMore" title="Menu: pionki, etykiety, filtry, zrzut" aria-label="Menu" aria-expanded="false"><svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M1 1.5h18M1 7h18M1 12.5h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
 </header>
 <div class="layout">
   <nav id="rail" aria-label="Menu boczne">
@@ -344,7 +356,6 @@ function saveSharedTeams(teamsObj) {
           <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
           <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
           <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
-          <button type="button" data-dtool="quad" title="Czworokąt – kliknij 4 punkty">▱ Czworokąt</button>
           <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
         </div>
         <div class="row">
@@ -1459,6 +1470,10 @@ function saveSharedTeams(teamsObj) {
   // pasek rotacji na telefonie: zwinięty (drużyna, rotacja, ustawienie) / rozwinięty (P1–P6 i reset)
   $('rbMore').addEventListener('click', function () { var o = $('rotBar').classList.toggle('open'); $('rbMore').setAttribute('aria-expanded', o); setRotH(); });
   function setRotH() { document.documentElement.style.setProperty('--rotH', $('rotBar').offsetHeight + 'px'); }
+  // wysokość nagłówka (rozwinięte menu jest wyższe) – boczny pasek na telefonie zaczyna się pod nim i nie zasłania menu
+  function setHdrH() { document.documentElement.style.setProperty('--hdrH', document.querySelector('header').offsetHeight + 'px'); }
+  if (window.ResizeObserver) new ResizeObserver(setHdrH).observe(document.querySelector('header')); else addEventListener('resize', setHdrH);
+  setHdrH();
   if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotBar')); else addEventListener('resize', setRotH);
   if (matchMedia('(max-width: 820px)').matches) $('side').hidden = true; // na telefonie menu boczne otwiera przycisk ☰ Panel
   setRotH(); placeDrawCard();

@@ -161,6 +161,14 @@
   .chead .nm { font-size: 13px; font-weight: 700; text-transform: uppercase; flex: 1; text-align: left; }
   .chead .sub { display: block; font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #3b4b6b; }
   .court { display: block; width: 100%; height: auto; border: 0; }
+  .grid.atk { padding-top: 2px; gap: 2px 14px; }
+  .grid.atk .cnotes { min-height: 64px; }
+  .secH { display: flex; align-items: center; gap: 10px; margin: 8px 36px 0 58px; padding: 0 0 2px; border-bottom: 1.5px solid var(--bar); }
+  .secH .tx { font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--bar); text-transform: uppercase; min-width: 60px; }
+  .secOps { display: flex; gap: 4px; margin-left: auto; }
+  .cw { position: relative; }
+  .ballSel { position: absolute; transform: translate(-50%, -105%); font: inherit; font-size: 11px; font-weight: 800; line-height: 1.1; color: #d62828; background: #fff; border: 1.5px solid #d62828; border-radius: 6px; padding: 0 3px; text-align: center; text-align-last: center; -webkit-appearance: none; appearance: none; cursor: pointer; outline: none; min-width: 22px; z-index: 3; }
+  .ballSel.empty { border-style: dashed; color: #9aa6bd; border-color: #b9c4d8; }
   .cnotes { border: 1px solid #aab3c6; border-top: 1.5px solid #14213d; padding: 5px 6px; min-height: 92px; }
   .cnotes.ctr { text-align: center; text-transform: uppercase; font-weight: 700; font-size: 8.8px; border: 0; border-top: 2px solid #14213d; border-bottom: 2px solid #14213d; min-height: 56px; }
   .legend { border: 1.5px solid #14213d; padding: 8px 10px; font-size: 9.5px; line-height: 1.4; align-self: center; }
@@ -173,6 +181,14 @@
   .dRowOps { display: flex; gap: 4px; position: absolute; right: 36px; top: 2px; }
   .foot { position: absolute; right: 34px; bottom: 20px; width: 92px; height: 66px; display: grid; place-items: center; cursor: pointer; }
   .foot { overflow: hidden; }
+  .wm { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 8.5px; font-weight: 600; letter-spacing: .06em; color: #9aa6bd; pointer-events: none; }
+  /* wiersz dystrybucji z więcej niż 4 kartami: karty kurczą się, aby zmieścić do 8 w jednym wierszu */
+  .dCards.many { flex-wrap: nowrap; gap: 5px; }
+  .dCards.many .dCard { flex: 1 1 0; min-width: 0; width: auto; }
+  .dCards.many .ct { font-size: 8.5px; }
+  .dCards.many .dGrid { padding: 3px; gap: 2px; }
+  .dCards.many .cell { font-size: 8.5px; padding: 5px 0; min-height: 22px; overflow: hidden; }
+  .dCards.many .dn2 .rt { font-size: 8px; }
   .foot img { opacity: .22; } /* stopka działa jak delikatny znak wodny */
   .foot.empty { border: 2px dashed #c3cce0; border-radius: 8px; color: #b2bbd0; font-size: 9px; font-weight: 700; text-align: center; }
 
@@ -192,7 +208,40 @@
     max-width: min(92vw, 560px); text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
   #toast.show { opacity: 1; }
 
-  @media (max-width: 820px) { header h1 { font-size: 16px; } #tb { padding: 6px 8px; } }
+  /* zwijanie menu rysowania */
+  #tb .tbBody { display: contents; }
+  #tb.collapsed .tbBody { display: none; }
+  #tb .gHead { flex: 1; min-width: 0; flex-wrap: nowrap; }
+  #tb #activeLbl { flex: 0 1 auto; min-width: 0; }
+  #tb #tbToggle { margin-left: auto; flex: none; font-weight: 700; }
+  header .ts { display: none; }
+  @media (max-width: 820px) { header h1 { font-size: 16px; } #tb { padding: 6px 8px; max-height: 60vh; overflow-y: auto; } }
+  /* widok mobilny: cały pasek w jednej linii (ikony), zwijane i zagęszczone narzędzia rysowania */
+  @media (max-width: 700px) {
+    header { flex-wrap: nowrap; gap: 5px; padding: 8px 8px; justify-content: space-between; }
+    header h1 { display: none; }
+    header .tl { display: none; }
+    header .ts { display: inline; }
+    header button { padding: 6px 9px; font-size: 14px; line-height: 1.1; }
+    #tb { padding: 5px 8px; gap: 5px; }
+    #tb .tbBody { display: flex; flex-wrap: wrap; gap: 5px 6px; width: 100%; }
+    #tb.collapsed .tbBody { display: none; }
+    #tb .sep { display: none; }
+    #tb button, #tb select { font-size: 12px; padding: 4px 6px; }
+    #tb #tools { width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    #tb #tools button { padding: 5px 1px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+    #tb .tbBody > .grp:nth-child(2) { width: 100%; }
+    #tb .tbBody > .grp:nth-child(2) .sws { width: 100%; justify-content: space-between; gap: 0; }
+    #tb .sw { width: min(8.4vw, 30px); height: min(8.4vw, 30px); }
+    #tb .tbBody > .grp:nth-child(3) { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr 1.4fr; gap: 4px; }
+    #tb .tbBody > .grp:nth-child(3) button { padding: 5px 2px; white-space: nowrap; font-size: 11px; }
+    #tb .tbBody > .grp:nth-child(5) { width: 100%; justify-content: space-between; }
+    #tb .tbBody > .grp:nth-child(5) .sws { gap: 0; flex: 1; justify-content: space-around; }
+    #tb .tbBody > .grp:nth-child(7), #tb .tbBody > .grp:nth-child(8) { flex: 1 1 0; }
+    #tb .tbBody > .grp:nth-child(7) button, #tb .tbBody > .grp:nth-child(8) button { width: 100%; white-space: nowrap; }
+    #tb #activeLbl { font-size: 11.5px; max-width: none; }
+    #tb #tsws .sw { width: 24px; height: 24px; }
+  }
 
   /* ---------- Wydruk / PDF ---------- */
   @page { size: A4; margin: 0; }
@@ -207,7 +256,8 @@
     .pageWrap:last-child { page-break-after: auto; break-after: auto; }
     .page { transform: none !important; box-shadow: none !important; width: 794px; height: 1122px; }
     [data-ph]:empty::before { content: '' !important; }
-    .foot.empty, .logo.empty { visibility: hidden; }
+    .foot.empty, .logo.empty, .ballSel.empty { visibility: hidden; }
+    .ballSel { border-color: #d62828 !important; }
     svg.court .ui { display: none; }
     svg.court.act { outline: none; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -229,20 +279,21 @@ function loadSharedTeams() {
 </script>
 
 <header>
-  <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span> Menu</span></button></a>
+  <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="tl"> Menu</span></button></a>
   <h1>📄 Gameplan</h1>
   <button type="button" id="undoBtn" title="Cofnij (Ctrl+Z)" disabled>↶</button>
   <button type="button" id="redoBtn" title="Ponów (Ctrl+Y)" disabled>↷</button>
-  <button type="button" id="newBtn" title="Nowy, pusty gameplan">Nowy</button>
-  <button type="button" id="saveBtn" title="Zapisz gameplan do pliku .json (np. żeby przenieść na inny komputer)">Zapisz plik</button>
-  <button type="button" id="loadBtn" title="Wczytaj gameplan z pliku .json">Wczytaj plik</button>
-  <button type="button" id="printBtn" class="primary" title="Drukuj lub zapisz jako PDF (3 strony A4)">⤓ PDF / Drukuj</button>
+  <button type="button" id="newBtn" title="Nowy, pusty gameplan">🆕<span class="tl"> Nowy</span></button>
+  <button type="button" id="saveBtn" title="Zapisz gameplan do pliku .json (np. żeby przenieść na inny komputer)">💾<span class="tl"> Zapisz plik</span></button>
+  <button type="button" id="loadBtn" title="Wczytaj gameplan z pliku .json">📂<span class="tl"> Wczytaj plik</span></button>
+  <button type="button" id="printBtn" class="primary" title="Drukuj lub zapisz jako PDF (A4)">⤓<span class="tl"> PDF / Drukuj</span><span class="ts"> PDF</span></button>
   <input type="file" id="loadFile" accept=".json,application/json" hidden>
   <input type="file" id="logoFile" accept="image/*" hidden>
 </header>
 
 <div id="tb">
-  <div class="grp"><span class="lbl">Boisko</span><span id="activeLbl">kliknij diagram, aby go wybrać</span></div>
+  <div class="grp gHead"><span class="lbl">Boisko</span><span id="activeLbl">kliknij diagram, aby go wybrać</span><button type="button" id="tbToggle" aria-expanded="true" title="Zwiń / rozwiń narzędzia rysowania">▴ Zwiń</button></div>
+  <div class="tbBody">
   <div class="grp" id="tools">
     <button type="button" data-tool="select" class="on" title="Zaznacz i przesuwaj elementy (dwuklik na koszulce lub napisie – edycja)">↖ Zaznacz</button>
     <button type="button" data-tool="arrow" title="Strzałka – przeciągnij od początku do końca">➜ Strzałka</button>
@@ -262,6 +313,7 @@ function loadSharedTeams() {
   <div class="sep"></div>
   <div class="grp"><button type="button" id="boxBtn" title="Wstaw pole tekstowe w dowolnym miejscu strony: kliknij ten przycisk, a potem miejsce na stronie">▭ Pole tekstowe</button></div>
   <div class="grp"><button type="button" id="themeBtn" title="Trzy kolory zespołu: paski i nagłówek, środek belki, dół belki">🎨 Kolory zespołu</button></div>
+  </div>
 </div>
 
 <div id="viewBar" role="group" aria-label="Widok"><span class="lbl">Widok</span><button type="button" id="zoomOut" title="Pomniejsz">−</button><span id="zoomVal">100%</span><button type="button" id="zoomIn" title="Powiększ">+</button><button type="button" id="zoomFit" title="Dopasuj stronę do szerokości okna">Dopasuj</button></div>
@@ -310,7 +362,14 @@ function loadSharedTeams() {
     middle: { sub: 'środek', shapes: function () { return [cone([120, 18], [86, 176], [154, 176])]; } }
   };
   var US_SHIRT = '#9ec5ea'; // te same koszulki w ataku i w zagrywce
-  function atkCard(n, kind) { var d = ATK[kind || 'left']; return { k: 'card', num: String(n), name: '', sub: d.sub, shapes: d.shapes().concat(blockers(US_SHIRT)), notes: '' }; }
+  // sekcje strony ataku: 0 – przyjmujący, 1 – atakujący, 2 – środkowi (w sekcji max 3 karty w wierszu)
+  var SEC_TITLES = ['PRZYJMUJĄCY', 'ATAKUJĄCY', 'ŚRODKOWI'], SEC_KIND = ['left', 'right2', 'middle'], SEC_MAX = 3, DIST_MAX = 8;
+  function atkCard(n, kind, sec) { var d = ATK[kind || 'left']; return { k: 'card', sec: sec || 0, ball: '', num: String(n), name: '', sub: d.sub, shapes: d.shapes().concat(blockers(US_SHIRT)), notes: '' }; }
+  function newAtkPage() { // dodatkowa strona ataku: po trzy karty w każdej sekcji
+    var it = [];
+    [['left', 0], ['left', 0], ['left', 0], ['right2', 1], ['right1', 1], ['right2', 1], ['middle', 2], ['middle', 2], ['middle', 2]].forEach(function (x) { it.push(atkCard('', x[0], x[1])); });
+    return { title: 'ATAK', items: it, boxes: [] };
+  }
   // zagrywka: stożek zza strefy I rywala (po lewej stronie diagramu) w stronę naszego przyjęcia
   function srvCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: [cone([74, 8], [38, 176], [134, 176])].concat(blockers(US_SHIRT)), notes: '' }; }
   var LEGEND = '<b>LEGENDA:</b><br><br><b>2 ball</b> – otwarta prosta (skaczemy skos)<br><b>1 ball</b> – jedna piłka między antenką a rękoma (łapka)<br><b>0 ball</b> – zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma<br><br><b>Q</b> – quick<br><b>HB</b> – wysoka<br><b>B3</b> – blok potrójny<br><b>K1</b> – krótka przy sobie<br><b>K7</b> – suw';
@@ -320,11 +379,11 @@ function loadSharedTeams() {
       shirt(45, 130, '4', 'ZAWODNIK 4', '#ffffff'), shirt(125, 130, '5', 'ZAWODNIK 5', '#ffffff'), shirt(205, 130, '6', 'ZAWODNIK 6', '#ffffff')];
     var p2 = [], p3 = [];
     // 1. rząd: atak z lewego skrzydła; 2. rząd: prawe skrzydło – II i I strefa osobno (+ legenda); 3. rząd: atak ze środka
-    ['left', 'left', 'left', 'right2', 'right1', 'middle', 'middle', 'middle'].forEach(function (k, n) { p2.push(atkCard(n + 1, k)); });
-    p2.splice(5, 0, { k: 'legend', html: LEGEND });
+    ['left', 'left', 'left', 'right2', 'right1', 'middle', 'middle', 'middle'].forEach(function (k, n) { p2.push(atkCard(n + 1, k, k === 'left' ? 0 : k === 'middle' ? 2 : 1)); });
+    p2.splice(5, 0, { k: 'legend', sec: 1, html: LEGEND });
     for (i = 1; i <= 9; i++) p3.push(srvCard(i));
     return {
-      v: 4, colors: themeObj(startTheme()),
+      v: 5, colors: themeObj(startTheme()), secT: SEC_TITLES.slice(), xa: [],
       meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
       titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
       p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: [{ num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }], role: '<b>Rola zagrywki:</b><br><br>', dist: [
@@ -400,7 +459,7 @@ function loadSharedTeams() {
     doc.p1.subs.forEach(function (r, i) {
       var b = 'p1.subs.' + i;
       h += '<div class="subrow" data-si="' + i + '"' + (r.num || r.name || r.pos ? '' : ' data-empty="1"') + '><span class="hash">#</span>' +
-        mtx(b + '.num', 'sn', '15', 'num') + mtx(b + '.name', 'snm', 'NAZWISKO', 'name') + mtx(b + '.pos', 'spo', 'R', 'pos') +
+        mtx(b + '.num', 'sn', 'nr', 'num') + mtx(b + '.name', 'snm', 'NAZWISKO', 'name') + mtx(b + '.pos', 'spo', 'poz', 'pos') +
         '<button type="button" class="subx noprint" data-act="sub-del" data-si="' + i + '" title="Usuń zmiennika">✕</button></div>';
     });
     if (doc.p1.subs.length < 6) h += '<button type="button" class="addbtn noprint" data-act="sub-add" style="margin-top:3px">+ zmiennik</button>';
@@ -422,7 +481,7 @@ function loadSharedTeams() {
   function barHTML(tp, first) { return '<div class="bar' + (first ? ' first' : '') + '">' + tx(tp, '', 'Tytuł sekcji') + '</div>'; }
   function footHTML() {
     var f = doc.meta.footLogo;
-    return '<div class="foot' + (f ? '' : ' empty') + '" data-logo="meta.footLogo" title="Logo w stopce (kliknij, aby wgrać)">' + (f ? '<img alt="" src="' + esc(f) + '">' : 'logo<br>stopki') + '</div>';
+    return '<div class="foot' + (f ? '' : ' empty') + '" data-logo="meta.footLogo" title="Logo w stopce (kliknij, aby wgrać)">' + (f ? '<img alt="" src="' + esc(f) + '">' : 'logo<br>stopki') + '</div><div class="wm">Wygenerowano z mPro Volley Gameplan</div>';
   }
   function logoHTML(path) {
     var v = getPath(doc, path);
@@ -456,51 +515,68 @@ function loadSharedTeams() {
     h += barHTML('titles.t2', false);
     p.dist.forEach(function (row, ri) {
       h += '<div class="distRow" data-ri="' + ri + '"><div class="dRowOps"><button type="button" data-act="dist-add" data-ri="' + ri + '" title="Dodaj kartę dystrybucji">+ karta</button><button type="button" data-act="dist-row-del" data-ri="' + ri + '" title="Usuń cały wiersz">✕ wiersz</button></div>';
-      h += '<div class="dHead">' + tx('p1.dist.' + ri + '.title', 'dt', 'Tytuł wiersza') + tx('p1.dist.' + ri + '.note', 'dn', 'adnotacja (np. nasza szansa!)') + '</div><div class="dCards">';
+      h += '<div class="dHead">' + tx('p1.dist.' + ri + '.title', 'dt', 'Tytuł wiersza') + tx('p1.dist.' + ri + '.note', 'dn', 'adnotacja') + '</div><div class="dCards' + (row.cards.length > 4 ? ' many' : '') + '">';
       row.cards.forEach(function (c, ci) {
         var base = 'p1.dist.' + ri + '.cards.' + ci;
-        h += '<div class="dCard"><div class="ops"><button type="button" data-act="dist-del" data-ri="' + ri + '" data-ci="' + ci + '" title="Usuń kartę">✕</button></div>' + tx(base + '.title', 'ct', '#1 P1 #+').replace('<span class="tx ct"', '<span class="tx ct" style="display:block"');
+        h += '<div class="dCard"><div class="ops"><button type="button" data-act="dist-del" data-ri="' + ri + '" data-ci="' + ci + '" title="Usuń kartę">✕</button></div>' + tx(base + '.title', 'ct', 'tytuł').replace('<span class="tx ct"', '<span class="tx ct" style="display:block"');
         h += '<div class="dGrid">';
         for (var k = 0; k < 6; k++) {
           if (k === 3) h += '</div><div class="dNet"></div><div class="dGrid">';
           h += '<span class="cell' + (c.hi[k] ? ' hi' : '') + '" contenteditable="' + CE + '" spellcheck="false" data-p="' + base + '.cells.' + k + '" data-hi="' + base + '.hi.' + k + '" data-ph="%" title="Dwuklik – zaznacz / odznacz czerwoną ramkę">' + esc(c.cells[k]) + '</span>';
         }
-        h += '</div><div class="dn2">' + rt(base + '.notes', '', '- notatka') + '</div></div>';
+        h += '</div><div class="dn2">' + rt(base + '.notes', '', 'notatka') + '</div></div>';
       });
       h += '</div></div>';
     });
     h += '<div class="addbar"><button type="button" class="addbtn" data-act="dist-row-add">+ dodaj wiersz dystrybucji</button></div>';
-    h += footHTML() + boxesHTML(1) + '</section>';
+    h += footHTML() + boxesHTML('p1') + '</section>';
     return h;
   }
-  function cardHTML(pg, items, i) {
-    var c = items[i], base = 'p' + pg + '.items.' + i, h = '';
+  // strona = ścieżka w dokumencie: 'p2' (atak), 'xa.N' (dodatkowa strona ataku), 'p3' (zagrywka)
+  function cardHTML(pp, items, i) {
+    var c = items[i], base = pp + '.items.' + i, srv = pp === 'p3', h = '';
     if (c.k === 'legend') {
-      return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div>' + rt(base + '.html', '', 'Legenda…') + '</div>';
+      return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pp, i) + '</div>' + rt(base + '.html', '', 'Legenda…') + '</div>';
     }
-    h += '<div class="card" data-i="' + i + '"><div class="ops">' + opsBtns(pg, i) + '</div><div class="chead">' + shIcon(base + '.num', '#ffffff') +
-      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + '<span class="sub">' + tx(base + '.sub', '', pg === 3 ? 'typ zagrywki' : 'schemat ataku') + '</span></div></div>';
-    h += courtSVG('persp', base + '.shapes');
-    h += '<div class="cnotes' + (pg === 3 ? ' ctr' : '') + '">' + rt(base + '.notes', '', pg === 3 ? 'uwagi do zagrywki' : '- blok / obrona / uwagi').replace('class="rt ', 'class="rt ') + '</div></div>';
+    h += '<div class="card" data-i="' + i + '"><div class="ops">' + opsBtns(pp, i) + '</div><div class="chead">' + shIcon(base + '.num', '#ffffff') +
+      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + '<span class="sub">' + tx(base + '.sub', '', srv ? 'typ zagrywki' : 'schemat ataku') + '</span></div></div>';
+    h += '<div class="cw">' + courtSVG('persp', base + '.shapes');
+    if (!srv) { // miejsce ataku (0/1/2) w dwóch pierwszych sekcjach, rodzaj ataku (K1/K7) w sekcji środkowych – przy wierzchołku stożka
+      var opts = c.sec === 2 ? ['', 'K1', 'K7'] : ['', '0', '1', '2'];
+      h += '<select class="ballSel' + (c.ball ? '' : ' empty') + '" data-ball="' + base + '.ball" title="' + (c.sec === 2 ? 'Rodzaj ataku: K1 / K7' : 'Miejsce ataku: 0 / 1 / 2') + '">' +
+        opts.map(function (o) { return '<option value="' + o + '"' + ((c.ball || '') === o ? ' selected' : '') + '>' + (o || '–') + '</option>'; }).join('') + '</select>';
+    }
+    h += '</div><div class="cnotes' + (srv ? ' ctr' : '') + '">' + rt(base + '.notes', '', 'uwagi') + '</div></div>';
     return h;
   }
-  function opsBtns(pg, i) {
-    return '<button type="button" data-act="card-left" data-pg="' + pg + '" data-i="' + i + '" title="Przesuń wcześniej">◀</button><button type="button" data-act="card-right" data-pg="' + pg + '" data-i="' + i + '" title="Przesuń później">▶</button>' +
-      '<button type="button" data-act="card-del" data-pg="' + pg + '" data-i="' + i + '" title="Usuń kartę">✕</button>';
+  function opsBtns(pp, i) {
+    return '<button type="button" data-act="card-left" data-pp="' + pp + '" data-i="' + i + '" title="Przesuń wcześniej">◀</button><button type="button" data-act="card-right" data-pp="' + pp + '" data-i="' + i + '" title="Przesuń później">▶</button>' +
+      '<button type="button" data-act="card-del" data-pp="' + pp + '" data-i="' + i + '" title="Usuń kartę">✕</button>';
   }
-  function pnHTML(pg) {
-    var items = doc['p' + pg].items, h = '<section class="page" data-page="' + pg + '">' + bandHTML() + barHTML(pg === 2 ? 'titles.t3' : 'titles.t4', true) + '<div class="grid">';
-    items.forEach(function (c, i) { h += cardHTML(pg, items, i); });
-    h += '</div><div class="addbar"><button type="button" class="addbtn" data-act="card-add" data-pg="' + pg + '">+ dodaj kartę zawodnika</button>' +
-      (pg === 2 ? '<button type="button" class="addbtn" data-act="legend-add">+ dodaj legendę</button>' : '') + '</div>' + footHTML() + boxesHTML(pg) + '</section>';
-    return h;
+  function pnHTML(pp) {
+    var d = getPath(doc, pp), items = d.items, srv = pp === 'p3', h = '<section class="page" data-page="' + pp + '">' + bandHTML() +
+      barHTML(pp === 'p2' ? 'titles.t3' : srv ? 'titles.t4' : pp + '.title', true);
+    if (srv) {
+      h += '<div class="grid">'; items.forEach(function (c, i) { h += cardHTML(pp, items, i); });
+      h += '</div><div class="addbar"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '">+ dodaj kartę zawodnika</button></div>';
+    } else {
+      [0, 1, 2].forEach(function (s) {
+        h += '<div class="secH">' + tx('secT.' + s, '', 'Sekcja') + '<span class="secOps noprint"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '" data-sec="' + s + '">+ karta</button>' +
+          (s === 1 ? '<button type="button" class="addbtn" data-act="legend-add" data-pp="' + pp + '">+ legenda</button>' : '') + '</span></div><div class="grid atk">';
+        items.forEach(function (c, i) { if (c.sec === s) h += cardHTML(pp, items, i); });
+        h += '</div>';
+      });
+      h += '<div class="addbar"><button type="button" class="addbtn" data-act="page-add">+ dodaj kolejną stronę ataku</button>' +
+        (pp !== 'p2' ? '<button type="button" class="addbtn" data-act="page-del" data-pp="' + pp + '">✕ usuń tę stronę</button>' : '') + '</div>';
+    }
+    return h + footHTML() + boxesHTML(pp) + '</section>';
   }
   // ---------- Pola tekstowe w dowolnym miejscu strony (przesuwane, zmieniana wielkość, formatowany tekst) ----------
-  function boxesHTML(pg) {
-    var arr = doc['p' + pg].boxes || [], h = '';
+  function boxesHTML(pp) {
+    var arr = getPath(doc, pp).boxes || [], h = '';
     arr.forEach(function (b, i) {
-      var base = 'p' + pg + '.boxes.' + i;
-      h += '<div class="tbox' + (b.border ? ' bd' : '') + '" data-pg="' + pg + '" data-bi="' + i + '" style="left:' + b.x + 'px;top:' + b.y + 'px;width:' + b.w + 'px;height:' + b.h + 'px">' +
+      var base = pp + '.boxes.' + i;
+      h += '<div class="tbox' + (b.border ? ' bd' : '') + '" data-pp="' + pp + '" data-bi="' + i + '" style="left:' + b.x + 'px;top:' + b.y + 'px;width:' + b.w + 'px;height:' + b.h + 'px">' +
         '<div class="tbhd noprint" title="Przeciągnij, aby przesunąć"><span class="tbgrip">⋮⋮</span><button type="button" data-act="box-sm" title="Mniejszy tekst">A−</button><button type="button" data-act="box-lg" title="Większy tekst">A+</button>' +
         '<button type="button" data-act="box-bd" title="Ramka wokół pola">▢</button><button type="button" data-act="box-del" title="Usuń pole">✕</button></div>' +
         '<div class="rt tbt" contenteditable="true" spellcheck="false" data-p="' + base + '.html" data-rich="1" data-ph="Wpisz tekst…" style="font-size:' + (b.size || 11) + 'px">' + clean(b.html) + '</div>' +
@@ -514,18 +590,18 @@ function loadSharedTeams() {
   stage.addEventListener('pointerdown', function (e) {
     var hd = e.target.closest('.tbhd'), rs = e.target.closest('.tbrs');
     if ((hd && !e.target.closest('button')) || rs) { // przesuwanie / zmiana rozmiaru pola
-      var box = e.target.closest('.tbox'), pr = box.closest('.page').getBoundingClientRect(), d = doc['p' + box.dataset.pg].boxes[+box.dataset.bi];
+      var box = e.target.closest('.tbox'), pr = box.closest('.page').getBoundingClientRect(), d = getPath(doc, box.dataset.pp).boxes[+box.dataset.bi];
       bdrag = { box: box, d: d, mode: rs ? 'r' : 'm', sx: e.clientX, sy: e.clientY, s: pr.width / 794 || 1, ox: d.x, oy: d.y, ow: d.w, oh: d.h };
       try { box.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); e.stopPropagation(); return;
     }
     if (inserting) { // wstawianie nowego pola w klikniętym miejscu
       var page = e.target.closest('.page'); if (!page || e.target.closest('.tbox')) return;
-      var r = page.getBoundingClientRect(), s = r.width / 794 || 1, pg = +page.getAttribute('data-page');
+      var r = page.getBoundingClientRect(), s = r.width / 794 || 1, pp = page.getAttribute('data-page');
       var x = Math.max(0, Math.min(794 - 190, Math.round((e.clientX - r.left) / s))), y = Math.max(0, Math.min(1123 - 60, Math.round((e.clientY - r.top) / s)));
-      doc['p' + pg].boxes.push({ x: x, y: y, w: 190, h: 60, html: '', size: 11, border: false });
-      var ni = doc['p' + pg].boxes.length - 1;
+      var barr0 = getPath(doc, pp).boxes; barr0.push({ x: x, y: y, w: 190, h: 60, html: '', size: 11, border: false });
+      var ni = barr0.length - 1;
       setInserting(false); e.preventDefault(); e.stopPropagation(); renderAll(); commit();
-      var t = stage.querySelector('.tbox[data-pg="' + pg + '"][data-bi="' + ni + '"] .tbt'); if (t) t.focus();
+      var t = stage.querySelector('.tbox[data-pp="' + pp + '"][data-bi="' + ni + '"] .tbt'); if (t) t.focus();
     }
   }, true);
   stage.addEventListener('pointermove', function (e) {
@@ -549,13 +625,19 @@ function loadSharedTeams() {
       shirts[k].name = String(shirts[k].name || '').toUpperCase(); // w schemacie ustawienia tylko wielkie litery
     }
     doc.p1.formation = shirts.concat(others);
-    ['p1', 'p2', 'p3'].forEach(function (k) { if (!Array.isArray(doc[k].boxes)) doc[k].boxes = []; });
+    // dokumenty ze starszych wersji: sekcje ataku, dodatkowe strony ataku
+    if (!Array.isArray(doc.secT) || doc.secT.length < 3) doc.secT = SEC_TITLES.slice();
+    if (!Array.isArray(doc.xa)) doc.xa = [];
+    doc.p2.items.forEach(function (c, i) { if (c.sec !== 0 && c.sec !== 1 && c.sec !== 2) c.sec = Math.min(2, Math.floor(i / 3)); });
+    doc.xa.forEach(function (x) { if (!Array.isArray(x.items)) x.items = []; x.items.forEach(function (c) { if (c.sec !== 0 && c.sec !== 1 && c.sec !== 2) c.sec = 1; }); if (x.title == null) x.title = 'ATAK'; });
+    ['p1', 'p2', 'p3'].concat(doc.xa.map(function (x, i) { return 'xa.' + i; })).forEach(function (k) { var d = getPath(doc, k); if (!Array.isArray(d.boxes)) d.boxes = []; });
     normSubs(); doc.p1.libName = maskText('name', doc.p1.libName || '');
     if (!/^P[1-6]$/.test(doc.p1.rot)) doc.p1.rot = 'P1'; // rotacja wybierana z listy P1–P6
   }
   function renderAll() {
     lockFormation();
-    var st = ''; [p1HTML(), pnHTML(2), pnHTML(3)].forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z 3</span>' + h + '</div>'; });
+    var st = '', pps = ['p2'].concat(doc.xa.map(function (x, i) { return 'xa.' + i; })).concat(['p3']), pgs = [p1HTML()].concat(pps.map(pnHTML));
+    pgs.forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z ' + pgs.length + '</span>' + h + '</div>'; });
     stage.innerHTML = st;
     applyTheme(); drawAll(); syncTb(); fit();
   }
@@ -589,6 +671,7 @@ function loadSharedTeams() {
   });
   stage.addEventListener('change', function (e) { // rotacja przeciwnika z listy P1–P6
     if (e.target.classList && e.target.classList.contains('rotSel')) { doc.p1.rot = e.target.value; commit(); }
+    if (e.target.classList && e.target.classList.contains('ballSel')) { setPath(doc, e.target.getAttribute('data-ball'), e.target.value); e.target.classList.toggle('empty', !e.target.value); commit(); }
   });
   stage.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.matches && e.target.matches('.tx, .cell, .n')) { e.preventDefault(); e.target.blur(); }
@@ -620,18 +703,25 @@ function loadSharedTeams() {
     var lg = e.target.closest('[data-logo]'); if (lg) { logoTarget = lg.getAttribute('data-logo'); $('logoFile').value = ''; $('logoFile').click(); }
   });
   function act(b) {
-    var a = b.getAttribute('data-act'), pg = +b.getAttribute('data-pg'), i = +b.getAttribute('data-i'), ri = +b.getAttribute('data-ri'), ci = +b.getAttribute('data-ci');
-    var items = pg ? doc['p' + pg].items : null;
-    if (a === 'card-add') { items.push(pg === 2 ? atkCard(items.length + 1) : srvCard(items.length + 1)); }
-    else if (a === 'legend-add') { doc.p2.items.push({ k: 'legend', html: LEGEND }); }
+    var a = b.getAttribute('data-act'), pp = b.getAttribute('data-pp'), i = +b.getAttribute('data-i'), ri = +b.getAttribute('data-ri'), ci = +b.getAttribute('data-ci');
+    var items = pp && pp !== 'p1' && getPath(doc, pp) ? getPath(doc, pp).items : null, scr = null;
+    function secCount(s) { return items.filter(function (c) { return c.sec === s; }).length; }
+    function swapSame(dir) { var j = i + dir; while (j >= 0 && j < items.length && items[j].sec !== items[i].sec) j += dir; if (j < 0 || j >= items.length) return; var t = items[i]; items[i] = items[j]; items[j] = t; }
+    if (a === 'card-add') {
+      if (pp === 'p3') items.push(srvCard(items.length + 1));
+      else { var sc = +b.getAttribute('data-sec'); if (secCount(sc) >= SEC_MAX) { toast('W sekcji mieszczą się 3 karty w wierszu – użyj „+ dodaj kolejną stronę ataku”.'); return; } items.push(atkCard('', SEC_KIND[sc], sc)); }
+    }
+    else if (a === 'legend-add') { if (secCount(1) >= SEC_MAX) { toast('W tej sekcji nie ma miejsca na legendę – usuń kartę lub użyj innej strony.'); return; } items.push({ k: 'legend', sec: 1, html: LEGEND }); }
     else if (a === 'card-del') { items.splice(i, 1); }
-    else if (a === 'card-left' && i > 0) { var t1 = items[i]; items[i] = items[i - 1]; items[i - 1] = t1; }
-    else if (a === 'card-right' && i < items.length - 1) { var t2 = items[i]; items[i] = items[i + 1]; items[i + 1] = t2; }
-    else if (a === 'dist-add') { if (doc.p1.dist[ri].cards.length < 5) doc.p1.dist[ri].cards.push(distCard()); else toast('Maksymalnie 5 kart w wierszu.'); }
+    else if (a === 'card-left') { swapSame(-1); }
+    else if (a === 'card-right') { swapSame(1); }
+    else if (a === 'page-add') { doc.xa.push(newAtkPage()); scr = doc.xa.length; }
+    else if (a === 'page-del') { if (!confirm('Usunąć tę stronę ataku razem z jej zawartością?')) return; doc.xa.splice(+pp.split('.')[1], 1); }
+    else if (a === 'dist-add') { if (doc.p1.dist[ri].cards.length < DIST_MAX) doc.p1.dist[ri].cards.push(distCard()); else toast('Maksymalnie ' + DIST_MAX + ' kart w wierszu.'); }
     else if (a === 'dist-del') { doc.p1.dist[ri].cards.splice(ci, 1); }
     else if (a === 'dist-row-del') { doc.p1.dist.splice(ri, 1); }
     else if (a.indexOf('box-') === 0) {
-      var bx = b.closest('.tbox'), barr = doc['p' + bx.dataset.pg].boxes, bi = +bx.dataset.bi, bb = barr[bi];
+      var bx = b.closest('.tbox'), barr = getPath(doc, bx.dataset.pp).boxes, bi = +bx.dataset.bi, bb = barr[bi];
       if (a === 'box-del') barr.splice(bi, 1); else if (a === 'box-lg') bb.size = Math.min(40, (bb.size || 11) + 1);
       else if (a === 'box-sm') bb.size = Math.max(6, (bb.size || 11) - 1); else if (a === 'box-bd') bb.border = !bb.border;
     }
@@ -639,6 +729,7 @@ function loadSharedTeams() {
     else if (a === 'sub-del') { doc.p1.subs.splice(+b.getAttribute('data-si'), 1); }
     else if (a === 'dist-row-add') { doc.p1.dist.push({ title: '', note: '', cards: [distCard(), distCard()] }); }
     sel = null; renderAll(); commit();
+    if (scr) { var pw = stage.querySelectorAll('.pageWrap')[scr + 1]; if (pw && pw.scrollIntoView) pw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
 
   // ---------- Kolory zespołu z logo ----------
@@ -708,6 +799,8 @@ function loadSharedTeams() {
     var path = svg.getAttribute('data-path'), sg = svg.querySelector('.shapes'), ug = svg.querySelector('.ui'), shapes = shapesOf(path);
     while (sg.firstChild) sg.removeChild(sg.firstChild); while (ug.firstChild) ug.removeChild(ug.firstChild);
     svg.classList.toggle('act', path === activePath);
+    var bs = svg.parentNode && svg.parentNode.querySelector ? svg.parentNode.querySelector('.ballSel') : null; // selecty 0/1/2 i K1/K7 siedzą przy wierzchołku pierwszego stożka
+    if (bs) { var cn = null; shapes.forEach(function (s) { if (!cn && s.t === 'cone') cn = s; }); var ap = cn ? cn.pts[0] : [120, 18]; bs.style.left = (ap[0] / 240 * 100) + '%'; bs.style.top = (ap[1] / 190 * 100) + '%'; }
     // rysunki (strzałki, stożki, napisy) zawsze pod zawodnikami: najpierw wszystko poza koszulkami, na wierzchu koszulki
     var order = [];
     shapes.forEach(function (s, i) { if (s.t !== 'shirt') order.push(i); });
@@ -744,8 +837,8 @@ function loadSharedTeams() {
   function activeName() {
     if (!activePath) return 'kliknij diagram, aby go wybrać';
     if (activePath === 'p1.formation') return 'Ustawienie przeciwnika';
-    var m = activePath.match(/^p(\d)\.items\.(\d+)\.shapes$/); if (!m) return activePath;
-    var c = doc['p' + m[1]].items[+m[2]]; return (m[1] === '2' ? 'Atak' : 'Zagrywka') + ' – ' + (c.name || ('karta ' + (+m[2] + 1)));
+    var m = activePath.match(/^(p\d|xa\.\d+)\.items\.(\d+)\.shapes$/); if (!m) return activePath;
+    var c = getPath(doc, m[1]).items[+m[2]]; return (m[1] === 'p3' ? 'Zagrywka' : 'Atak') + ' – ' + (c.name || ('karta ' + (+m[2] + 1)));
   }
   function setActive(path) { if (activePath === path) return; activePath = path; $('activeLbl').textContent = activeName(); drawAll(); }
   var cur = null, preview = null, conePts = null, lastTap = null; // trwające rysowanie
@@ -863,6 +956,9 @@ function loadSharedTeams() {
   document.addEventListener('mousedown', function (e) { if ($('pop').classList.contains('show') && !e.target.closest('#pop') && !e.target.closest('svg.court')) closePop(); });
 
   // ---------- Pasek narzędzi ----------
+  function setTbCollapsed(on) { var t = $('tb'); t.classList.toggle('collapsed', on); $('tbToggle').textContent = on ? '▾ Rysowanie' : '▴ Zwiń'; $('tbToggle').setAttribute('aria-expanded', on ? 'false' : 'true'); }
+  $('tbToggle').addEventListener('click', function () { setTbCollapsed(!$('tb').classList.contains('collapsed')); });
+  setTbCollapsed(!!(window.matchMedia && matchMedia('(max-width: 700px)').matches)); // na telefonie start ze zwiniętym menu rysowania
   function syncTb() {
     Array.prototype.forEach.call($('tools').querySelectorAll('[data-tool]'), function (b) { b.classList.toggle('on', b.dataset.tool === tool); });
     Array.prototype.forEach.call($('sws').children, function (s) { s.classList.toggle('on', s.dataset.c === color); });
