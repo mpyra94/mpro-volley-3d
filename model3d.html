@@ -866,7 +866,10 @@ function applyFloorStyle(style) {
   floorStyle = prefs.floorStyle = style;
   court.material = style === 'pro' ? courtMatPro : courtMatPlain;
   floor.material = style === 'pro' ? floorMatProBase : floorMatPlain;
-  proBand.visible = proZoneA.visible = proZoneB.visible = style === 'pro';
+  proBand.visible = style === 'pro';
+  // strefa 3 m jest w obu stylach: na jasnym drewnie (PRO) mocny pomarańcz, na jednolitym pomarańczowym parkiecie – jego ciemniejszy odcień
+  const zoneCol = style === 'pro' ? 0xe0733f : 0xbf5f2c, zoneOp = style === 'pro' ? .86 : .8;
+  [proZoneA, proZoneB].forEach(z => { z.visible = true; z.material.color.setHex(zoneCol); z.material.opacity = zoneOp; });
   document.querySelectorAll('#floorSeg [data-floor]').forEach(b => b.classList.toggle('on', b.dataset.floor === style));
   savePrefs();
 }
