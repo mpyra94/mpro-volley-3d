@@ -855,7 +855,7 @@ const proBandMat = new THREE.MeshStandardMaterial({ color: 0x1b48a8, roughness: 
 const proBand = new THREE.Mesh(new THREE.PlaneGeometry(COURT_L + 6, COURT_W + 6), proBandMat);
 proBand.rotation.x = -Math.PI / 2; proBand.position.y = 0.001; proBand.receiveShadow = true; proBand.visible = false; scene.add(proBand); // boisko (wyzej, y=0.002) zakrywa srodek pasa - zostaje tylko 3-metrowa niebieska ramka
 function proZonePlane() {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(3, COURT_W), new THREE.MeshStandardMaterial({ color: 0xd2803c, roughness: .55, transparent: true, opacity: .5 }));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3, COURT_W), new THREE.MeshStandardMaterial({ color: 0xe0733f, roughness: .55, transparent: true, opacity: .86 })); // ciemniejszy, nasycony pomarańcz strefy 3 m (jak na zdjęciach z hal ligowych: ok. #dc6e46)
   m.rotation.x = -Math.PI / 2; m.position.y = 0.003; m.receiveShadow = true; m.visible = false; scene.add(m); return m;
 }
 // Strefy ataku (0-3 m od siatki) wyrozniane kolorem - typowy ukelad dwubarwnego boiska w profesjonalnych halach, bez zadnych loga/marek
