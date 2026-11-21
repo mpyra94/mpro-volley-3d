@@ -29,8 +29,8 @@
   .bench { fill: var(--benchFill); stroke: var(--benchStroke); stroke-width: 1.5; }
   .benchTxt { fill: var(--benchTxt); }
   header .seg { display: inline-flex; border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; overflow: hidden; }
-  header .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; }
-  .hl { font-size: 12px; font-weight: 700; color: #cfe3ff; text-transform: uppercase; letter-spacing: .05em; }
+  header .seg button { border: 0; border-radius: 0; padding: 4px 9px; font-size: 12.5px; white-space: nowrap; }
+  .hl { font-size: 11px; font-weight: 700; color: #cfe3ff; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
   header .seg button.on { background: #ffd60a; color: #0e1b3d; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
@@ -40,17 +40,21 @@
     border: 1px solid rgba(255, 255, 255, .45); border-radius: 9px; padding: 6px 12px; cursor: pointer;
     transition: background .15s, border-color .15s; }
   button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
-  header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; color: #fff;
+  @media (min-width: 821px) and (max-width: 1500px) { header .hide-m { display: none; } } /* na średnich ekranach przycisk „Menu” to sama ikona – tytuł mieści się w jednej linii */
+  header { display: flex; align-items: center; gap: 8px 8px; padding: 8px 12px; flex-wrap: wrap; color: #fff;
     background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%);
     box-shadow: 0 8px 20px -12px rgba(7, 26, 82, .8); z-index: 2; }
-  header h1 { font-size: 19px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase;
-    letter-spacing: .02em; flex: 1; min-width: 150px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase;
+    letter-spacing: 0; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (min-width: 1181px) { header { flex-wrap: nowrap; } header .hgrp, header #langSw, header a, header button { flex-shrink: 0; } } /* menu w jednej linii; przy węższym oknie zawija się */
+  @media (min-width: 821px) and (max-width: 1180px) { header h1 { flex: 1 1 100%; } }
   header a { text-decoration: none; }
-  #langSw { display: inline-flex; gap: 6px; align-items: center; }
+  body.half #fTeamSeg, body.half #fTeamSeg + .rb-sep { display: none; } /* widok połowy: pracujemy tylko na drużynie A */
+  #langSw { display: inline-flex; gap: 3px; align-items: center; }
   #langSw button { padding: 3px; line-height: 0; border-radius: 7px; opacity: .6; border: 2px solid transparent; background: transparent; }
   #langSw button:hover { opacity: 1; background: rgba(255, 255, 255, .18); }
   #langSw button.on { opacity: 1; border-color: #ffd60a; background: rgba(255, 255, 255, .12); }
-  #langSw svg { width: 28px; height: 19px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  #langSw svg { width: 24px; height: 16px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
   @media (max-width: 820px) { #langSw { gap: 3px; } #langSw svg { width: 22px; height: 15px; } #langSw button { padding: 2px; } }
   header button:disabled { opacity: .4; cursor: default; }
   #undoBtn, #redoBtn { font-size: 17px; padding: 4px 12px; }
@@ -195,7 +199,7 @@
   }
   /* ---------- Nagłówek: pulpit / telefon ---------- */
   .hdr-extra { display: contents; }
-  .hgrp { display: inline-flex; align-items: center; gap: 6px; }
+  .hgrp { display: inline-flex; align-items: center; gap: 4px; }
   #hdrMore { display: none; }
   @media (max-width: 820px) {
     header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
@@ -321,7 +325,7 @@ function saveSharedTeams(teamsObj) {
 
 <header>
   <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="hide-m"> Menu</span></button></a>
-  <h1>📋 Tablica Taktyczna</h1>
+  <h1>Tablica taktyczna</h1>
   <div id="langSw" role="group" aria-label="Language">
     <button type="button" data-lang="pl" title="Polski" aria-label="Polski"><svg viewBox="0 0 16 10" aria-hidden="true"><rect width="16" height="5" fill="#fff"/><rect y="5" width="16" height="5" fill="#dc143c"/></svg></button>
     <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
@@ -329,14 +333,14 @@ function saveSharedTeams(teamsObj) {
   </div>
   <div class="hdr-extra">
     <div class="hgrp"><span class="hl">Widok</span>
-      <span class="seg" id="viewSeg" title="Całe boisko albo powiększona połowa jednej drużyny (wybierasz ją przyciskami A / B w pasku rotacji)"><button type="button" data-view="full" title="Całe boisko, obie drużyny">Całe boisko</button><button type="button" data-view="half" title="Powiększona połowa boiska i pionki tylko jednej drużyny (A / B wybierasz w pasku rotacji)">Połowa boiska</button></span></div>
-    <div class="hgrp"><span class="hl">Na pionku</span>
+      <span class="seg" id="viewSeg" title="Całe boisko albo powiększona połowa drużyny A (z 4 m boiska rywala, bez jego pionków)"><button type="button" data-view="full" title="Całe boisko, obie drużyny">Całe</button><button type="button" data-view="half" title="Powiększona dolna połowa (drużyna A) z 4 m boiska rywala; pionki rywala są ukryte">Połowa</button></span></div>
+    <div class="hgrp"><span class="hl">Pionek</span>
       <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span></div>
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
     <div class="hgrp wide"><span class="hl">Filtry</span>
       <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
-      <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span></div>
+      <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor" title="Tło: parkiet">Parkiet</button><button type="button" data-bg="light" title="Tło: jasne">Jasne</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
       <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button></span></div>
   </div>
@@ -468,15 +472,19 @@ function saveSharedTeams(teamsObj) {
   var I18N = { en: {}, it: {} };
   [ // [polski, English, Italiano]
     ['Tablica Taktyczna', 'Tactical Board', 'Lavagna Tattica'],
-    ['📋 Tablica Taktyczna', '📋 Tactical Board', '📋 Lavagna Tattica'],
+    ['Tablica taktyczna', 'Tactical board', 'Lavagna tattica'],
+    ['Całe', 'Full', 'Intero'],
+    ['Połowa', 'Half', 'Metà'],
+    ['Parkiet', 'Floor', 'Parquet'],
+    ['Jasne', 'Light', 'Chiaro'],
     ['Menu główne', 'Main menu', 'Menu principale'],
     ['Widok', 'View', 'Vista'],
     ['Całe boisko', 'Full court', 'Campo intero'],
     ['Połowa boiska', 'Half court', 'Metà campo'],
-    ['Całe boisko albo powiększona połowa jednej drużyny (wybierasz ją przyciskami A / B w pasku rotacji)', 'Full court or an enlarged half of one team (choose it with the A / B buttons in the rotation bar)', 'Campo intero oppure metà campo ingrandita di una squadra (si sceglie con i pulsanti A / B nella barra delle rotazioni)'],
+    ['Całe boisko albo powiększona połowa drużyny A (z 4 m boiska rywala, bez jego pionków)', 'Full court or an enlarged half for team A (with 4 m of the opponent’s court, without their pawns)', 'Campo intero oppure metà campo ingrandita della squadra A (con 4 m del campo avversario, senza le sue pedine)'],
     ['Całe boisko, obie drużyny', 'Full court, both teams', 'Campo intero, entrambe le squadre'],
-    ['Powiększona połowa boiska i pionki tylko jednej drużyny (A / B wybierasz w pasku rotacji)', 'Enlarged half court with the pawns of one team only (choose A / B in the rotation bar)', 'Metà campo ingrandita con le pedine di una sola squadra (A / B si sceglie nella barra delle rotazioni)'],
-    ['Na pionku', 'On pawn', 'Sul pedone'],
+    ['Powiększona dolna połowa (drużyna A) z 4 m boiska rywala; pionki rywala są ukryte', 'Enlarged lower half (team A) with 4 m of the opponent’s court; the opponent’s pawns are hidden', 'Metà campo inferiore ingrandita (squadra A) con 4 m del campo avversario; le pedine avversarie sono nascoste'],
+    ['Pionek', 'Pawn', 'Pedina'],
     ['Co wyświetlać na pionku', 'What to show on the pawn', 'Cosa mostrare sulla pedina'],
     ['Numer', 'Number', 'Numero'],
     ['Numer zawodnika', 'Player number', 'Numero del giocatore'],
@@ -566,7 +574,7 @@ function saveSharedTeams(teamsObj) {
     ['Imię / nazwisko', 'Name / surname', 'Nome / cognome'],
     ['Imię i nazwisko', 'First and last name', 'Nome e cognome'],
     ['Rola', 'Role', 'Ruolo'],
-    ['R rozgrywający · A atakujący · P przyjmujący · Ś środkowy · L libero. Wyświetlanie na pionkach: sekcja „Etykiety” na górze menu.', 'S setter · OP opposite · OH outside hitter · MB middle blocker · L libero. What is shown on the pawns is set in the “On pawn” and “Label” options at the top.', 'P palleggiatore · O opposto · S schiacciatore · C centrale · L libero. Cosa mostrare sulle pedine si imposta in «Sul pedone» ed «Etichetta» in alto.'],
+    ['R rozgrywający · A atakujący · P przyjmujący · Ś środkowy · L libero. Wyświetlanie na pionkach: sekcja „Etykiety” na górze menu.', 'S setter · OP opposite · OH outside hitter · MB middle blocker · L libero. What is shown on the pawns is set in the “Pawn” and “Label” options at the top.', 'P palleggiatore · O opposto · S schiacciatore · C centrale · L libero. Cosa mostrare sulle pedine si imposta in «Pedina» ed «Etichetta» in alto.'],
     ['rozgrywający', 'setter', 'palleggiatore'],
     ['atakujący', 'opposite', 'opposto'],
     ['przyjmujący', 'outside hitter', 'schiacciatore'],
@@ -739,7 +747,7 @@ function saveSharedTeams(teamsObj) {
     el('circle', { cx: 440, cy: 450, r: 5, fill: '#fff' });
     if (zonesOn) { // filtr „Strefy”: numery stref 1–6 w obu połowach i oś boiska przez środek
       var zc = { 1: [-6, 3], 2: [-1.5, 3], 3: [-1.5, 0], 4: [-1.5, -3], 5: [-6, -3], 6: [-6, 0] };
-      ['a', 'b'].forEach(function (tm) {
+      (viewMode === 'half' ? ['a'] : ['a', 'b']).forEach(function (tm) {
         for (var z = 1; z <= 6; z++) {
           var zp = toBoard(mirror(tm, zc[z]));
           el('text', { x: zp[0], y: zp[1], 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 56, 'font-weight': 700, 'font-style': 'italic',
@@ -753,9 +761,9 @@ function saveSharedTeams(teamsObj) {
     // logo drużyny w strefie wolnej (tak jak na parkiecie w modelu 3D)
     if (teams.b.logo && teams.b.floorLogo !== false) el('image', { href: teams.b.logo, x: 34, y: -14, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
     if (teams.a.logo && teams.a.floorLogo !== false) el('image', { href: teams.a.logo, x: 34, y: 862, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
-    if (viewMode === 'half') { // widok połowy: druga połowa boiska (z ławką, nazwą i logo) jest zasłonięta kolorem tła, siatka zostaje widoczna
-      var hid = formState.fteam === 'a' ? { y: -100, h: 545 } : { y: 455, h: 545 };
-      el('rect', { x: -140, y: hid.y, width: 680, height: hid.h, class: 'bgOuter', 'pointer-events': 'none' });
+    if (viewMode === 'half') { // widok połowy: widać naszą połowę (A) i 4 m boiska rywala; reszta rywala (z ławką, nazwą i logo) jest zasłonięta kolorem tła
+      el('rect', { x: -140, y: -100, width: 680, height: 390, class: 'bgOuter', 'pointer-events': 'none' });
+      el('rect', { x: -140, y: 290, width: 200, height: 80, class: 'bgOuter', 'pointer-events': 'none' }); // ławka rywala
     }
   }
 
@@ -884,7 +892,7 @@ function saveSharedTeams(teamsObj) {
     var pos = resolveMap(currentPositions());
     for (var n = 1; n <= 7; n++) {
       ['a', 'b'].forEach(function (t) { // w widoku połowy tylko pionki wybranej drużyny (pozycje drugiej są zachowane)
-        if (!isGone(t, n) && (viewMode !== 'half' || t === formState.fteam)) makePawn(t, n, pos[t][n]);
+        if (!isGone(t, n) && (viewMode !== 'half' || t === 'a')) makePawn(t, n, pos[t][n]);
       });
     }
     drawBall();
@@ -1363,13 +1371,14 @@ function saveSharedTeams(teamsObj) {
   // ---------- Przybliżanie / oddalanie (przyciski, kółko myszy, szczypanie; przesuwanie – przeciąganie tła) ----------
   var FULL = { x: -140, y: -60, w: 680, h: 1020 }, view = { cx: FULL.x + FULL.w / 2, cy: FULL.y + FULL.h / 2, z: 1 }, ZMAX = 4;
   // widok połowy: wycinek planszy z połową wybranej drużyny (od siatki do nazwy drużyny i logo) – przy 100% wypełnia pole planszy
-  var HALF = { a: { x: -115, y: 436, w: 650, h: 500 }, b: { x: -115, y: -36, w: 650, h: 500 } };
-  function baseView() { return viewMode === 'half' ? HALF[formState.fteam] : FULL; } // obszar widoczny przy przybliżeniu 100%
+  // zawsze dolna połowa (drużyna A), plus 4 m boiska rywala za siatką; dalszą część rywala i jego pionki ukrywamy
+  var HALF = { x: -115, y: 290, w: 650, h: 646 };
+  function baseView() { return viewMode === 'half' ? HALF : FULL; } // obszar widoczny przy przybliżeniu 100%
   function resetView() { var B = baseView(); view.cx = B.x + B.w / 2; view.cy = B.y + B.h / 2; view.z = 1; }
   function clampView() {
-    var B = baseView(), w = B.w / view.z, h = B.h / view.z;
-    view.cx = Math.max(B.x + w / 2, Math.min(B.x + B.w - w / 2, view.cx));
-    view.cy = Math.max(B.y + h / 2, Math.min(B.y + B.h - h / 2, view.cy));
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z; // przy oddaleniu poza obszar bazowy widok jest wyśrodkowany
+    view.cx = w >= B.w ? B.x + B.w / 2 : Math.max(B.x + w / 2, Math.min(B.x + B.w - w / 2, view.cx));
+    view.cy = h >= B.h ? B.y + B.h / 2 : Math.max(B.y + h / 2, Math.min(B.y + B.h - h / 2, view.cy));
   }
   function applyView() {
     clampView();
@@ -1378,7 +1387,7 @@ function saveSharedTeams(teamsObj) {
     var pct = document.getElementById('zoomReset'); if (pct) pct.textContent = Math.round(view.z * 100) + '%';
   }
   function zoomAt(clientX, clientY, factor) { // przybliża wokół punktu pod kursorem
-    var nz = Math.max(1, Math.min(ZMAX, view.z * factor)); if (nz === view.z) return;
+    var nz = Math.max(viewMode === 'half' ? 0.75 : 1, Math.min(ZMAX, view.z * factor)); if (nz === view.z) return;
     var ctm = svg.getScreenCTM(), p = ctm ? ctm.inverse() : null;
     var bx = p ? p.a * clientX + p.c * clientY + p.e : view.cx, by = p ? p.b * clientX + p.d * clientY + p.f : view.cy;
     view.z = nz; applyView();
@@ -1656,19 +1665,21 @@ function saveSharedTeams(teamsObj) {
   });
   document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
     b.addEventListener('click', function () {
-      var changed = formState.fteam !== b.dataset.fteam;
       formState.fteam = b.dataset.fteam; saveForm(); syncFormUI();
-      if (changed && viewMode === 'half') { resetView(); render(); } // w widoku połowy przełączenie drużyny pokazuje jej połowę
     });
   });
-  // filtr „Widok”: całe boisko (domyślnie) albo połowa boiska wybranej drużyny
+  // filtr „Widok”: całe boisko (domyślnie) albo połowa boiska – zawsze dolna, czyli drużyna A (przełącznik A / B jest wtedy ukryty)
+  function syncViewMode() {
+    if (viewMode === 'half' && formState.fteam !== 'a') { formState.fteam = 'a'; saveForm(); syncFormUI(); }
+    document.body.classList.toggle('half', viewMode === 'half');
+  }
   function setViewMode(m) {
     if (m === viewMode) return;
     viewMode = m; try { localStorage.setItem(VIEW_KEY, m); } catch (e) {}
-    resetView(); markLabels(); render();
+    syncViewMode(); resetView(); markLabels(); render();
   }
   document.querySelectorAll('#viewSeg [data-view]').forEach(function (b) { b.addEventListener('click', function () { setViewMode(b.dataset.view); }); });
-  resetView(); markLabels();
+  syncViewMode(); resetView(); markLabels();
 
   $('hdrMore').addEventListener('click', function () { var o = document.querySelector('header').classList.toggle('open'); $('hdrMore').setAttribute('aria-expanded', o); });
   // rysowanie na telefonie: karta narzędzi przenosi się do paska u dołu (zamiast paska rotacji), włącza ją przycisk ✏️ w nagłówku
