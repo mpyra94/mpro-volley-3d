@@ -1789,11 +1789,11 @@ function saveSharedTeams(teamsObj) {
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
     updateShadow(); // cień bloku zgodnie z filtrem na tablicy (shState = null, gdy filtr wyłączony lub brak piłki po jednej ze stron)
-    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, shadow: shState, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, shadow: shState, drawings: drawings3d, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
-    if (d.type === 'mpv-ready') { ready3d = true; if (pend3d) frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); }
+    if (d.type === 'mpv-ready') { ready3d = true; if (pend3d) { if (drawingsPending) waitSend3d = true; else frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); } }
     else if (d.type === 'mpv-rendered' && anim3d && d.id >= anim3d.base && d.id <= anim3d.base + anim3d.n) { // klatka animacji (wszystkie zlecone naraz, wracają po kolei)
       if (d.error || !d.blob) { fail3d(); return; }
       anim3d.frames[d.id - anim3d.base] = URL.createObjectURL(d.blob); anim3d.got++;
@@ -1879,8 +1879,20 @@ function saveSharedTeams(teamsObj) {
   }
   $('animSave').addEventListener('click', saveAnim3d);
   $('shotAnim').addEventListener('click', startAnim3d);
+  // rysunki z tablicy (pióro, linie, strzałki, kształty, teksty) jako przezroczysty obraz całej planszy – w 3D leżą na podłodze
+  var drawings3d = null, drawingsPending = false, waitSend3d = false;
+  function annotsImage(cb) {
+    if (!annots.length || !annotG) { cb(null); return; }
+    var xml = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -60 680 1020" width="1360" height="2040"><style>text{font-family:"Exo 2",system-ui,Arial,sans-serif}</style>' + new XMLSerializer().serializeToString(annotG) + '</svg>';
+    var img = new Image();
+    img.onload = function () { var cv = document.createElement('canvas'); cv.width = 1360; cv.height = 2040; cv.getContext('2d').drawImage(img, 0, 0); cb(cv.toDataURL('image/png')); };
+    img.onerror = function () { cb(null); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+  }
   function export3D() {
     if (pend3d) return;
+    drawings3d = null; drawingsPending = true; waitSend3d = false;
+    annotsImage(function (u) { drawings3d = u; drawingsPending = false; if (waitSend3d && frame3d && ready3d && pend3d && !anim3d) { waitSend3d = false; frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); } });
     pend3d = ++rid3d; busy3d(true);
     timer3d = setTimeout(fail3d, 60000);
     if (!frame3d) {

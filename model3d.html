@@ -2693,6 +2693,16 @@ async function addBoardShadow(sh) { // cień bloku z tablicy: tekstura na połow
   const pts = []; for (const hz of sh.rayZ) pts.push(new THREE.Vector3(sh.Bx, 0.03, sh.Bz), new THREE.Vector3(sh.endX, 0.03, hz));
   if (pts.length) { const ln = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .95 })); scene.add(ln); boardShadowObjs.push(ln); }
 }
+let boardDrawObj = null;
+async function addBoardDrawings(url) { // rysunki z tablicy (przezroczysty obraz planszy 17 × 25,5 m) rozłożone na podłodze
+  if (boardDrawObj) { scene.remove(boardDrawObj); boardDrawObj = null; }
+  if (!url) return;
+  const img = new Image(); img.src = url; await img.decode();
+  const tex = new THREE.Texture(img); tex.needsUpdate = true; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(17, 25.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0))); // wiersze obrazu = x (do siatki), kolumny = z
+  m.position.set(0, 0.02, -1.25); m.renderOrder = 3; scene.add(m); boardDrawObj = m; // środek planszy tablicy: x = 0, z = −1,25 m
+}
 function placeBoardPlayers() {
   tweens.length = 0;
   for (const p of players) {
@@ -2732,7 +2742,7 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   hemi.intensity = 1.15; sun.intensity = 1.0; fill.intensity = 0.5;
   tweens.length = 0; // jeszcze raz tuż przed ustawieniem pozycji (w trakcie oczekiwania na logo mogły wystartować nowe)
   try { const an = renderer.capabilities.getMaxAnisotropy(); if (netMat.map) { netMat.map.anisotropy = an; netMat.map.needsUpdate = true; } } catch (e) {} // ostrzejsza siatka pod kątem
-  boardPlayers = d.players; placeBoardPlayers(); await addBoardShadow(d.shadow);
+  boardPlayers = d.players; placeBoardPlayers(); await addBoardShadow(d.shadow); await addBoardDrawings(d.drawings);
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
   boardBall = bl || null;
