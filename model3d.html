@@ -2623,6 +2623,53 @@ $('shot').addEventListener('click', () => openEditor(renderClean()));
 $('quickShot').addEventListener('click', () => openEditor(renderClean()));
 $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam)));
 
+// ---------- Widok 3D na żądanie z Tablicy Taktycznej ----------
+// Tablica ładuje tę stronę w ukrytej ramce, przesyła pozycje pionków i odbiera obraz „zza drużyny A” (kamera jak w „Z tyłu drużyny”).
+// Współrzędne: x wzdłuż boiska (A po stronie x < 0), z w poprzek – dokładnie jak w modelu.
+async function renderFromBoard(d) {
+  const W = d.W || 1600, H = d.H || 900;
+  ['a', 'b'].forEach(t => { if (d.teams && d.teams[t]) Object.assign(teams[t], d.teams[t]); });
+  for (const p of players) { const q = d.players.find(x => x.id === p.id); if (q) { p.num = q.num; p.name = q.name || ''; } }
+  applyTeamColors();
+  await Promise.all(['a', 'b'].map(t => (logoCache[t] && logoCache[t].img.decode) ? logoCache[t].img.decode().catch(() => {}) : null));
+  applyTeamColors(); // koszulki z numerami i logo po załadowaniu obrazów
+  const taken = { a: new Set(), b: new Set() };
+  for (const p of players) {
+    const q = d.players.find(x => x.id === p.id);
+    if (!q || q.hidden) { p.group.visible = false; continue; }
+    p.group.visible = true;
+    let x = q.x, z = q.z, pose = POSES[q.pose] ? q.pose : 'stand', face = 0;
+    if (Math.abs(z) > COURT_W / 2 + 0.6 || Math.abs(x) > COURT_L / 2 + 0.6) { // poza boiskiem → wolne krzesełko na ławce
+      const spots = chairSpots(p.team); let best = -1, bd = 1e9;
+      spots.forEach(([cx, cz], i) => { if (taken[p.team].has(i)) return; const dd = Math.hypot(x - cx, z - cz); if (dd < bd) { bd = dd; best = i; } });
+      if (best >= 0) { taken[p.team].add(best); [x, z] = spots[best]; pose = 'sit'; face = p.team === 'a' ? -90 : 90; }
+    }
+    p.group.position.set(x, 0, z);
+    p.pose = pose; p.poseCur = { ...POSES[pose].p };
+    setFacing(p, face); applyPose(p);
+    p.J.pelvis.visible = true; p.pawn.visible = false; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
+  }
+  const bl = d.ball;
+  ball.visible = ballShadow.visible = ballLine.visible = !!bl;
+  if (bl) { ball.position.set(bl.x, BALL_R, bl.z); syncBallHelpers(); }
+  shadowOn = false; updateBlockShadow(); zoneLabels.visible = false;
+  const prevSize = renderer.getSize(new THREE.Vector2()), prevRatio = renderer.getPixelRatio();
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  const cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 250);
+  cam.position.set(-15.5, 4.2, 0); cam.lookAt(0, 1.1, 0); // zza drużyny A, siatka na wprost
+  const c = renderClean(cam);
+  renderer.setPixelRatio(prevRatio); renderer.setSize(prevSize.x, prevSize.y, false); resize();
+  return c.toDataURL('image/png');
+}
+addEventListener('message', ev => {
+  const d = ev.data;
+  if (!d || d.type !== 'mpv-render' || ev.source !== window.parent) return;
+  if (ev.origin !== location.origin && location.protocol !== 'file:') return;
+  renderFromBoard(d).then(dataUrl => ({ type: 'mpv-rendered', id: d.id, dataUrl }), e => ({ type: 'mpv-rendered', id: d.id, error: String((e && e.message) || e) }))
+    .then(out => window.parent.postMessage(out, '*'));
+});
+if (window.parent !== window) window.parent.postMessage({ type: 'mpv-ready' }, '*');
+
 // ---------- Edytor zrzutu: kadr, pióro, linia, strzałka, prostokąt, elipsa, tekst ----------
 const ED = { img: null, crop: null, shapes: [], history: [], tool: 'pen', fill: true, scale: 1, cur: null, sel: -1, tri: null, hover: null, drag: null };
 const edCanvas = $('edCanvas'), edCtx = edCanvas.getContext('2d');
