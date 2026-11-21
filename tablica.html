@@ -1032,7 +1032,8 @@ function saveSharedTeams(teamsObj) {
     pawns.forEach(function (g) {
       if (g.dataset.team !== def) return;
       var px = (CY - g.__pos[1]) / UNIT, pz = (g.__pos[0] - CX) / UNIT, dn = Math.abs(px);
-      if (dn > 2.2 || Math.abs(pz) > 4.7) return; // blokuje tylko ten, kto stoi przy siatce na boisku
+      // blokuje tylko pionek, który styka się z siatką (najmniejszy możliwy odstęp od niej + 4 jednostki tolerancji); pionek tuż obok siatki, ale bez styku, nie blokuje
+      if (Math.abs(g.__pos[1] - CY) > 18 * g.__s + 6 + 4 || Math.abs(pz) > 4.7) return;
       var r = 18 * g.__s / UNIT * 0.95;
       rects.push({ x: (px < 0 ? -1 : 1) * Math.max(0.25, dn - 0.5), zmin: pz - r, zmax: pz + r }); // dłonie ok. 0,5 m przed środkiem pionka
     });
