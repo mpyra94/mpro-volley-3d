@@ -936,6 +936,27 @@ function saveSharedTeams(teamsObj) {
     return m;
   }
 
+  // ikona piłki (żółto-niebieska, trzy niebieskie pasy) – w pasku po lewej zamiast emoji 🏐; sfx = unikalny przyrostek identyfikatorów
+  function ballIcon(sfx, size) {
+    var bands = '', bi, ii, W = 0.42 * 2 * Math.PI / 3;
+    for (bi = 0; bi < 3; bi++) {
+      var lo = [], hi = [];
+      for (ii = 0; ii <= 24; ii++) {
+        var rr = 19 * ii / 24, th = Math.asin(Math.min(1, rr / 15)), a = bi * 2 * Math.PI / 3 + th;
+        lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
+      }
+      bands += '<path d="M' + lo.concat(hi.reverse()).map(function (p) { return p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('L') + 'Z" fill="#1b3a96" stroke="rgba(8,16,60,.55)" stroke-width=".7" stroke-linejoin="round"/>';
+    }
+    return '<svg viewBox="-16 -16 32 32" width="' + size + '" height="' + size + '" aria-hidden="true" style="display:block"><defs>' +
+      '<clipPath id="bcI' + sfx + '"><circle r="15"/></clipPath>' +
+      '<radialGradient id="bsI' + sfx + '" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0a1030" stop-opacity=".38"/></radialGradient></defs>' +
+      '<circle r="15" fill="#f6cf16"/><g clip-path="url(#bcI' + sfx + ')">' + bands + '</g><circle r="15" fill="url(#bsI' + sfx + ')"/><circle r="14.7" fill="none" stroke="#9a8512" stroke-width=".8"/></svg>';
+  }
+  (function () { // piłka w pasku po lewej: logo i przycisk „Piłka”
+    var lg = document.querySelector('#rail .logo'), bb = document.querySelector('#rail [data-act="ball"] span');
+    if (lg) lg.innerHTML = ballIcon('L', 28);
+    if (bb) bb.innerHTML = ballIcon('B', 24);
+  })();
   // piłka (pokaż / ukryj z paska po lewej; przeciągana w dowolne miejsce)
   function drawBall() {
     if (!pst.ball.on) return;
