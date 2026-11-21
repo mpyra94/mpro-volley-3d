@@ -293,6 +293,11 @@
   .shotRow { display: flex; align-items: stretch; justify-content: center; gap: 14px; }
   #angleBox { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 8px; width: 34px; padding: 4px 0; line-height: 1.2; }
   #angleBox[hidden] { display: none; }
+  #angleBox { width: 44px; }
+  .zoomBtns { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .zoomBtns button { font: inherit; font-weight: 800; font-size: 16px; line-height: 1; width: 32px; height: 28px; padding: 0; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+  .zoomBtns button:hover { border-color: var(--accent); }
+  .zoomBtns b { font-size: 11px; cursor: pointer; }
   #angleBox .angleLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
   #angleBox b { font-size: 12px; }
   #angleSlider { writing-mode: vertical-lr; direction: rtl; flex: 1; width: 22px; min-height: 80px; margin: 0; accent-color: var(--accent); cursor: pointer; } /* w górę = wyższy kąt */
@@ -459,9 +464,14 @@ function saveSharedTeams(teamsObj) {
       </div>
     </div>
     <div id="angleBox" hidden>
+      <div class="zoomBtns" role="group" aria-label="Przybliżenie">
+        <button type="button" id="z3In" title="Przybliż widok 3D (kółko myszy nad podglądem)">+</button>
+        <b id="z3Val" title="Przywróć 100%">100%</b>
+        <button type="button" id="z3Out" title="Oddal widok 3D">−</button>
+      </div>
       <span class="angleLbl">Kąt</span>
-      <input type="range" id="angleSlider" min="4" max="60" step="1" value="17" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
-      <b id="angleVal">17°</b>
+      <input type="range" id="angleSlider" min="4" max="60" step="1" value="20" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
+      <b id="angleVal">20°</b>
     </div>
     </div>
     <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
@@ -633,6 +643,9 @@ function saveSharedTeams(teamsObj) {
     ['Zapisz', 'Save', 'Salva'],
     ['Wpisz tekst i Enter', 'Type the text and press Enter', 'Scrivi il testo e premi Invio'],
     ['Tekst na boisku', 'Text on the court', 'Testo sul campo'],
+    ['Przybliż widok 3D (kółko myszy nad podglądem)', 'Zoom in the 3D view (mouse wheel over the preview)', 'Ingrandisci la vista 3D (rotella sopra l’anteprima)'],
+    ['Oddal widok 3D', 'Zoom out the 3D view', 'Riduci la vista 3D'],
+    ['Przywróć 100%', 'Reset to 100%', 'Ripristina il 100%'],
     ['Kąt', 'Angle', 'Angolo'],
     ['Kąt widoku', 'View angle', 'Angolo di vista'],
     ['Kąt widoku: wyżej = widok bardziej z góry', 'View angle: higher = more from above', 'Angolo di vista: più in alto = più dall’alto'],
@@ -1519,17 +1532,20 @@ function saveSharedTeams(teamsObj) {
   function busy3d(on) { $('busy3d').hidden = !on; }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
-  var angle3d = 17, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) ustawiany suwakiem przy podglądzie
-  function render3dAngle() { // nowy obraz po zmianie kąta (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
+  var angle3d = 20, zoom3d = 1, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
+  function render3dAngle() { // nowy obraz po zmianie kąta / przybliżenia (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
     if (!frame3d || !ready3d) return;
     if (pend3d) { queued3d = true; return; }
     pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
-    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, W: 1200, H: 900 }, '*');
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, W: 1200, H: 900 }, '*');
   }
-  $('angleSlider').addEventListener('input', function () {
-    angle3d = +this.value; $('angleVal').textContent = angle3d + '°';
-    clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60);
-  });
+  function queue3d() { clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60); }
+  $('angleSlider').addEventListener('input', function () { angle3d = +this.value; $('angleVal').textContent = angle3d + '°'; queue3d(); });
+  function setZoom3d(z) { zoom3d = Math.max(0.5, Math.min(3, Math.round(z * 100) / 100)); $('z3Val').textContent = Math.round(zoom3d * 100) + '%'; queue3d(); }
+  $('z3In').addEventListener('click', function () { setZoom3d(zoom3d * 1.2); });
+  $('z3Out').addEventListener('click', function () { setZoom3d(zoom3d / 1.2); });
+  $('z3Val').addEventListener('click', function () { setZoom3d(1); });
+  $('shotStage').addEventListener('wheel', function (e) { if (shotKind !== '3d') return; e.preventDefault(); setZoom3d(zoom3d * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); }, { passive: false });
   var R3D = 0.27; // promień pionka w widoku 3D (m) – mniejszy niż na tablicy, żeby pionki nie były grube
   function payload3d(id) {
     var pos = positionsNow(), list = [];
@@ -1557,7 +1573,7 @@ function saveSharedTeams(teamsObj) {
       items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
-    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zoom: zoom3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
