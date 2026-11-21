@@ -101,7 +101,15 @@
   .tile.soon { filter: grayscale(1) brightness(1.08) contrast(.85); pointer-events: none; cursor: default; box-shadow: none; }
   .tile.soon .go { display: none; }
   .tile.soon .badge { background: #3b4252; color: #fff; }
-  #settingsBtn { position: fixed; top: 16px; right: 16px; z-index: 10; box-shadow: 0 6px 18px -8px rgba(14, 27, 61, .5); }
+  #topRight { position: fixed; top: 16px; right: 16px; z-index: 10; display: flex; align-items: center; gap: 10px; }
+  #settingsBtn { box-shadow: 0 6px 18px -8px rgba(14, 27, 61, .5); }
+  /* przełącznik języka (flagi) – w prawym górnym rogu, jak w tablicy */
+  #langSw { display: inline-flex; gap: 4px; align-items: center; padding: 3px; border-radius: 12px; background: rgba(7, 26, 82, .45); box-shadow: 0 6px 18px -8px rgba(14, 27, 61, .5); }
+  #langSw button { padding: 3px; line-height: 0; border-radius: 8px; opacity: .65; border: 2px solid transparent; background: transparent; box-shadow: none; }
+  #langSw button:hover { opacity: 1; background: rgba(255, 255, 255, .18); box-shadow: none; }
+  #langSw button.on { opacity: 1; border-color: #ffd60a; background: rgba(255, 255, 255, .12); }
+  #langSw svg { width: 28px; height: 19px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  @media (max-width: 820px) { #topRight { top: 10px; right: 10px; gap: 6px; } #langSw svg { width: 24px; height: 16px; } }
   footer { flex: 0 0 auto; color: var(--muted); font-size: 11px; line-height: 1.2; text-align: center; margin: 0; padding: 2px 0 6px; }
 
   /* ---------- Ustawienia ---------- */
@@ -150,11 +158,44 @@ function saveSharedTeams(teamsObj) {
   });
   try { localStorage.setItem(SHARED_TEAMS_KEY, JSON.stringify(out)); } catch (e) {}
 }
+// ---------- Wersje językowe: polski (domyślnie), English, Italiano (wybór wspólny z Tablicą Taktyczną: klucz mpv:lang) ----------
+var LANG_KEY = 'mpv:lang', lang = 'pl';
+try { var lg0 = localStorage.getItem(LANG_KEY); if (lg0 === 'en' || lg0 === 'it') lang = lg0; } catch (e) {}
+var I18N = { en: {}, it: {} };
+[ // [polski, English, Italiano]
+  ['Siatkówka · Taktyka · 3D', 'Volleyball · Tactics · 3D', 'Pallavolo · Tattica · 3D'],
+  ['Wybierz narzędzie', 'Choose a tool', 'Scegli lo strumento'],
+  ['Tablica Taktyczna', 'Tactical Board', 'Lavagna Tattica'],
+  ['Rzut boiska z góry z uproszczonym widokiem pionków — szybkie ustawianie formacji.', 'Top-down court view with simplified pawns — quick formation setup.', 'Vista dall’alto del campo con pedine semplificate — schieramenti rapidi.'],
+  ['Konfigurator 3-stronicowego gameplanu przeciwnika: ustawienie i dystrybucja, atak, zagrywka. Eksport do PDF (A4).', 'Configurator for a 3-page opponent game plan: setup and distribution, attack, serve. PDF export (A4).', 'Configuratore di un game plan avversario di 3 pagine: schieramento e distribuzione, attacco, battuta. Esportazione in PDF (A4).'],
+  ['Pełny model 3D boiska, zawodników i formacji, z dowolnym obrotem kamery.', 'Full 3D model of the court, players and formations, with free camera rotation.', 'Modello 3D completo di campo, giocatori e schieramenti, con rotazione libera della telecamera.'],
+  ['Otwórz →', 'Open →', 'Apri →'],
+  ['⚙️ Ustawienia', '⚙️ Settings', '⚙️ Impostazioni'],
+  ['Ustawienia zespołów', 'Team settings', 'Impostazioni squadre'],
+  ['Zamknij', 'Close', 'Chiudi'],
+  ['Nazwa, logo, kolory i płeć — wspólne dla Tablicy Taktycznej i Modelu 3D.', 'Name, logo, colours and category — shared by the Tactical Board and the 3D Model.', 'Nome, logo, colori e categoria — comuni a Lavagna Tattica e Modello 3D.'],
+  ['Motyw', 'Theme', 'Tema'],
+  ['☀️ Jasny', '☀️ Light', '☀️ Chiaro'],
+  ['🌙 Ciemny', '🌙 Dark', '🌙 Scuro'],
+  ['Przywróć domyślne kolory', 'Restore default colours', 'Ripristina i colori predefiniti'],
+  ['Drużyna', 'Team', 'Squadra'], ['Nazwa', 'Name', 'Nome'], ['Wgraj logo', 'Upload logo', 'Carica logo'], ['Usuń logo', 'Remove logo', 'Rimuovi logo'],
+  ['Płeć', 'Category', 'Categoria'], ['Mężczyźni', 'Men', 'Uomini'], ['Kobiety', 'Women', 'Donne'],
+  ['Koszulka', 'Jersey', 'Maglia'], ['Spodenki', 'Shorts', 'Pantaloncini'], ['Libero', 'Libero', 'Libero'], ['Buty', 'Shoes', 'Scarpe'],
+  ['Wyświetlaj na parkiecie', 'Show on the court', 'Mostra sul campo']
+].forEach(function (r) { I18N.en[r[0]] = r[1]; I18N.it[r[0]] = r[2]; });
+function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
 </script>
 </head>
 <body>
 
-<button id="settingsBtn" class="glass" title="Ustawienia zespołów">⚙️ Ustawienia</button>
+<div id="topRight">
+  <div id="langSw" role="group" aria-label="Language">
+    <button type="button" data-lang="pl" title="Polski" aria-label="Polski"><svg viewBox="0 0 16 10" aria-hidden="true"><rect width="16" height="5" fill="#fff"/><rect y="5" width="16" height="5" fill="#dc143c"/></svg></button>
+    <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
+    <button type="button" data-lang="it" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg></button>
+  </div>
+  <button id="settingsBtn" class="glass" title="Ustawienia zespołów">⚙️ Ustawienia</button>
+</div>
 
 <header class="hero">
   <svg class="scene" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -346,32 +387,32 @@ function saveSharedTeams(teamsObj) {
 
   function save() { saveSharedTeams(teams); }
 
-  var COLOR_FIELDS = [['jersey', 'Koszulka'], ['shorts', 'Spodenki'], ['libero', 'Libero'], ['shoes', 'Buty']];
+  var COLOR_FIELDS = [['jersey', 'Koszulka'], ['shorts', 'Spodenki'], ['libero', 'Libero'], ['shoes', 'Buty']]; // etykiety tłumaczone przez T()
   var esc = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
 
   function teamCardHTML(t, label) {
     var tm = teams[t];
     var colorsHtml = COLOR_FIELDS.map(function (f) {
-      return '<div class="colorItem"><input type="color" data-team="' + t + '" data-key="' + f[0] + '" value="' + esc(tm[f[0]]) + '"><span>' + f[1] + '</span></div>';
+      return '<div class="colorItem"><input type="color" data-team="' + t + '" data-key="' + f[0] + '" value="' + esc(tm[f[0]]) + '"><span>' + T(f[1]) + '</span></div>';
     }).join('');
     return (
       '<div class="teamCard" data-team="' + t + '">' +
-      '<h3>Drużyna ' + label + '</h3>' +
-      '<div class="row"><div style="flex:1;min-width:0"><label>Nazwa</label>' +
-      '<input type="text" class="nameInput" data-team="' + t + '" placeholder="Drużyna ' + label + '" value="' + esc(tm.name) + '"></div></div>' +
+      '<h3>' + T('Drużyna') + ' ' + label + '</h3>' +
+      '<div class="row"><div style="flex:1;min-width:0"><label>' + T('Nazwa') + '</label>' +
+      '<input type="text" class="nameInput" data-team="' + t + '" placeholder="' + T('Drużyna') + ' ' + label + '" value="' + esc(tm.name) + '"></div></div>' +
       '<div class="row">' +
       '<img class="logoPrev" data-team="' + t + '" src="' + esc(tm.logo) + '" style="' + (tm.logo ? '' : 'display:none') + '">' +
       '<input type="file" accept="image/*" class="logoInput" data-team="' + t + '" style="display:none">' +
-      '<button type="button" class="logoBtn" data-team="' + t + '">Wgraj logo</button>' +
-      '<button type="button" class="logoClear" data-team="' + t + '" style="' + (tm.logo ? '' : 'display:none') + '">Usuń logo</button>' +
+      '<button type="button" class="logoBtn" data-team="' + t + '">' + T('Wgraj logo') + '</button>' +
+      '<button type="button" class="logoClear" data-team="' + t + '" style="' + (tm.logo ? '' : 'display:none') + '">' + T('Usuń logo') + '</button>' +
       '</div>' +
-      '<div class="row"><label style="margin:0 8px 0 0">Płeć</label>' +
+      '<div class="row"><label style="margin:0 8px 0 0">' + T('Płeć') + '</label>' +
       '<select class="genderSel" data-team="' + t + '">' +
-      '<option value="m"' + (tm.gender !== 'k' ? ' selected' : '') + '>Mężczyźni</option>' +
-      '<option value="k"' + (tm.gender === 'k' ? ' selected' : '') + '>Kobiety</option>' +
+      '<option value="m"' + (tm.gender !== 'k' ? ' selected' : '') + '>' + T('Mężczyźni') + '</option>' +
+      '<option value="k"' + (tm.gender === 'k' ? ' selected' : '') + '>' + T('Kobiety') + '</option>' +
       '</select></div>' +
       '<div class="row colorRow">' + colorsHtml + '</div>' +
-      '<div class="row"><button type="button" class="floorLogoBtn' + (tm.floorLogo !== false ? ' on' : '') + '" data-team="' + t + '">Wyświetlaj na parkiecie</button></div>' +
+      '<div class="row"><button type="button" class="floorLogoBtn' + (tm.floorLogo !== false ? ' on' : '') + '" data-team="' + t + '">' + T('Wyświetlaj na parkiecie') + '</button></div>' +
       '</div>'
     );
   }
@@ -379,7 +420,7 @@ function saveSharedTeams(teamsObj) {
   function render() {
     document.getElementById('teamsGrid').innerHTML = teamCardHTML('a', 'A') + teamCardHTML('b', 'B');
   }
-  render();
+  render(); window.mpvRenderTeams = render; // przerysowanie kart zespołów po zmianie języka
 
   var grid = document.getElementById('teamsGrid');
 
@@ -437,6 +478,41 @@ function saveSharedTeams(teamsObj) {
   });
 
   if (location.hash === '#settings') document.getElementById('settingsOverlay').hidden = false;
+})();
+</script>
+<script>
+(function () { // tłumaczenie statycznego tekstu i atrybutów strony; oryginał polski jest zapamiętany, więc można wrócić do PL
+  var txt = new WeakMap(), attr = new WeakMap();
+  function applyI18n() {
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+      return /^(SCRIPT|STYLE|TEXTAREA|OPTION)$/i.test(n.parentNode.nodeName) || n.parentNode.closest('svg') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach(function (n) {
+      if (!txt.has(n)) txt.set(n, n.nodeValue);
+      var orig = txt.get(n), key = orig.replace(/\s+/g, ' ').trim(); if (!key) return;
+      var tr = lang === 'pl' ? key : T(key);
+      var want = tr === key ? orig : orig.replace(/^(\s*)[\s\S]*?(\s*)$/, function (m, a, b) { return a + tr + b; });
+      if (n.nodeValue !== want) n.nodeValue = want;
+    });
+    document.body.querySelectorAll('[title],[placeholder],[aria-label]').forEach(function (el) {
+      var m = attr.get(el); if (!m) attr.set(el, m = {});
+      ['title', 'placeholder', 'aria-label'].forEach(function (a) {
+        if (!el.hasAttribute(a)) return;
+        if (!(a in m)) m[a] = el.getAttribute(a);
+        var key = m[a].replace(/\s+/g, ' ').trim(), tr = lang === 'pl' ? key : T(key), want = tr === key ? m[a] : tr;
+        if (el.getAttribute(a) !== want) el.setAttribute(a, want);
+      });
+    });
+  }
+  function setLang(l) {
+    lang = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.classList.toggle('on', b.dataset.lang === l); b.setAttribute('aria-pressed', b.dataset.lang === l ? 'true' : 'false'); });
+    if (window.mpvRenderTeams) window.mpvRenderTeams();
+    applyI18n();
+  }
+  document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  setLang(lang);
 })();
 </script>
 <script>
