@@ -1696,7 +1696,7 @@ function saveSharedTeams(teamsObj) {
     var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900) - (kind === '3d' ? 60 : 0)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
     shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
     cvs.style.width = shotDisp.w + 'px'; cvs.style.height = shotDisp.h + 'px';
-    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px'; $('angleBox').style.height = shotDisp.h + 'px';
+    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px'; $('angleBox').style.height = Math.max(shotDisp.h, 300) + 'px'; // na niskim oknie panel sterowania nie wychodzi poza ramkę
     $('shotKind').textContent = kind.toUpperCase();
     $('shotView').hidden = kind === '3d'; // „Jak na ekranie” ma sens tylko dla planszy 2D
     if (kind === '3d') wholeCrop(); else screenCrop();
