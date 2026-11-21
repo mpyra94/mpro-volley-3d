@@ -1469,7 +1469,9 @@ const isLibero = p => p.slot < 0;
 // Odejście od krzesełka (np. przeciągnięcie na boisko) przywraca postawę stojącą.
 const isOnCourt = q => Math.abs(q.group.position.x) < COURT_L / 2 + 0.8 && Math.abs(q.group.position.z) < COURT_W / 2 + 0.8;
 const spotOf = q => { const tw = tweens.find(t => t.obj === q.group); return tw ? tw.to : q.group.position; };
+let boardMode = false; // tryb „widok z tablicy”: pozycje zawodników ustawia tylko tablica – model niczego nie przesuwa (ławka, tweeny)
 function updateBench() {
+  if (boardMode) return;
   for (const p of players) {
     if (!p.group.visible || drag?.player === p || tweens.some(t => t.obj === p.group)) continue;
     const pos = p.group.position, spots = chairSpots(p.team);
@@ -2628,6 +2630,7 @@ $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam
 // Współrzędne: x wzdłuż boiska (A po stronie x < 0), z w poprzek – dokładnie jak w modelu.
 let boardPrepared = false;
 async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kolejne obrazy przy zmianie kąta tylko przestawiają kamerę)
+  boardMode = true; tweens.length = 0; // od teraz pozycje ustawia wyłącznie tablica (wcześniej rozpoczęte przesunięcia, np. libero na krzesełko, są anulowane)
   ['a', 'b'].forEach(t => { if (d.teams && d.teams[t]) Object.assign(teams[t], d.teams[t]); });
   for (const p of players) { const q = d.players.find(x => x.id === p.id); if (q) { p.num = q.num; p.name = q.name || ''; } }
   applyTeamColors();
@@ -2642,6 +2645,7 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   scene.background = new THREE.Color(LIGHT); scene.fog = new THREE.Fog(LIGHT, 45, 110);
   floor.material = new THREE.MeshBasicMaterial({ color: 0xdde7f5, toneMapped: false }); floor.scale.set(6, 6, 1); court.material.color.set(0xf5a04e); // jasna, nieoświetlana podłoga
   hemi.intensity = 1.15; sun.intensity = 1.0; fill.intensity = 0.5;
+  tweens.length = 0; // jeszcze raz tuż przed ustawieniem pozycji (w trakcie oczekiwania na logo mogły wystartować nowe)
   try { const an = renderer.capabilities.getMaxAnisotropy(); if (netMat.map) { netMat.map.anisotropy = an; netMat.map.needsUpdate = true; } } catch (e) {} // ostrzejsza siatka pod kątem
   for (const p of players) {
     const q = d.players.find(x => x.id === p.id);
