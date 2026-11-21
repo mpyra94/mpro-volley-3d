@@ -1497,36 +1497,41 @@ function updateBench() {
 }
 
 // Piłka
-// Piłka meczowa w stylu niebiesko-żółtej piłki z zakrzywionymi panelami (wzór generowany na sferze)
-function ballTexture() {
-  const W = 1024, H = 512;
-  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-  const img = g.createImageData(W, H), d = img.data;
-  const YEL = [247, 208, 30], BLU = [22, 78, 168], SEAM = [10, 30, 70];
+// Piłka: żółta z trzema szerokimi, zakręconymi niebieskimi pasami schodzącymi się w biegunie + dołki w siatce heksagonalnej
+// - dokładnie ten sam wzór co na tablicy taktycznej (patrz boardBallTexture), żeby piłka wyglądała tak samo w obu widokach
+function drawBallBands(g, W, H) {
+  const img = g.createImageData(W, H), d = img.data, YEL = [246, 207, 22], BLU = [24, 56, 150], SEAM = [40, 44, 80];
   for (let j = 0; j < H; j++) {
     const th = (j + 0.5) / H * Math.PI;
     for (let i = 0; i < W; i++) {
       const ph = (i + 0.5) / W * Math.PI * 2;
-      // kierunek na sferze (jak w SphereGeometry)
       const x = -Math.cos(ph) * Math.sin(th), y = Math.cos(th), z = Math.sin(ph) * Math.sin(th);
-      // skręcone pasy panelowe: kąt wokół osi Y przesuwany wraz z wysokością
-      const swirl = Math.atan2(z, x) + 1.9 * y + 0.35 * Math.sin(3 * y);
-      const t = (swirl / (Math.PI * 2)) * 6 + 0.25 * Math.sin(2.5 * y);
-      const f = t - Math.floor(t);
-      const band = ((Math.floor(t) % 2) + 2) % 2;
-      // poprzeczne szwy (dzielą pasy na panele)
-      const lat = y * 2.2 + 0.35 * Math.sin(Math.atan2(z, x) * 3);
-      const fl = lat - Math.floor(lat);
-      let col = band ? BLU : YEL;
-      if (f < 0.025 || f > 0.975 || Math.abs(fl - 0.5) < 0.012) col = SEAM;
-      const k = (j * W + i) * 4;
+      let s = ((Math.atan2(z, x) + 1.0 * Math.acos(y)) / (Math.PI * 2) * 3) % 1; if (s < 0) s += 1; // trzy pasy wychodzące z bieguna i zakręcające się ku równikowi
+      const e = Math.min(Math.abs(s - 0.0), Math.abs(s - 1), Math.abs(s - 0.42)), seam = e < 0.01; // krawędzie niebieskiego pasa = szwy; niebieski zajmuje 42% sektora (żółtego jest więcej)
+      const col = seam ? SEAM : (s < 0.42 ? BLU : YEL), k = (j * W + i) * 4;
       d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255;
     }
   }
   g.putImageData(img, 0, 0);
+}
+function drawBallDimples(ctx, W, H, style) { // dołki: stały odstęp na kuli (liczba w rzędzie ~ sin szerokości geograficznej)
+  const rows = 120, dy = H / rows;
+  for (let r = 0; r < rows; r++) {
+    const th = (r + 0.5) / rows * Math.PI, n = Math.max(1, Math.floor(W * Math.sin(th) / dy)), off = (r % 2) * 0.5;
+    for (let q = 0; q < n; q++) {
+      const px = ((q + off) / n) * W, py = (r + 0.5) * dy, rad = dy * 0.3, rx = rad / Math.max(0.35, Math.sin(th)) * 0.9;
+      ctx.fillStyle = style; ctx.beginPath(); ctx.ellipse(px, py, rx, rad, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+function ballTexture() {
+  const W = 1024, H = 512;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  drawBallBands(g, W, H);
+  drawBallDimples(g, W, H, 'rgba(10,15,50,.3)');
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
-// Gold: ta sama piłka z fakturą (drobne dołki, wgłębione szwy) i znakiem mPro
+// Gold: ta sama piłka w wyższej rozdzielczości i ze znakiem mPro
 function ballTextureHQ(base) {
   const c = document.createElement('canvas'); c.width = 2048; c.height = 1024; const g = c.getContext('2d');
   g.imageSmoothingQuality = 'high'; g.drawImage(base.image, 0, 0, 2048, 1024);
@@ -1534,26 +1539,16 @@ function ballTextureHQ(base) {
   for (const x of [512, 1536]) { g.save(); g.translate(x, 512); g.scale(0.62, 1); g.lineWidth = 8; g.strokeStyle = 'rgba(10,30,70,.85)'; g.strokeText('mPro', 0, 0); g.fillText('mPro', 0, 0); g.restore(); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
-function ballBump(base) {
+function ballBump() {
   const W = 1024, H = 512, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-  g.fillStyle = '#808080'; g.fillRect(0, 0, W, H);
-  // dołki: gęstość skorygowana o szerokość geograficzną, żeby nie zlewały się przy biegunach
-  g.fillStyle = '#5a5a5a';
-  for (let j = 6; j < H; j += 9) {
-    const k = Math.max(0.15, Math.sin((j / H) * Math.PI)), step = 9 / k, off = (j / 9 % 2) * step / 2;
-    for (let x = off; x < W; x += step) { g.beginPath(); g.ellipse(x, j, 2.2 / k, 2.2, 0, 0, Math.PI * 2); g.fill(); }
-  }
-  // szwy z tekstury koloru (ciemne piksele) jako wgłębienia
-  const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H; const tg = tmp.getContext('2d');
-  tg.drawImage(base.image, 0, 0, W, H); const src = tg.getImageData(0, 0, W, H).data, img = g.getImageData(0, 0, W, H), d = img.data;
-  for (let i = 0; i < W * H; i++) if (src[i * 4] < 40 && src[i * 4 + 1] < 60) { d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = 20; }
-  g.putImageData(img, 0, 0);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  drawBallDimples(g, W, H, '#000');
   return new THREE.CanvasTexture(c);
 }
 const ballTexBase = ballTexture(); let ballTexGold = null, ballBumpGold = null;
 const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 48, 32), new THREE.MeshStandardMaterial({ map: ballTexBase, roughness: .45 }));
 function applyBallLook(hq) {
-  if (hq && !ballTexGold) { ballTexGold = ballTextureHQ(ballTexBase); ballBumpGold = ballBump(ballTexBase); }
+  if (hq && !ballTexGold) { ballTexGold = ballTextureHQ(ballTexBase); ballBumpGold = ballBump(); }
   const m = ball.material; m.map = hq ? ballTexGold : ballTexBase; m.bumpMap = hq ? ballBumpGold : null; m.bumpScale = 0.5; m.roughness = hq ? .55 : .45; m.needsUpdate = true;
 }
 ball.castShadow = true; ball.position.set(-7.5, 3, 4.0); ball.userData.ball = true; scene.add(ball);
@@ -2631,32 +2626,12 @@ $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam
 let boardPrepared = false, boardPlayers = [], boardBall = null;
 const BOARD_BALL_H = 3; // wysokość piłki w widoku z tablicy (m od parkietu)
 let boardBallTex = null;
-function boardBallTexture() { // żółta piłka z trzema szerokimi, zakręconymi niebieskimi pasami schodzącymi się w biegunie (jak na wzorze z tablicy)
+function boardBallTexture() { // ten sam wzór piłki co ballTexture() (drawBallBands/drawBallDimples) + osobna mapa wypukłości
   const W = 1024, H = 512, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-  const img = g.createImageData(W, H), d = img.data, YEL = [246, 207, 22], BLU = [24, 56, 150], SEAM = [40, 44, 80];
-  for (let j = 0; j < H; j++) {
-    const th = (j + 0.5) / H * Math.PI;
-    for (let i = 0; i < W; i++) {
-      const ph = (i + 0.5) / W * Math.PI * 2;
-      const x = -Math.cos(ph) * Math.sin(th), y = Math.cos(th), z = Math.sin(ph) * Math.sin(th);
-      let s = ((Math.atan2(z, x) + 1.0 * Math.acos(y)) / (Math.PI * 2) * 3) % 1; if (s < 0) s += 1; // trzy pasy wychodzące z bieguna i zakręcające się ku równikowi
-      const e = Math.min(Math.abs(s - 0.0), Math.abs(s - 1), Math.abs(s - 0.42)), seam = e < 0.01; // krawędzie niebieskiego pasa = szwy; niebieski zajmuje 42% sektora (żółtego jest więcej, jak na zdjęciu)
-      const col = seam ? SEAM : (s < 0.42 ? BLU : YEL), k = (j * W + i) * 4;
-      d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255;
-    }
-  }
-  g.putImageData(img, 0, 0);
-  // faktura: perforacja – drobne dołki w siatce heksagonalnej (stały odstęp na kuli: liczba dołków w rzędzie ~ sin θ), w kolorze i w mapie wypukłości
+  drawBallBands(g, W, H);
   const bc = document.createElement('canvas'); bc.width = W; bc.height = H; const bg = bc.getContext('2d'); bg.fillStyle = '#fff'; bg.fillRect(0, 0, W, H);
-  const rows = 120, dy = H / rows;
-  for (let r = 0; r < rows; r++) {
-    const th = (r + 0.5) / rows * Math.PI, n = Math.max(1, Math.floor(W * Math.sin(th) / dy)), off = (r % 2) * 0.5;
-    for (let q = 0; q < n; q++) {
-      const px = ((q + off) / n) * W, py = (r + 0.5) * dy, rad = dy * 0.3, rx = rad / Math.max(0.35, Math.sin(th)) * 0.9;
-      g.fillStyle = 'rgba(10,15,50,.3)'; g.beginPath(); g.ellipse(px, py, rx, rad, 0, 0, Math.PI * 2); g.fill();
-      bg.fillStyle = '#000'; bg.beginPath(); bg.ellipse(px, py, rx, rad, 0, 0, Math.PI * 2); bg.fill();
-    }
-  }
+  drawBallDimples(g, W, H, 'rgba(10,15,50,.3)');
+  drawBallDimples(bg, W, H, '#000');
   boardBallBump = new THREE.CanvasTexture(bc);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
