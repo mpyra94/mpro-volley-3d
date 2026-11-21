@@ -77,8 +77,9 @@
   footer { text-align: center; color: var(--muted); font-size: 10px; line-height: 1.2; padding: 2px 0 3px; }
 
   /* ---------- Menu boczne ---------- */
-  /* menu po lewej: karty (Drużyny, Pionki, Rysowanie) rozwijane i zwijane niezależnie – można mieć otwartych kilka naraz; poniżej, osobno i zawsze rozwinięte, Rotacje.
-     Menu nakłada się na planszę, więc nie zabiera jej miejsca ani nie przesuwa boiska; przyciskiem « można je całkiem schować */
+  /* menu po lewej: karty (Piłka, Drużyny, Pionki) rozwijane i zwijane niezależnie – można mieć otwartych kilka naraz.
+     Rotacje i Rysowanie są od tego menu niezależne: to osobne okna po prawej stronie, każde zwija się do pionowej zakładki.
+     Lewe menu nakłada się na planszę, więc nie zabiera jej miejsca ani nie przesuwa boiska; przyciskiem « można je całkiem schować */
   #side { overflow-y: auto; padding: 8px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -10px rgba(7, 26, 82, .5); }
   .mTop { display: flex; gap: 5px; align-items: center; margin-bottom: 8px; }
   .mTop button { height: 30px; padding: 0 9px; font-size: 15px; line-height: 1; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 600; }
@@ -94,35 +95,60 @@
   #side .card > summary::after { margin-left: auto; }
   #side .card[open] { padding-bottom: 10px; }
   #side .card[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
-  body.drawing #side #drawCard > summary { color: var(--accent); }
-  #rotDock { z-index: 11; padding: 8px 10px 10px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -10px rgba(7, 26, 82, .5); }
-  #rotDock .rotTitle { font-size: 12.5px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--text); }
+  #drawCard > summary { display: none; } /* Rysowanie ma teraz własne okno (zakładka po prawej) albo arkusz na telefonie – ta karta tylko przenosi tam swoją zawartość */
+  #drawCard.dimTools #drawTools { opacity: .6; }
   #menuBtn { position: fixed; left: 8px; top: calc(var(--hdrH, 49px) + 8px); z-index: 12; width: 38px; height: 38px; padding: 0; font-size: 18px; color: var(--text);
     background: var(--glass); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px -10px rgba(7, 26, 82, .6); }
   #menuBtn[hidden] { display: none; }
   body.menuOff #side { display: none; }
+  /* Rotacje i Rysowanie: okna niezależne od lewego menu (menuOff ich nie dotyczy), każde zwijane do pionowej zakładki po prawej stronie */
+  .dockBody { padding: 8px 10px 10px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -10px rgba(7, 26, 82, .5); }
+  .dockBody .dockTitle { font-size: 12.5px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--text); margin-bottom: 4px; }
+  .dockTab { display: none; }
   @media (min-width: 821px) {
     .layout { position: relative; }
     #side { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 262px; z-index: 11; } /* lewe menu rozciągnięte na całą wysokość planszy */
-    /* Rotacje: po prawej stronie, pod przyciskami przybliżania, w kolorze górnego paska */
-    #rotDock { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); width: 250px; color: #fff; border-color: rgba(255, 255, 255, .25);
-      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); box-shadow: 0 14px 30px -12px rgba(7, 26, 82, .8); }
-    body.menuOff #rotDock { display: none; }
-    #rotDock .rotTitle { color: #cfe3ff; }
-    #rotDock #rotBar button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); }
-    #rotDock #rotBar button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
-    #rotDock #rotBar button.on { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
-    #rotDock #rotBar .seg { border-color: rgba(255, 255, 255, .45); }
-    #rotDock #rotBar .seg button { border: 0; }
-    #rotDock #rotBar #rotCur { color: #fff; }
-    #rotDock #rotBar { display: block; flex: none; padding: 0; background: transparent; border: 0; }
-    #rotDock #rotBar .rb-main, #rotDock #rotBar .rb-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 7px; padding: 0; }
-    #rotDock #rotBar .rb-sep, #rotDock #rotBar #rbMore { display: none; }
-    #rotDock #rotBar .full { display: inline; } #rotDock #rotBar .short { display: none; }
-    #rotDock #rotBar #resetBtn, #rotDock #rotBar #resetAllBtn { flex: 1 1 100%; }
-    #rotDock #rotBar #resetAllBtn { border-color: rgba(255, 150, 150, .8); }
-    #rotDock #rotBar .rotGrid { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 100%; }
-    #rotDock #rotBar .rotGrid button { flex: 1 1 0; min-width: 34px; padding: 6px 0; }
+    /* kolumna po prawej, pod przyciskami przybliżania: Rotacje i Rysowanie, każde jako zakładka + okno (w kolorze górnego paska) */
+    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); bottom: 20px; z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .dockPanel { display: flex; flex-direction: row-reverse; align-items: flex-start; min-height: 0; }
+    .dockTab { display: inline-flex; align-items: center; justify-content: center; flex: none; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
+      font: inherit; font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 14px 7px; cursor: pointer; color: #fff;
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border: 1px solid rgba(255, 255, 255, .35); border-radius: 10px;
+      box-shadow: 0 10px 24px -10px rgba(7, 26, 82, .8); }
+    .dockTab:hover { border-color: #ffd60a; }
+    .dockPanel.open .dockTab { border-color: #ffd60a; }
+    body.drawing #drawDockPanel .dockTab { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    .dockBody { display: none; width: 250px; max-height: 100%; overflow-y: auto; margin-right: 8px; color: #fff;
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border-color: rgba(255, 255, 255, .25); }
+    .dockPanel.open .dockBody { display: block; }
+    .dockBody .dockTitle { color: #cfe3ff; }
+    .dockBody .card { background: transparent; border: 0; padding: 0; margin: 0; border-radius: 0; }
+    .dockBody button, .dockBody select, .dockBody input { font: inherit; font-size: 13px; border-radius: 8px; padding: 5px 9px; }
+    .dockBody button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); font-weight: 600; cursor: pointer; }
+    .dockBody button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
+    .dockBody button.on { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    .dockBody button:disabled { opacity: .45; cursor: default; }
+    .dockBody select { color: var(--text); background: #fff; border: 1px solid rgba(255, 255, 255, .45); } /* lista rozwijana zostaje jasna – czytelna niezależnie od przeglądarki */
+    .dockBody input[type=color] { width: 100%; height: 32px; padding: 2px; cursor: pointer; border: 1px solid rgba(255, 255, 255, .45); }
+    .dockBody input[type=range] { width: 100px; padding: 0; accent-color: #ffd60a; }
+    .dockBody label { font-size: 12px; color: #cfe3ff; display: block; margin-bottom: 2px; }
+    .dockBody .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+    .dockBody .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+    .dockBody .grid3 button { padding: 6px 4px; font-size: 12.5px; }
+    .dockBody .seg { display: inline-flex; border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; overflow: hidden; }
+    .dockBody .seg button { border: 0; border-radius: 0; }
+    .dockBody .hint { font-size: 12px; color: #cfe3ff; margin-top: 6px; }
+    .dockBody .alpha { display: inline-flex; align-items: center; gap: 5px; }
+    .dockBody .alpha b { min-width: 34px; font-size: 12px; }
+    .dockBody b { color: #fff; }
+    #rotBar { display: block; flex: none; padding: 0; background: transparent; border: 0; }
+    #rotBar .rb-main, #rotBar .rb-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 7px; padding: 0; }
+    #rotBar .rb-sep, #rbMore { display: none; }
+    #rotBar .full { display: inline; } #rotBar .short { display: none; }
+    #rotBar #resetBtn, #rotBar #resetAllBtn { flex: 1 1 100%; }
+    #rotBar #resetAllBtn { border-color: rgba(255, 150, 150, .8); }
+    #rotBar .rotGrid { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 100%; }
+    #rotBar .rotGrid button { flex: 1 1 0; min-width: 34px; padding: 6px 0; }
   }
   #pawnPop { position: fixed; z-index: 60; width: 236px; padding: 10px 12px 12px; background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 40px -12px rgba(7, 26, 82, .6); }
   #pawnPop[hidden] { display: none; }
@@ -174,7 +200,6 @@
   #side .rrow input, #side .rrow select { padding: 3px 6px; }
   #side .rb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 11px;
     color: #fff; border: 2px solid #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--line); }
-  #side.dimTools #drawTools { opacity: .6; }
   /* ---------- Pasek rotacji (dół) ---------- */
   #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px;
     background: var(--glass); border-top: 1px solid var(--line); }
@@ -202,8 +227,13 @@
   #rotBar .short, #rbMore { display: none; }
   @media (max-width: 820px) {
     footer { display: none; }
-    #rotDock { position: static; width: auto; padding: 0; border: 0; border-radius: 0; box-shadow: none; border-top: 1px solid var(--line); }
-    #rotDock .rotTitle { display: none; }
+    #dockColumn { display: contents; } /* bez pudełka: #rotDockPanel i #drawDockPanel są bezpośrednio w <body>, tak jak dawniej #rotDock */
+    #drawDockPanel { display: none; } /* na telefonie Rysowanie dalej otwiera osobny arkusz (przycisk ✏️ w nagłówku), nie to okno */
+    .dockTab { display: none; }
+    .dockPanel { display: block; }
+    #rotDockPanel .dockBody { display: block; position: static; width: auto; margin-right: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none;
+      border-top: 1px solid var(--line); color: inherit; background: none; }
+    #rotDockPanel .dockTitle { display: none; }
     #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
     .rb-main, .rb-extra { display: flex; align-items: center; justify-content: center; gap: 6px; }
     .rb-extra { display: none; margin-top: 8px; }
@@ -279,7 +309,7 @@
     #hdrDraw { display: inline-block; font-size: 15px; padding: 4px 12px; }
     body.drawing #hdrDraw { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
     body.drawing #drawDock { display: block; flex: none; background: var(--glass); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
-    body.drawing #rotDock { display: none; }
+    body.drawing #rotDockPanel { display: none; }
     #drawDock .card { border: 0; background: transparent; padding: 0; margin: 0; border-radius: 0; }
     #drawDock .card > summary, #drawDock .hint, #drawDock .card > .row:first-of-type { display: none; }
     /* narzędzia rysowania na telefonie: wszystko widoczne bez przewijania – narzędzia w siatce 4×2, kolory w jednej linii */
@@ -429,37 +459,6 @@ function saveSharedTeams(teamsObj) {
       <div class="row"><button type="button" id="restoreGone" title="Przywróć pionki usunięte z boiska">Przywróć usunięte pionki <span id="goneN"></span></button></div>
     </details>
 
-    <details class="card" id="drawCard">
-      <summary><span class="ci">✏️</span><span>Rysowanie</span></summary>
-      <div class="row"><button type="button" id="drawBtn" title="Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki">✏️ Rysuj na boisku</button></div>
-      <div id="drawTools">
-        <div class="grid3" id="drTools">
-          <button type="button" data-dtool="select" title="Edytuj kształty – przeciągaj punkty lub cały kształt">↖ Edycja</button>
-          <button type="button" data-dtool="pen" class="on" title="Rysuj odręcznie">✏ Pióro</button>
-          <button type="button" data-dtool="line" title="Linia">╱ Linia</button>
-          <button type="button" data-dtool="arrow" title="Strzałka">➜ Strzałka</button>
-          <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
-          <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
-          <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
-          <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
-        </div>
-        <div class="row">
-          <input type="color" id="drColor" value="#ff3b30" hidden>
-          <div class="swatches" id="drSwatches" title="Kolor"></div>
-          <select id="drWidth" title="Grubość"><option value="3">cienka</option><option value="6" selected>średnia</option><option value="12">gruba</option></select>
-          <select id="drBorder" title="Obramowanie wielokątów"><option value="0" selected>bez obramowania</option><option value="2">obramowanie cienkie</option><option value="5">obramowanie grube</option></select>
-        </div>
-        <div class="row">
-          <button type="button" id="drFill" class="on" title="Wypełnienie półprzezroczyste kształtów">◧ Wypełnienie</button>
-          <label class="alpha" title="Krycie wypełnienia (%)"><input type="range" id="drAlpha" min="10" max="100" step="5" value="40" aria-label="Krycie wypełnienia (%)"><b id="drAlphaV">40%</b></label>
-        </div>
-        <div class="row">
-          <button type="button" id="drDel" title="Usuń zaznaczony rysunek (Delete)">🗑 Usuń</button>
-          <button type="button" id="drClear">Wyczyść rysunki</button>
-        </div>
-        <div class="hint">Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.</div>
-      </div>
-    </details>
   </aside>
 
   <main>
@@ -473,8 +472,11 @@ function saveSharedTeams(teamsObj) {
     <svg id="board" viewBox="-140 -60 680 1020" preserveAspectRatio="xMidYMid meet"></svg>
   </main>
 </div>
-<div id="rotDock">
-  <div class="rotTitle">Rotacje</div>
+<div id="dockColumn">
+  <div class="dockPanel" id="rotDockPanel">
+    <button type="button" class="dockTab" data-dock="rot" aria-expanded="true" title="Zwiń / rozwiń okno Rotacje">Rotacje</button>
+    <div class="dockBody" id="rotDockBody">
+      <div class="dockTitle">Rotacje</div>
       <div id="rotBar">
         <div class="rb-main">
           <span class="seg" id="fTeamSeg"><button type="button" data-fteam="a" class="on"><span class="full">Drużyna A</span><span class="short">A</span></button><button type="button" data-fteam="b"><span class="full">Drużyna B</span><span class="short">B</span></button></span>
@@ -490,7 +492,46 @@ function saveSharedTeams(teamsObj) {
           <button type="button" id="resetAllBtn" title="Zresetuj wszystko: powrót do ekranu jak po uruchomieniu (bez rysunków i zaznaczonych filtrów)">⟲ Zresetuj wszystko</button>
         </div>
       </div>
+    </div>
+  </div>
+  <div class="dockPanel" id="drawDockPanel">
+    <button type="button" class="dockTab" data-dock="draw" aria-expanded="false" title="Zwiń / rozwiń okno Rysowanie">Rysowanie</button>
+    <div class="dockBody" id="drawDockBody">
+      <div class="dockTitle">Rysowanie</div>
+    </div>
+  </div>
 </div>
+<details class="card" id="drawCard">
+  <summary><span class="ci">✏️</span><span>Rysowanie</span></summary>
+  <div class="row"><button type="button" id="drawBtn" title="Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki">✏️ Rysuj na boisku</button></div>
+  <div id="drawTools">
+    <div class="grid3" id="drTools">
+      <button type="button" data-dtool="select" title="Edytuj kształty – przeciągaj punkty lub cały kształt">↖ Edycja</button>
+      <button type="button" data-dtool="pen" class="on" title="Rysuj odręcznie">✏ Pióro</button>
+      <button type="button" data-dtool="line" title="Linia">╱ Linia</button>
+      <button type="button" data-dtool="arrow" title="Strzałka">➜ Strzałka</button>
+      <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
+      <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
+      <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
+      <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
+    </div>
+    <div class="row">
+      <input type="color" id="drColor" value="#ff3b30" hidden>
+      <div class="swatches" id="drSwatches" title="Kolor"></div>
+      <select id="drWidth" title="Grubość"><option value="3">cienka</option><option value="6" selected>średnia</option><option value="12">gruba</option></select>
+      <select id="drBorder" title="Obramowanie wielokątów"><option value="0" selected>bez obramowania</option><option value="2">obramowanie cienkie</option><option value="5">obramowanie grube</option></select>
+    </div>
+    <div class="row">
+      <button type="button" id="drFill" class="on" title="Wypełnienie półprzezroczyste kształtów">◧ Wypełnienie</button>
+      <label class="alpha" title="Krycie wypełnienia (%)"><input type="range" id="drAlpha" min="10" max="100" step="5" value="40" aria-label="Krycie wypełnienia (%)"><b id="drAlphaV">40%</b></label>
+    </div>
+    <div class="row">
+      <button type="button" id="drDel" title="Usuń zaznaczony rysunek (Delete)">🗑 Usuń</button>
+      <button type="button" id="drClear">Wyczyść rysunki</button>
+    </div>
+    <div class="hint">Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.</div>
+  </div>
+</details>
 <button type="button" id="menuBtn" hidden title="Pokaż menu" aria-label="Menu">☰</button>
 <div id="pawnPop" hidden role="dialog" aria-label="Zawodnik">
   <div class="ppHead"><b id="ppTitle">Zawodnik</b><button type="button" id="ppClose" title="Zamknij">✕</button></div>
@@ -675,6 +716,8 @@ function saveSharedTeams(teamsObj) {
     ['Przywróć widok całego boiska', 'Reset the view', 'Ripristina la vista'],
     ['Oddal', 'Zoom out', 'Riduci'],
     ['Rotacje', 'Rotations', 'Rotazioni'],
+    ['Zwiń / rozwiń okno Rotacje', 'Collapse / expand the Rotations window', 'Comprimi / espandi la finestra Rotazioni'],
+    ['Zwiń / rozwiń okno Rysowanie', 'Collapse / expand the Drawing window', 'Comprimi / espandi la finestra Disegno'],
     ['Poprzednia rotacja', 'Previous rotation', 'Rotazione precedente'],
     ['Następna rotacja (zgodnie ze wskazówkami zegara)', 'Next rotation (clockwise)', 'Rotazione successiva (in senso orario)'],
     ['Bazowo', 'Base', 'Base'],
@@ -1462,7 +1505,7 @@ function saveSharedTeams(teamsObj) {
   function setDraw(on) {
     drawOn = on;
     $('drawBtn').classList.toggle('on', on);
-    $('side').classList.toggle('dimTools', !on);
+    $('drawCard').classList.toggle('dimTools', !on);
     svg.classList.toggle('drawing', on);
     document.body.classList.toggle('drawing', on);
     $('drawBtn').textContent = on ? '✓ Zakończ rysowanie' : '✏️ Rysuj na boisku';
@@ -1626,10 +1669,11 @@ function saveSharedTeams(teamsObj) {
     }
   });
 
-  $('side').classList.add('dimTools');
-  // menu boczne: karty (Drużyny, Pionki, Rysowanie) to natywne <details> – każdą rozwija się i zwija osobno, można mieć otwartych kilka naraz
+  $('drawCard').classList.add('dimTools');
+  // menu boczne: karty (Piłka, Drużyny, Pionki) to natywne <details> – każdą rozwija się i zwija osobno, można mieć otwartych kilka naraz
   $('ballBtn').addEventListener('click', function () { pst.ball.on = !pst.ball.on; savePst(); render(); pushHistory(); }); // piłka: pokaż / ukryj
-  // cale menu (karty + Rotacje) można schować przyciskiem «, a przywrócić przyciskiem ☰; na telefonie domyślnie jest schowane
+  // lewe menu (Piłka/Drużyny/Pionki) można schować przyciskiem «, a przywrócić przyciskiem ☰; na telefonie domyślnie jest schowane.
+  // Rotacje i Rysowanie są od tego menu całkiem niezależne – patrz obsługa .dockPanel niżej.
   var MENU_KEY = 'mpv:tablica:menu:v1', menuOff = matchMedia('(max-width: 820px)').matches;
   try { var mk = localStorage.getItem(MENU_KEY); if (mk === 'off') menuOff = true; else if (mk === 'on') menuOff = false; } catch (e) {}
   function setMenuOff(off, keep) {
@@ -1639,6 +1683,23 @@ function saveSharedTeams(teamsObj) {
   }
   $('menuHide').addEventListener('click', function () { setMenuOff(true); });
   $('menuBtn').addEventListener('click', function () { setMenuOff(false); });
+  // Rotacje i Rysowanie: dwa niezależne okna po prawej stronie, każde zwijane do swojej pionowej zakładki (klik otwiera / zamyka to jedno okno)
+  var DOCK_KEY = 'mpv:tablica:dock:';
+  function dockPanelEl(name) { return $(name === 'rot' ? 'rotDockPanel' : 'drawDockPanel'); }
+  function setDockOpen(name, open, keep) {
+    dockPanelEl(name).classList.toggle('open', open);
+    document.querySelectorAll('.dockTab[data-dock="' + name + '"]').forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+    if (!keep) try { localStorage.setItem(DOCK_KEY + name, open ? '1' : '0'); } catch (e) {}
+  }
+  function initDock(name, defOpen) {
+    var open = defOpen;
+    try { var v = localStorage.getItem(DOCK_KEY + name); if (v === '1') open = true; else if (v === '0') open = false; } catch (e) {}
+    setDockOpen(name, open, true);
+  }
+  document.querySelectorAll('.dockTab').forEach(function (b) {
+    b.addEventListener('click', function () { var n = b.dataset.dock; setDockOpen(n, !dockPanelEl(n).classList.contains('open')); });
+  });
+  initDock('rot', true); initDock('draw', false); // Rotacje domyślnie rozwinięte, Rysowanie domyślnie zwinięte (telefon: oba bez znaczenia – patrz CSS)
   // „Zresetuj wszystko”: powrót do ekranu jak po uruchomieniu – bez rysunków i zaznaczonych filtrów (zapisane drużyny, zawodnicy i język zostają)
   $('resetAllBtn').addEventListener('click', function () {
     if (!confirm(T('Zresetować wszystko? Rysunki, filtry, piłka, rozmiar i ustawienie pionków wrócą do stanu z uruchomienia.'))) return;
@@ -2189,17 +2250,21 @@ function saveSharedTeams(teamsObj) {
   $('hdrMore').addEventListener('click', function () { var o = document.querySelector('header').classList.toggle('open'); $('hdrMore').setAttribute('aria-expanded', o); });
   // rysowanie na telefonie: karta narzędzi przenosi się do paska u dołu (zamiast paska rotacji), włącza ją przycisk ✏️ w nagłówku
   var mqPhone = matchMedia('(max-width: 820px)');
-  function placeDrawCard() { if (mqPhone.matches) $('drawDock').appendChild($('drawCard')); else $('side').appendChild($('drawCard')); setRotH(); }
+  function placeDrawCard() { // na telefonie: arkusz #drawDock (przycisk ✏️); na pulpicie: własne okno Rysowanie (zakładka po prawej) – zawsze w pełni rozwinięte, bo zwija się już samo okno
+    if (mqPhone.matches) $('drawDock').appendChild($('drawCard')); else $('drawDockBody').appendChild($('drawCard'));
+    $('drawCard').open = true;
+    setRotH();
+  }
   if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeDrawCard); else mqPhone.addListener(placeDrawCard);
   $('hdrDraw').addEventListener('click', function () { $('drawBtn').click(); if (drawOn) setMenuOff(true, true); setRotH(); });
   // pasek rotacji na telefonie: zwinięty (drużyna, rotacja, ustawienie) / rozwinięty (P1–P6 i reset)
   $('rbMore').addEventListener('click', function () { var o = $('rotBar').classList.toggle('open'); $('rbMore').setAttribute('aria-expanded', o); setRotH(); });
-  function setRotH() { document.documentElement.style.setProperty('--rotH', (mqPhone.matches ? $('rotDock').offsetHeight : 0) + 'px'); } // na telefonie arkusz menu stoi nad paskiem rotacji; na pulpicie Rotacje są w menu
+  function setRotH() { document.documentElement.style.setProperty('--rotH', (mqPhone.matches ? $('rotDockPanel').offsetHeight : 0) + 'px'); } // na telefonie arkusz menu stoi nad paskiem rotacji; na pulpicie Rotacje mają własne okno
   // wysokość nagłówka (rozwinięte menu jest wyższe) – boczny pasek na telefonie zaczyna się pod nim i nie zasłania menu
   function setHdrH() { document.documentElement.style.setProperty('--hdrH', document.querySelector('header').offsetHeight + 'px'); }
   if (window.ResizeObserver) new ResizeObserver(setHdrH).observe(document.querySelector('header')); else addEventListener('resize', setHdrH);
   setHdrH();
-  if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotDock')); else addEventListener('resize', setRotH);
+  if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotDockPanel')); else addEventListener('resize', setRotH);
   setMenuOff(menuOff, true); // stan menu z poprzedniej wizyty (na telefonie domyślnie schowane – otwiera je przycisk ☰)
   setRotH(); placeDrawCard();
   // ---------- Gotowe kolory (zamiast wpisywania hex) ----------
