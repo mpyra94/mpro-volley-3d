@@ -288,6 +288,7 @@
   #busy3d { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 400; padding: 16px 26px; border-radius: 14px; font-weight: 700;
     background: rgba(14, 27, 61, .92); color: #fff; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6); }
   #busy3d[hidden] { display: none; }
+  #busy3d.prog { min-width: 280px; text-align: center; background: linear-gradient(90deg, rgba(255, 214, 10, .38) var(--p, 0%), transparent var(--p, 0%)), rgba(14, 27, 61, .92); } /* pasek postępu w tle */
   #busy3d::before { content: ''; display: inline-block; width: 14px; height: 14px; margin-right: 10px; vertical-align: -2px; border: 3px solid rgba(255, 255, 255, .35); border-top-color: #ffd60a; border-radius: 50%; animation: spin3d .8s linear infinite; }
   @keyframes spin3d { to { transform: rotate(360deg); } }
   .shotBox { background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: 96vw; max-height: 96vh; overflow: auto;
@@ -1557,7 +1558,12 @@ function saveSharedTeams(teamsObj) {
   var WATERMARK = 'mPro Volley 3D', shotCv = null, shotKind = 'png', crop = { x: 0, y: 0, w: 0, h: 0 }, shotDisp = { w: 0, h: 0, k: 1 };
   // ---- Widok 3D zza drużyny A: model3d.html w ukrytej ramce renderuje scenę (siatka, zawodnicy) z pozycji pionków i odsyła obraz ----
   var frame3d = null, ready3d = false, pend3d = null, rid3d = 0, timer3d = 0;
-  function busy3d(on, txt) { if (on) $('busy3d').textContent = txt || T('Generowanie widoku 3D…'); $('busy3d').hidden = !on; }
+  function busy3d(on, txt, pct) { // pct (0–100): pasek postępu w tle okienka
+    var b = $('busy3d');
+    if (on) b.textContent = txt || T('Generowanie widoku 3D…');
+    b.classList.toggle('prog', on && pct != null); if (pct != null) b.style.setProperty('--p', Math.max(0, Math.min(100, pct)) + '%');
+    b.hidden = !on;
+  }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; anim3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
   var angle3d = 30, zoom3d = 1, pan3d = 3, // domyślnie kamera jest już przesunięta 3 m do przodu (jak po kilku kliknięciach ▲): siatka wyżej, nasza połowa większa
@@ -1643,7 +1649,8 @@ function saveSharedTeams(teamsObj) {
   function animSeq(n) { var s = [], i; for (i = 0; i < n; i++) s.push(i); for (i = n - 2; i > 0; i--) s.push(i); return s; } // kolejność odtwarzania: w dół i z powrotem w górę
   function nextAnimFrame3d() {
     var a = anim3d; if (!a || !frame3d) return;
-    busy3d(true, T('Generowanie animacji…') + ' ' + (a.i + 1) + '/' + (a.n + 1));
+    var pct = Math.round(100 * a.i / (a.n + 1));
+    busy3d(true, T('Generowanie animacji…') + ' ' + pct + '%', pct);
     pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
     frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: animAngle(a.i, a.n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, ss: 2, fmt: 'jpeg' }, '*');
   }
@@ -1690,7 +1697,8 @@ function saveSharedTeams(teamsObj) {
     var i = 0, t0 = 0; // tempo wg zegara – stała liczba klatek na sekundę
     (function draw() {
       if (i >= p.seq.length) { setTimeout(function () { rec.stop(); }, 1000 / ANIM.fps); return; }
-      var im = p.imgs[p.seq[i]];
+      var im = p.imgs[p.seq[i]], pct = Math.round(100 * i / p.seq.length);
+      busy3d(true, T('Zapisywanie animacji…') + ' ' + pct + '%', pct);
       im.decode().then(function () {
         if (!t0) t0 = performance.now();
         drawAnimFrame(g, im); if (track.requestFrame) track.requestFrame();
