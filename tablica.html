@@ -109,26 +109,29 @@
     .layout { position: relative; }
     #side { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 262px; z-index: 11; } /* lewe menu rozciągnięte na całą wysokość planszy */
     /* kolumna po prawej, pod przyciskami przybliżania: Rotacje i Rysowanie, każde jako zakładka + okno (w kolorze górnego paska) */
-    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); bottom: 20px; z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
     .dockPanel { display: flex; flex-direction: row-reverse; align-items: flex-start; min-height: 0; }
     .dockTab { display: inline-flex; align-items: center; justify-content: center; flex: none; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
       font: inherit; font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 14px 7px; cursor: pointer; color: #fff;
       background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border: 1px solid rgba(255, 255, 255, .35); border-radius: 10px;
       box-shadow: 0 10px 24px -10px rgba(7, 26, 82, .8); }
     .dockTab:hover { border-color: #ffd60a; }
-    .dockPanel.open .dockTab { border-color: #ffd60a; }
     body.drawing #drawDockPanel .dockTab { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
-    .dockBody { display: none; width: 250px; max-height: 100%; overflow-y: auto; margin-right: 8px; color: #fff;
+    .dockPanel.open .dockTab { display: none; } /* otwarte okno samo jest swoim przyciskiem - zwija je ✕ przy tytule, zakładka nie dubluje się obok */
+    .dockBody { display: none; width: 250px; margin-right: 8px; color: #fff;
       background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border-color: rgba(255, 255, 255, .25); }
     .dockPanel.open .dockBody { display: block; }
-    .dockBody .dockTitle { color: #cfe3ff; }
+    .dockBody .dockTitle { color: #cfe3ff; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .dockBody .dockClose { font: inherit; font-size: 13px; line-height: 1; color: #cfe3ff; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 7px; width: 22px; height: 22px; padding: 0; cursor: pointer; }
+    .dockBody .dockClose:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; color: #fff; }
     .dockBody .card { background: transparent; border: 0; padding: 0; margin: 0; border-radius: 0; }
     .dockBody button, .dockBody select, .dockBody input { font: inherit; font-size: 13px; border-radius: 8px; padding: 5px 9px; }
     .dockBody button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); font-weight: 600; cursor: pointer; }
     .dockBody button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
     .dockBody button.on { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
     .dockBody button:disabled { opacity: .45; cursor: default; }
-    .dockBody select { color: var(--text); background: #fff; border: 1px solid rgba(255, 255, 255, .45); } /* lista rozwijana zostaje jasna – czytelna niezależnie od przeglądarki */
+    .dockBody select { color: #0e1b3d; background: #fff; border: 1px solid rgba(255, 255, 255, .45); } /* lista rozwijana ma stały jasny motyw (nie var(--text) – w ciemnym motywie byłby prawie biały na białym tle) */
     .dockBody input[type=color] { width: 100%; height: 32px; padding: 2px; cursor: pointer; border: 1px solid rgba(255, 255, 255, .45); }
     .dockBody input[type=range] { width: 100px; padding: 0; accent-color: #ffd60a; }
     .dockBody label { font-size: 12px; color: #cfe3ff; display: block; margin-bottom: 2px; }
@@ -332,7 +335,7 @@
   #shStat { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: 270px; padding: 7px 11px; border-radius: 10px; font-size: 12px; line-height: 1.45;
     background: var(--glass); color: var(--text); border: 1px solid var(--line); box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); pointer-events: none; }
   #shStat[hidden] { display: none; }
-  #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 4px;
+  #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: row; gap: 4px; padding: 4px;
     background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); }
   #zoomCtl button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px;
     min-width: 44px; padding: 7px 8px; font-size: 15px; cursor: pointer; }
@@ -474,9 +477,9 @@ function saveSharedTeams(teamsObj) {
 </div>
 <div id="dockColumn">
   <div class="dockPanel" id="rotDockPanel">
-    <button type="button" class="dockTab" data-dock="rot" aria-expanded="true" title="Zwiń / rozwiń okno Rotacje">Rotacje</button>
+    <button type="button" class="dockTab" data-dock="rot" aria-expanded="true" title="Rozwiń okno Rotacje">Rotacje</button>
     <div class="dockBody" id="rotDockBody">
-      <div class="dockTitle">Rotacje</div>
+      <div class="dockTitle"><span>Rotacje</span><button type="button" class="dockClose" data-dock="rot" title="Zwiń okno Rotacje">✕</button></div>
       <div id="rotBar">
         <div class="rb-main">
           <span class="seg" id="fTeamSeg"><button type="button" data-fteam="a" class="on"><span class="full">Drużyna A</span><span class="short">A</span></button><button type="button" data-fteam="b"><span class="full">Drużyna B</span><span class="short">B</span></button></span>
@@ -495,9 +498,9 @@ function saveSharedTeams(teamsObj) {
     </div>
   </div>
   <div class="dockPanel" id="drawDockPanel">
-    <button type="button" class="dockTab" data-dock="draw" aria-expanded="false" title="Zwiń / rozwiń okno Rysowanie">Rysowanie</button>
+    <button type="button" class="dockTab" data-dock="draw" aria-expanded="false" title="Rozwiń okno Rysowanie">Rysowanie</button>
     <div class="dockBody" id="drawDockBody">
-      <div class="dockTitle">Rysowanie</div>
+      <div class="dockTitle"><span>Rysowanie</span><button type="button" class="dockClose" data-dock="draw" title="Zwiń okno Rysowanie">✕</button></div>
     </div>
   </div>
 </div>
@@ -716,8 +719,10 @@ function saveSharedTeams(teamsObj) {
     ['Przywróć widok całego boiska', 'Reset the view', 'Ripristina la vista'],
     ['Oddal', 'Zoom out', 'Riduci'],
     ['Rotacje', 'Rotations', 'Rotazioni'],
-    ['Zwiń / rozwiń okno Rotacje', 'Collapse / expand the Rotations window', 'Comprimi / espandi la finestra Rotazioni'],
-    ['Zwiń / rozwiń okno Rysowanie', 'Collapse / expand the Drawing window', 'Comprimi / espandi la finestra Disegno'],
+    ['Rozwiń okno Rotacje', 'Expand the Rotations window', 'Espandi la finestra Rotazioni'],
+    ['Rozwiń okno Rysowanie', 'Expand the Drawing window', 'Espandi la finestra Disegno'],
+    ['Zwiń okno Rotacje', 'Collapse the Rotations window', 'Comprimi la finestra Rotazioni'],
+    ['Zwiń okno Rysowanie', 'Collapse the Drawing window', 'Comprimi la finestra Disegno'],
     ['Poprzednia rotacja', 'Previous rotation', 'Rotazione precedente'],
     ['Następna rotacja (zgodnie ze wskazówkami zegara)', 'Next rotation (clockwise)', 'Rotazione successiva (in senso orario)'],
     ['Bazowo', 'Base', 'Base'],
@@ -871,7 +876,7 @@ function saveSharedTeams(teamsObj) {
     var mine = shapesOf(x, y, pill, s);
     for (var i = 0; i < others.length; i++) {
       var o = shapesOf(others[i].x, others[i].y, others[i].pill, others[i].s);
-      for (var a = 0; a < mine.length; a++) for (var b = 0; b < o.length; b++) if (shapeHit(mine[a], o[b], 2)) return true;
+      for (var a = 0; a < mine.length; a++) for (var b = 0; b < o.length; b++) if (shapeHit(mine[a], o[b], 0)) return true; // 0 = pionki mogą dojść do siebie na styk (bez marginesu)
     }
     return false;
   }
@@ -1239,10 +1244,15 @@ function saveSharedTeams(teamsObj) {
       g.addEventListener('pointerdown', function (e) {
         e.preventDefault(); e.stopPropagation();
         var loc = toLocal(e);
-        // strefy chwytania sąsiednich pionków nachodzą na siebie: chwytamy ten pionek, którego środek jest najbliżej kursora
-        var near = g, bd = 1e9;
-        pawns.forEach(function (o) { var d = Math.hypot(o.__pos[0] - loc[0], o.__pos[1] - loc[1]) / (o.__s || 1); if (d < bd) { bd = d; near = o; } });
-        if (near !== g && bd <= 18 + 8) { near.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, button: e.button, buttons: e.buttons })); return; }
+        // Strefy chwytania sąsiednich pionków nachodzą na siebie (dla łatwiejszego łapania) – ale gdy kliknięcie trafia we właściwy,
+        // widoczny okrąg TEGO pionka, zawsze łapiemy jego, bez przekierowania. Dzięki temu stykające się pionki da się złapać
+        // i dosunąć do siebie dokładnie – przekierowanie do sąsiada działa tylko poza widocznym kółkiem (w samej strefie chwytania).
+        var dOwn = Math.hypot(g.__pos[0] - loc[0], g.__pos[1] - loc[1]) / (g.__s || 1);
+        if (dOwn > 18) {
+          var near = g, bd = dOwn;
+          pawns.forEach(function (o) { if (o === g) return; var d = Math.hypot(o.__pos[0] - loc[0], o.__pos[1] - loc[1]) / (o.__s || 1); if (d < bd) { bd = d; near = o; } });
+          if (near !== g && bd <= 18 + 8) { near.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, button: e.button, buttons: e.buttons })); return; }
+        }
         drag = { g: g, dx: g.__pos[0] - loc[0], dy: g.__pos[1] - loc[1], sx: e.clientX, sy: e.clientY, moved: false, off: g.__pos[0] < COURT_MIN_X }; // off: pionek zaczął poza boiskiem (na ławce)
         g.classList.add('dragging');
         g.setPointerCapture && g.setPointerCapture(e.pointerId);
@@ -1698,6 +1708,9 @@ function saveSharedTeams(teamsObj) {
   }
   document.querySelectorAll('.dockTab').forEach(function (b) {
     b.addEventListener('click', function () { var n = b.dataset.dock; setDockOpen(n, !dockPanelEl(n).classList.contains('open')); });
+  });
+  document.querySelectorAll('.dockClose').forEach(function (b) {
+    b.addEventListener('click', function () { setDockOpen(b.dataset.dock, false); });
   });
   initDock('rot', true); initDock('draw', false); // Rotacje domyślnie rozwinięte, Rysowanie domyślnie zwinięte (telefon: oba bez znaczenia – patrz CSS)
   // „Zresetuj wszystko”: powrót do ekranu jak po uruchomieniu – bez rysunków i zaznaczonych filtrów (zapisane drużyny, zawodnicy i język zostają)
