@@ -109,7 +109,8 @@
     .layout { position: relative; }
     #side { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 262px; z-index: 11; } /* lewe menu rozciągnięte na całą wysokość planszy */
     /* kolumna po prawej, pod przyciskami przybliżania: Rotacje i Rysowanie, każde jako zakładka + okno (w kolorze górnego paska) */
-    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    /* zoomCtl jest teraz poziomy i niski (ok. 44px), więc kolumna może zaczynać się dużo wyżej niż poprzednio – więcej miejsca na treść bez przewijania */
+    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 62px); bottom: 12px; z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
     .dockPanel { display: flex; flex-direction: row-reverse; align-items: flex-start; min-height: 0; }
     .dockTab { display: inline-flex; align-items: center; justify-content: center; flex: none; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
       font: inherit; font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 14px 7px; cursor: pointer; color: #fff;
@@ -118,8 +119,8 @@
     .dockTab:hover { border-color: #ffd60a; }
     body.drawing #drawDockPanel .dockTab { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
     .dockPanel.open .dockTab { display: none; } /* otwarte okno samo jest swoim przyciskiem - zwija je ✕ przy tytule, zakładka nie dubluje się obok */
-    .dockBody { display: none; width: 250px; margin-right: 8px; color: #fff;
-      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border-color: rgba(255, 255, 255, .25); }
+    .dockBody { display: none; width: 250px; margin-right: 8px; color: #fff; min-height: 0; max-height: 100%; overflow-y: auto;
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border-color: rgba(255, 255, 255, .25); } /* rośnie do wysokości treści; przewijanie to już tylko awaryjne zabezpieczenie na bardzo niskim oknie */
     .dockPanel.open .dockBody { display: block; }
     .dockBody .dockTitle { color: #cfe3ff; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .dockBody .dockClose { font: inherit; font-size: 13px; line-height: 1; color: #cfe3ff; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35);
@@ -204,8 +205,7 @@
   #side .rb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 11px;
     color: #fff; border: 2px solid #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--line); }
   /* ---------- Pasek rotacji (dół) ---------- */
-  #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px;
-    background: var(--glass); border-top: 1px solid var(--line); }
+  #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px; }
   #rotBar .rb-title { font-size: 13px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   #rotBar .rb-sep { width: 1px; height: 26px; background: var(--line); }
   #rotBar button { font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--field);
@@ -237,7 +237,7 @@
     #rotDockPanel .dockBody { display: block; position: static; width: auto; margin-right: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none;
       border-top: 1px solid var(--line); color: inherit; background: none; }
     #rotDockPanel .dockTitle { display: none; }
-    #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+    #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: var(--glass); border-top: 1px solid var(--line); }
     .rb-main, .rb-extra { display: flex; align-items: center; justify-content: center; gap: 6px; }
     .rb-extra { display: none; margin-top: 8px; }
     #rotBar.open .rb-extra { display: flex; flex-wrap: wrap; }
@@ -1700,6 +1700,8 @@ function saveSharedTeams(teamsObj) {
     dockPanelEl(name).classList.toggle('open', open);
     document.querySelectorAll('.dockTab[data-dock="' + name + '"]').forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
     if (!keep) try { localStorage.setItem(DOCK_KEY + name, open ? '1' : '0'); } catch (e) {}
+    // tylko jedno z okien (Rotacje / Rysowanie) na raz – razem byłoby za ciasno na typowym ekranie (Rysowanie musiałoby się przewijać)
+    if (open) { var other = name === 'rot' ? 'draw' : 'rot'; if (dockPanelEl(other).classList.contains('open')) setDockOpen(other, false, keep); }
   }
   function initDock(name, defOpen) {
     var open = defOpen;
@@ -1712,7 +1714,7 @@ function saveSharedTeams(teamsObj) {
   document.querySelectorAll('.dockClose').forEach(function (b) {
     b.addEventListener('click', function () { setDockOpen(b.dataset.dock, false); });
   });
-  initDock('rot', true); initDock('draw', false); // Rotacje domyślnie rozwinięte, Rysowanie domyślnie zwinięte (telefon: oba bez znaczenia – patrz CSS)
+  initDock('draw', false); initDock('rot', true); // Rotacje domyślnie rozwinięte, Rysowanie domyślnie zwinięte (telefon: oba bez znaczenia – patrz CSS); draw jako pierwsze, żeby init('rot', true) nie zamknęło go przez wzajemne wykluczanie
   // „Zresetuj wszystko”: powrót do ekranu jak po uruchomieniu – bez rysunków i zaznaczonych filtrów (zapisane drużyny, zawodnicy i język zostają)
   $('resetAllBtn').addEventListener('click', function () {
     if (!confirm(T('Zresetować wszystko? Rysunki, filtry, piłka, rozmiar i ustawienie pionków wrócą do stanu z uruchomienia.'))) return;
