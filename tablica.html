@@ -1718,7 +1718,7 @@ function saveSharedTeams(teamsObj) {
     pend3d = ++rid3d; busy3d(true);
     timer3d = setTimeout(fail3d, 60000);
     if (!frame3d) {
-      frame3d = document.createElement('iframe'); frame3d.src = 'model3d.html'; frame3d.setAttribute('aria-hidden', 'true'); frame3d.tabIndex = -1;
+      frame3d = document.createElement('iframe'); frame3d.src = 'model3d.html?v=' + Date.now(); // za każdym razem świeża kopia (bez starej wersji z pamięci podręcznej przeglądarki) frame3d.setAttribute('aria-hidden', 'true'); frame3d.tabIndex = -1;
       frame3d.style.cssText = 'position:fixed;left:-10000px;top:0;width:1280px;height:720px;border:0;visibility:hidden;pointer-events:none';
       document.body.appendChild(frame3d);
     } else if (ready3d) frame3d.contentWindow.postMessage(payload3d(pend3d), '*');

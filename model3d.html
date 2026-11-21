@@ -2628,7 +2628,26 @@ $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam
 // ---------- Widok 3D na żądanie z Tablicy Taktycznej ----------
 // Tablica ładuje tę stronę w ukrytej ramce, przesyła pozycje pionków i odbiera obraz „zza drużyny A” (kamera jak w „Z tyłu drużyny”).
 // Współrzędne: x wzdłuż boiska (A po stronie x < 0), z w poprzek – dokładnie jak w modelu.
-let boardPrepared = false;
+let boardPrepared = false, boardPlayers = [];
+// Ustawia zawodników dokładnie tak, jak przysłała tablica. Wywoływane przed KAŻDYM obrazem – nawet gdyby model sam coś przesunął
+// (np. libero na krzesełko), pozycje z tablicy zawsze wygrywają.
+function placeBoardPlayers() {
+  tweens.length = 0;
+  for (const p of players) {
+    const q = boardPlayers.find(x => x.id === p.id);
+    const off = q && q.z < -(COURT_W / 2 + 1.2); // zawodnik na ławce (po lewej stronie, z < 0) nie jest na wykresie; pionki za linią końcową (do 2 m) i z boku są rysowane
+    if (!q || q.hidden || off) { p.group.visible = false; continue; }
+    p.group.visible = true;
+    p.group.position.set(q.x, 0, q.z);
+    p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
+    setFacing(p, 0); applyPose(p);
+    p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
+    // pionek skalowany równomiernie (proporcje jak w modelu); pionki stykające się na tablicy tablica zbliża do siebie tak, by stykały się też tutaj
+    const k = (q.r || 0.27) / 0.24;
+    p.pawn.scale.set(k, k, k); p.disc.scale.set(k, k, 1);
+    if (p.pawn.children[3]) p.pawn.children[3].visible = false; // bez główki – sam walec z numerem i kopułami
+  }
+}
 async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kolejne obrazy przy zmianie kąta tylko przestawiają kamerę)
   boardMode = true; tweens.length = 0; // od teraz pozycje ustawia wyłącznie tablica (wcześniej rozpoczęte przesunięcia, np. libero na krzesełko, są anulowane)
   ['a', 'b'].forEach(t => { if (d.teams && d.teams[t]) Object.assign(teams[t], d.teams[t]); });
@@ -2647,20 +2666,7 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   hemi.intensity = 1.15; sun.intensity = 1.0; fill.intensity = 0.5;
   tweens.length = 0; // jeszcze raz tuż przed ustawieniem pozycji (w trakcie oczekiwania na logo mogły wystartować nowe)
   try { const an = renderer.capabilities.getMaxAnisotropy(); if (netMat.map) { netMat.map.anisotropy = an; netMat.map.needsUpdate = true; } } catch (e) {} // ostrzejsza siatka pod kątem
-  for (const p of players) {
-    const q = d.players.find(x => x.id === p.id);
-    const off = q && q.z < -(COURT_W / 2 + 1.2); // zawodnik na ławce (po lewej stronie, z < 0) nie jest na wykresie; pionki za linią końcową (do 2 m) i z boku są rysowane
-    if (!q || q.hidden || off) { p.group.visible = false; continue; }
-    p.group.visible = true;
-    p.group.position.set(q.x, 0, q.z);
-    p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
-    setFacing(p, 0); applyPose(p);
-    p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
-    // pionek skalowany równomiernie (proporcje jak w modelu); pionki stykające się na tablicy tablica zbliża do siebie tak, by stykały się też tutaj
-    const k = (q.r || 0.27) / 0.24;
-    p.pawn.scale.set(k, k, k); p.disc.scale.set(k, k, 1);
-    if (p.pawn.children[3]) p.pawn.children[3].visible = false; // bez główki – sam walec z numerem i kopułami
-  }
+  boardPlayers = d.players; placeBoardPlayers();
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
   if (bl) { ball.position.set(bl.x, BALL_R, bl.z); syncBallHelpers(); }
@@ -2670,6 +2676,7 @@ let outCv = null, boardSize = '', origSize = null, origRatio = 1; // jeden płó
 async function renderFromBoard(d) {
   const W = d.W || 1200, H = d.H || 900;
   if (!d.angleOnly || !boardPrepared) { await prepareBoard(d); boardPrepared = true; gizmo.visible = annotHandles.visible = annotPreview.visible = false; }
+  else placeBoardPlayers(); // kolejne obrazy (zmiana kąta, klatki animacji): pozycje z tablicy ustawiane na nowo przed każdym renderem
   const SS = Math.max(1, Math.min(2, d.ss || 1)); // supersampling: render w większej rozdzielczości, potem zmniejszenie – gładkie krawędzie, linie i siatka
   if (!origSize) { origSize = renderer.getSize(new THREE.Vector2()); origRatio = renderer.getPixelRatio(); } // rozmiar sprzed serii klatek
   const sz = (W * SS) + 'x' + (H * SS);
