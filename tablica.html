@@ -280,6 +280,11 @@
   #zoomCtl #zoomReset { font-size: 12px; }
   #shotModal { position: fixed; inset: 0; z-index: 300; background: rgba(14, 27, 61, .72); display: flex; align-items: center; justify-content: center; padding: 12px; }
   #shotModal[hidden] { display: none; }
+  #animModal { position: fixed; inset: 0; z-index: 350; background: rgba(14, 27, 61, .78); display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #animModal[hidden] { display: none; }
+  .animBox { background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: 96vw; max-height: 96vh;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .6); }
+  #animCanvas { display: block; border-radius: 6px; background: #dde7f5; aspect-ratio: 4 / 3; height: auto; width: min(900px, 90vw, calc((96vh - 150px) * 4 / 3)); }
   #busy3d { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 400; padding: 16px 26px; border-radius: 14px; font-weight: 700;
     background: rgba(14, 27, 61, .92); color: #fff; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6); }
   #busy3d[hidden] { display: none; }
@@ -482,6 +487,13 @@ function saveSharedTeams(teamsObj) {
     <div class="shotBtns"><button type="button" id="shotAnim" hidden title="Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)">🎞 Stwórz animację</button><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
   </div>
 </div>
+<div id="animModal" hidden>
+  <div class="animBox">
+    <div class="shotHead"><b>Animacja 3D</b><button type="button" id="animX" title="Zamknij">✕</button></div>
+    <canvas id="animCanvas" width="1200" height="900"></canvas>
+    <div class="shotBtns"><button type="button" id="animPlay">⏸ Pauza</button><button type="button" id="animSave" class="primary" title="Zapisz animację jako plik wideo (nagranie trwa tyle, co animacja)">💾 Zapisz animację…</button><button type="button" id="animClose">Zamknij</button></div>
+  </div>
+</div>
 <div id="busy3d" hidden role="status">Generowanie widoku 3D…</div>
 <div id="drawDock"></div>
 <input id="drText" type="text" hidden placeholder="Wpisz tekst i Enter" aria-label="Tekst na boisku">
@@ -649,6 +661,11 @@ function saveSharedTeams(teamsObj) {
     ['Tekst na boisku', 'Text on the court', 'Testo sul campo'],
     ['Przesuń kamerę do przodu (w stronę siatki)', 'Move the camera forward (towards the net)', 'Sposta la telecamera in avanti (verso la rete)'],
     ['Przesuń kamerę do tyłu', 'Move the camera back', 'Sposta la telecamera indietro'],
+    ['Animacja 3D', '3D animation', 'Animazione 3D'],
+    ['⏸ Pauza', '⏸ Pause', '⏸ Pausa'],
+    ['▶ Odtwórz', '▶ Play', '▶ Riproduci'],
+    ['💾 Zapisz animację…', '💾 Save the animation…', '💾 Salva l’animazione…'],
+    ['Zapisz animację jako plik wideo (nagranie trwa tyle, co animacja)', 'Save the animation as a video file (recording takes as long as the animation)', 'Salva l’animazione come file video (la registrazione dura quanto l’animazione)'],
     ['🎞 Stwórz animację', '🎞 Create animation', '🎞 Crea animazione'],
     ['Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)', 'Animation: the camera goes from the top view down to 10° and back (video file)', 'Animazione: la telecamera passa dalla vista dall’alto a 10° e torna indietro (file video)'],
     ['Generowanie animacji…', 'Generating the animation…', 'Generazione dell’animazione…'],
@@ -1548,7 +1565,7 @@ function saveSharedTeams(teamsObj) {
     if (!frame3d || !ready3d || anim3d) return;
     if (pend3d) { queued3d = true; return; }
     pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
-    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, pan: pan3d, W: 1200, H: 900 }, '*');
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, pan: pan3d, W: 1200, H: 900, ss: 2 }, '*');
   }
   function queue3d() { clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60); }
   $('angleSlider').addEventListener('input', function () { angle3d = +this.value; $('angleVal').textContent = angle3d + '°'; queue3d(); });
@@ -1593,7 +1610,7 @@ function saveSharedTeams(teamsObj) {
       items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
-    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
@@ -1618,47 +1635,70 @@ function saveSharedTeams(teamsObj) {
       img.onerror = fail3d; img.src = d.dataUrl;
     }
   });
-  // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem; klatki z ukrytej ramki są nagrywane do pliku wideo ----
-  var anim3d = null, ANIM = { W: 960, H: 720, fps: 30, sec: 9 }; // 270 klatek: wolniej (9 s) i płynniej (30 kl./s)
-  function animAngle(i, n) { var s = (1 - Math.cos(2 * Math.PI * i / n)) / 2; return 90 - 80 * s; } // 90° → 10° → 90°, płynnie (zwalnia na końcach)
+  // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem. Renderujemy tylko drogę w dół (z powrotem klatki
+  // odtwarzamy wstecz), więc klatek jest o połowę mniej. Animacja gra w oknie podglądu; zapis do pliku wideo jest opcjonalny. ----
+  var anim3d = null, animPlay = null, ANIM = { W: 1200, H: 900, fps: 24, steps: 72 }; // 73 klatki w jedną stronę → 6 s w pętli (w dół i w górę)
+  function animAngle(i, n) { return 90 - 80 * (1 - Math.cos(Math.PI * i / n)) / 2; } // 90° → 10° z łagodnym startem i końcem
+  function animSeq(n) { var s = [], i; for (i = 0; i < n; i++) s.push(i); for (i = n - 2; i > 0; i--) s.push(i); return s; } // kolejność odtwarzania: w dół i z powrotem w górę
   function nextAnimFrame3d() {
     var a = anim3d; if (!a || !frame3d) return;
-    busy3d(true, T('Generowanie animacji…') + ' ' + a.i + '/' + a.n);
+    busy3d(true, T('Generowanie animacji…') + ' ' + (a.i + 1) + '/' + (a.n + 1));
     pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
-    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: animAngle(a.i, a.n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, fmt: 'jpeg' }, '*');
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: animAngle(a.i, a.n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, ss: 2, fmt: 'jpeg' }, '*');
   }
   function startAnim3d() {
     if (anim3d || pend3d || !frame3d || !ready3d) return;
+    anim3d = { n: ANIM.steps, i: 0, frames: [] }; nextAnimFrame3d();
+  }
+  function finishAnim3d() { // wszystkie klatki gotowe: otwieramy okno z odtwarzaniem
+    var frames = anim3d.frames; anim3d = null; busy3d(false);
+    animPlay = { imgs: frames.map(function (u) { var im = new Image(); im.src = u; return im; }), seq: animSeq(frames.length), pos: 0, prev: 0, last: -1, playing: true, raf: 0, saving: false };
+    var cv = $('animCanvas'); cv.width = ANIM.W; cv.height = ANIM.H;
+    $('animPlay').textContent = T('⏸ Pauza'); $('animModal').hidden = false;
+    animPlay.raf = requestAnimationFrame(animTick);
+  }
+  function drawAnimFrame(g, im) { g.drawImage(im, 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H); }
+  function animTick(ts) {
+    var p = animPlay; if (!p) return;
+    if (p.prev && p.playing) p.pos += (ts - p.prev) / 1000;
+    p.prev = ts;
+    var idx = p.seq[Math.floor(p.pos * ANIM.fps) % p.seq.length], im = p.imgs[idx];
+    if (idx !== p.last && im.complete && im.naturalWidth) { drawAnimFrame($('animCanvas').getContext('2d'), im); p.last = idx; }
+    p.raf = requestAnimationFrame(animTick);
+  }
+  function closeAnim3d() { if (animPlay) { cancelAnimationFrame(animPlay.raf); animPlay = null; } $('animModal').hidden = true; }
+  $('animPlay').addEventListener('click', function () { if (!animPlay) return; animPlay.playing = !animPlay.playing; this.textContent = T(animPlay.playing ? '⏸ Pauza' : '▶ Odtwórz'); });
+  $('animClose').addEventListener('click', closeAnim3d);
+  $('animX').addEventListener('click', closeAnim3d);
+  $('animModal').addEventListener('mousedown', function (e) { if (e.target === $('animModal')) closeAnim3d(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('animModal').hidden) { e.stopPropagation(); closeAnim3d(); } }, true);
+  function saveAnim3d() { // opcjonalny zapis do pliku wideo (WebM / MP4 – zależnie od przeglądarki); nagranie trwa tyle co animacja
+    var p = animPlay; if (!p || p.saving) return;
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { alert(T('Ta przeglądarka nie obsługuje zapisu animacji.')); return; }
-    anim3d = { n: Math.round(ANIM.fps * ANIM.sec), i: 0, frames: [] }; nextAnimFrame3d();
+    p.saving = true; busy3d(true, T('Zapisywanie animacji…'));
+    var cv = document.createElement('canvas'); cv.width = ANIM.W; cv.height = ANIM.H; var g = cv.getContext('2d');
+    var mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
+    var stream = cv.captureStream(0), track = stream.getVideoTracks()[0], chunks = [];
+    var rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : {});
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = function () {
+      var type = rec.mimeType || mime || 'video/webm', d = new Date();
+      var name = 'tablica-3d-animacja-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
+      downloadBlob(new Blob(chunks, { type: type }), name); busy3d(false); p.saving = false;
+    };
+    var i = 0, t0 = 0; // tempo wg zegara – stała liczba klatek na sekundę
+    (function draw() {
+      if (i >= p.seq.length) { setTimeout(function () { rec.stop(); }, 1000 / ANIM.fps); return; }
+      var im = p.imgs[p.seq[i]];
+      im.decode().then(function () {
+        if (!t0) t0 = performance.now();
+        drawAnimFrame(g, im); if (track.requestFrame) track.requestFrame();
+        i++; setTimeout(draw, Math.max(0, t0 + i * 1000 / ANIM.fps - performance.now()));
+      }).catch(function () { rec.stop(); });
+    })();
+    rec.start();
   }
-  function finishAnim3d() {
-    var a = anim3d; busy3d(true, T('Zapisywanie animacji…'));
-    Promise.resolve().then(function () {
-      var cv = document.createElement('canvas'); cv.width = ANIM.W; cv.height = ANIM.H; var g = cv.getContext('2d');
-      var mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
-      var stream = cv.captureStream(0), track = stream.getVideoTracks()[0], chunks = [];
-      var rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6000000 } : {});
-      rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
-      rec.onstop = function () {
-        var type = rec.mimeType || mime || 'video/webm', d = new Date();
-        var name = 'tablica-3d-animacja-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
-        downloadBlob(new Blob(chunks, { type: type }), name); busy3d(false); anim3d = null;
-      };
-      var i = 0, t0 = 0; // klatki dekodowane na bieżąco (nie trzymamy ich wszystkich w pamięci), tempo wg zegara – stała liczba klatek na sekundę
-      (function draw() {
-        if (i >= a.frames.length) { setTimeout(function () { rec.stop(); }, 1000 / ANIM.fps); return; }
-        var im = new Image(); im.src = a.frames[i];
-        im.decode().then(function () {
-          if (!t0) t0 = performance.now();
-          g.drawImage(im, 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H);
-          if (track.requestFrame) track.requestFrame();
-          i++; setTimeout(draw, Math.max(0, t0 + i * 1000 / ANIM.fps - performance.now()));
-        }).catch(function () { rec.stop(); });
-      })();
-      rec.start();
-    }).catch(function () { anim3d = null; fail3d(); });
-  }
+  $('animSave').addEventListener('click', saveAnim3d);
   $('shotAnim').addEventListener('click', startAnim3d);
   function export3D() {
     if (pend3d) return;
@@ -1709,7 +1749,7 @@ function saveSharedTeams(teamsObj) {
     if (x1 - x0 < 10 || y1 - y0 < 10) { wholeCrop(); return; }
     crop = { x: (x0 - SHOT.x) * sx, y: (y0 - SHOT.y) * sy, w: (x1 - x0) * sx, h: (y1 - y0) * sy }; placeCrop();
   }
-  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; anim3d = null; busy3d(false); drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
+  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; anim3d = null; busy3d(false); closeAnim3d(); drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
   function saveShot() {
     if (!shotCv) return;
     var k = shotDisp.k, sx = Math.round(crop.x * k), sy = Math.round(crop.y * k);
