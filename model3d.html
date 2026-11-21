@@ -2628,7 +2628,8 @@ $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam
 // ---------- Widok 3D na żądanie z Tablicy Taktycznej ----------
 // Tablica ładuje tę stronę w ukrytej ramce, przesyła pozycje pionków i odbiera obraz „zza drużyny A” (kamera jak w „Z tyłu drużyny”).
 // Współrzędne: x wzdłuż boiska (A po stronie x < 0), z w poprzek – dokładnie jak w modelu.
-let boardPrepared = false, boardPlayers = [];
+let boardPrepared = false, boardPlayers = [], boardBall = null;
+const BOARD_BALL_H = 3; // wysokość piłki w widoku z tablicy (m od parkietu)
 // Ustawia zawodników dokładnie tak, jak przysłała tablica. Wywoływane przed KAŻDYM obrazem – nawet gdyby model sam coś przesunął
 // (np. libero na krzesełko), pozycje z tablicy zawsze wygrywają.
 function placeBoardPlayers() {
@@ -2669,7 +2670,8 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   boardPlayers = d.players; placeBoardPlayers();
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
-  if (bl) { ball.position.set(bl.x, BALL_R, bl.z); syncBallHelpers(); }
+  boardBall = bl || null;
+  if (bl) { ball.scale.setScalar(2.2); ball.position.set(bl.x, BOARD_BALL_H, bl.z); syncBallHelpers(); } // powiększona (×2,2), żeby przy uproszczonych pionkach była czytelna // piłka wisi 3 m nad parkietem (ponad siatką); cień i linia pokazują, nad którym miejscem
   shadowOn = false; updateBlockShadow(); zoneLabels.visible = courtAxis.visible = !!d.zones;
 }
 let outCv = null, boardSize = '', origSize = null, origRatio = 1; // jeden płótno wyjściowe i jeden rozmiar bufora na całą serię klatek – bez realokacji bufora przy każdej klatce
@@ -2689,6 +2691,7 @@ async function renderFromBoard(d) {
   const NX = -COURT_L / 2 - 2, ZM = COURT_W / 2 + 2, V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   const must = [V3(NX, 0, -ZM), V3(NX, 0, ZM), V3(-COURT_L / 2, 2.6, -COURT_W / 2), V3(-COURT_L / 2, 2.6, COURT_W / 2), V3(0, 2.6, -COURT_W / 2 - 0.8), V3(0, 2.6, COURT_W / 2 + 0.8),
     V3(-COURT_L / 2 - 1.5, 2.1, -COURT_W / 2 - 0.5), V3(-COURT_L / 2 - 1.5, 2.1, COURT_W / 2 + 1.3)]; // także pionki ustawione tuż za linią końcową (do 1,5 m) nie mogą być ucięte
+  if (boardBall) must.push(V3(boardBall.x, BOARD_BALL_H + 0.3, boardBall.z), V3(boardBall.x, 0, boardBall.z)); // piłka i jej cień na parkiecie też mają się zmieścić w kadrze
   const place = (R, tx) => { cam.position.set(tx - R * Math.cos(phi), R * Math.sin(phi), 0); cam.up.set(Math.sin(phi), Math.cos(phi), 0); cam.lookAt(tx, 0, 0); cam.updateMatrixWorld(); cam.updateProjectionMatrix(); }; // „góra” kadru prostopadła do kierunku patrzenia – także przy widoku z góry (90°)
   const bottomPts = [V3(NX, 0, 0), V3(-COURT_L / 2 - 1.5, 2.1, 0), V3(-COURT_L / 2, 2.6, 0)]; // najniżej w kadrze: koniec pasa 2 m albo czubki pionków tuż za linią końcową
   const tmp = new THREE.Vector3(); // jeden wektor roboczy – bez alokacji w pętlach wyszukiwania
