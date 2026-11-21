@@ -272,6 +272,9 @@
   .sw { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
   .sw:hover { transform: scale(1.1); }
   .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
+  #shStat { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: 270px; padding: 7px 11px; border-radius: 10px; font-size: 12px; line-height: 1.45;
+    background: var(--glass); color: var(--text); border: 1px solid var(--line); box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); pointer-events: none; }
+  #shStat[hidden] { display: none; }
   #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 4px;
     background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); }
   #zoomCtl button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px;
@@ -365,7 +368,8 @@ function saveSharedTeams(teamsObj) {
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
     <div class="hgrp wide"><span class="hl">Filtry</span>
-      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span></div>
+      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
+      <span class="seg" id="shadowSeg" title="Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka"><button type="button" id="shadowBtn">Cień bloku</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
       <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button><button type="button" data-shot="3d" title="Wygeneruj widok 3D zza drużyny A (z siatką, jak w modelu 3D)">3D</button></span></div>
   </div>
@@ -434,6 +438,7 @@ function saveSharedTeams(teamsObj) {
   </aside>
 
   <main>
+    <div id="shStat" hidden role="status"></div>
     <div id="trash" aria-hidden="true">🗑<small>USUŃ</small></div>
     <div id="zoomCtl" role="group" aria-label="Przybliżenie">
       <button type="button" id="zoomIn" title="Przybliż (kółko myszy / szczypanie)">+</button>
@@ -667,6 +672,12 @@ function saveSharedTeams(teamsObj) {
     ['Przesuń kamerę do przodu (w stronę siatki)', 'Move the camera forward (towards the net)', 'Sposta la telecamera in avanti (verso la rete)'],
     ['Przesuń kamerę do tyłu', 'Move the camera back', 'Sposta la telecamera indietro'],
     ['Na boisku może być jednocześnie tylko 6 zawodników drużyny.', 'Only 6 players of a team can be on the court at the same time.', 'In campo possono esserci contemporaneamente solo 6 giocatori della squadra.'],
+    ['Cień bloku', 'Block shadow', 'Ombra del muro'],
+    ['Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka', 'Block shadow: which parts of the court are covered by the block from the ball’s position', 'Ombra del muro: quali zone del campo sono coperte dal muro dal punto in cui si trova la palla'],
+    ['Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.', 'Drag the ball onto one half of the court to see the block shadow.', 'Trascina la palla su una metà del campo per vedere l’ombra del muro.'],
+    ['Atak na stronę {0} · blokujących: {1}', 'Attack on side {0} · blockers: {1}', 'Attacco sul lato {0} · a muro: {1}'],
+    ['dostępne {0}%', 'available {0}%', 'disponibile {0}%'],
+    ['cień bloku {0}% połowy', 'block shadow {0}% of the half', 'ombra del muro {0}% della metà'],
     ['Animacja 3D', '3D animation', 'Animazione 3D'],
     ['⏸ Pauza', '⏸ Pause', '⏸ Pausa'],
     ['▶ Odtwórz', '▶ Play', '▶ Riproduci'],
@@ -996,7 +1007,7 @@ function saveSharedTeams(teamsObj) {
     g.addEventListener('pointermove', function (e) {
       if (!drag) return; var p = pt(e);
       pst.ball.x = Math.max(-90, Math.min(530, p[0] + drag.dx)); pst.ball.y = Math.max(-50, Math.min(950, p[1] + drag.dy));
-      g.setAttribute('transform', 'translate(' + pst.ball.x + ',' + pst.ball.y + ')');
+      g.setAttribute('transform', 'translate(' + pst.ball.x + ',' + pst.ball.y + ')'); queueShadow();
     });
     ['pointerup', 'pointercancel'].forEach(function (ev) { g.addEventListener(ev, function () { if (drag) { drag = null; savePst(); pushHistory(); } }); });
   }
@@ -1009,6 +1020,73 @@ function saveSharedTeams(teamsObj) {
   }
   function removePawn(team, n) { pawnOwn(team, n).gone = true; commit(); } // usuniecie pionka: przeciagniecie do kosza
 
+  // ---------- Cień bloku (widok z góry; wysokość piłki nie ma znaczenia) ----------
+  // Piłka (punkt uderzenia) jest po jednej stronie siatki; blokują pionki drużyny po drugiej stronie, stojące przy siatce.
+  // Punkt boiska jest w cieniu, gdy prosta od piłki do niego przecina pas jednego z blokujących na linii dłoni; poza antenkami nie da się zaatakować.
+  var SHADOW_KEY = 'mpv:tablica:shadow:v1', shadowOn = false, shG = null, shQueued = false, SH_N = 120, SH_SS = 2;
+  try { shadowOn = localStorage.getItem(SHADOW_KEY) === '1'; } catch (e) {}
+  var shCv = document.createElement('canvas'); shCv.width = shCv.height = SH_N;
+  var shCtx = shCv.getContext('2d'), shImg = shCtx.createImageData(SH_N, SH_N);
+  function shadowRects(def) {
+    var rects = [];
+    pawns.forEach(function (g) {
+      if (g.dataset.team !== def) return;
+      var px = (CY - g.__pos[1]) / UNIT, pz = (g.__pos[0] - CX) / UNIT, dn = Math.abs(px);
+      if (dn > 2.2 || Math.abs(pz) > 4.7) return; // blokuje tylko ten, kto stoi przy siatce na boisku
+      var r = 18 * g.__s / UNIT * 0.95;
+      rects.push({ x: (px < 0 ? -1 : 1) * Math.max(0.25, dn - 0.5), zmin: pz - r, zmax: pz + r }); // dłonie ok. 0,5 m przed środkiem pionka
+    });
+    rects.sort(function (a, b) { return a.zmin - b.zmin; });
+    for (var i = 0; i < rects.length - 1; i++) { // blok szczelny: sąsiedzi z odstępem < 0,5 m zamykają szczelinę
+      var a = rects[i], b = rects[i + 1], gap = b.zmin - a.zmax;
+      if (gap > 0 && gap < 0.5) { var mid = (a.zmax + b.zmin) / 2; a.zmax = mid; b.zmin = mid; }
+    }
+    return rects;
+  }
+  function updateShadow() {
+    if (shG && shG.parentNode) shG.parentNode.removeChild(shG); shG = null;
+    var st = $('shStat'); if (!st) return;
+    if (!shadowOn || !pst.ball.on) { st.hidden = true; return; }
+    var Bx = (CY - pst.ball.y) / UNIT, Bz = (pst.ball.x - CX) / UNIT; st.hidden = false;
+    if (Math.abs(Bx) < 0.05) { st.textContent = T('Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.'); return; }
+    var def = Bx < 0 ? 'b' : 'a', rects = shadowRects(def), step = 9 / SH_N, ssN = SH_SS * SH_SS, data = shImg.data, ok = 0, blocked = 0, HW = 4.5;
+    var COL = [[40, 235, 110, 105], [30, 18, 70, 165], [95, 100, 110, 125]]; // 0 dostępne, 1 cień bloku, 2 poza antenkami
+    for (var r = 0; r < SH_N; r++) for (var c = 0; c < SH_N; c++) {
+      var rr = 0, gg = 0, bb = 0, aa = 0, n0 = 0, n1 = 0;
+      for (var sy = 0; sy < SH_SS; sy++) {
+        var xm = def === 'a' ? -(r + (sy + .5) / SH_SS) * step : 9 - (r + (sy + .5) / SH_SS) * step;
+        for (var sx = 0; sx < SH_SS; sx++) {
+          var pz = -4.5 + (c + (sx + .5) / SH_SS) * step, dx = xm - Bx, state = 0;
+          for (var k = 0; k < rects.length; k++) {
+            var rc = rects[k], t = (rc.x - Bx) / dx; if (t <= 0 || t >= 1) continue;
+            var z = Bz + t * (pz - Bz); if (z > rc.zmin && z < rc.zmax) { state = 1; break; }
+          }
+          if (state === 0 && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW) state = 2; // prosta przechodzi przez siatkę poza antenką
+          var cl = COL[state]; rr += cl[0]; gg += cl[1]; bb += cl[2]; aa += cl[3];
+          if (state === 0) n0++; else if (state === 1) n1++;
+        }
+      }
+      var o = (r * SH_N + c) * 4; data[o] = rr / ssN; data[o + 1] = gg / ssN; data[o + 2] = bb / ssN; data[o + 3] = aa / ssN; ok += n0 / ssN; blocked += n1 / ssN;
+    }
+    shCtx.putImageData(shImg, 0, 0);
+    shG = el('g', { style: 'pointer-events:none' }, svg);
+    el('image', { x: CX - 180, y: def === 'a' ? CY : CY - 360, width: 360, height: 360, href: shCv.toDataURL(), preserveAspectRatio: 'none' }, shG);
+    rects.forEach(function (rc) { // pasy blokujących na siatce
+      el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
+    });
+    if (rects.length) { // dwa skrajne promienie: od piłki przez krawędzie bloku do końca boiska
+      var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; }), endX = def === 'a' ? -9 : 9;
+      [[left, left.zmin], [right, right.zmax]].forEach(function (a) {
+        var t = (endX - Bx) / (a[0].x - Bx), hz = Bz + t * (a[1] - Bz);
+        el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
+      });
+    }
+    if (annotG && annotG.parentNode === svg) svg.insertBefore(shG, annotG); // pod rysunkami i pionkami
+    var total = SH_N * SH_N;
+    st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + rects.length + '</b>') + '<br>' +
+      '<span style="color:#1fa65a">' + T('dostępne {0}%').replace('{0}', (ok / total * 100).toFixed(0)) + '</span> · <span style="color:#6f5bd6">' + T('cień bloku {0}% połowy').replace('{0}', (blocked / total * 100).toFixed(0)) + '</span>';
+  }
+  function queueShadow() { if (!shadowOn || shQueued) return; shQueued = true; requestAnimationFrame(function () { shQueued = false; updateShadow(); }); } // przy przeciąganiu: najwyżej raz na klatkę
   function render() {
     tween = null;
     applyView();
@@ -1027,6 +1105,7 @@ function saveSharedTeams(teamsObj) {
     previewG = el('g', { 'pointer-events': 'none' });
     attachDrag();
     layoutLabels();
+    updateShadow();
     redrawAnnots();
     syncPawnsPanel();
   }
@@ -1088,7 +1167,7 @@ function saveSharedTeams(teamsObj) {
         }
         g.__pos = [x, y];
         g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
-        layoutLabels();
+        layoutLabels(); queueShadow();
       });
       ['pointerup', 'pointercancel'].forEach(function (ev) {
         g.addEventListener(ev, function (e) {
@@ -1405,6 +1484,13 @@ function saveSharedTeams(teamsObj) {
   lblBtns.forEach(function (b) {
     b.addEventListener('click', function () { labels[b.dataset.lbl] = !labels[b.dataset.lbl]; saveLabels(); markLabels(); render(); });
   });
+  function syncShadowBtn() { $('shadowBtn').classList.toggle('on', shadowOn); }
+  $('shadowBtn').addEventListener('click', function () { // cień bloku: pokazuje się, gdy piłka jest po jednej stronie siatki; włączenie pokazuje piłkę
+    shadowOn = !shadowOn; try { localStorage.setItem(SHADOW_KEY, shadowOn ? '1' : '0'); } catch (e) {} syncShadowBtn();
+    if (shadowOn && (!pst.ball.on || Math.abs(pst.ball.y - CY) < 30)) { pst.ball.on = true; if (Math.abs(pst.ball.y - CY) < 30) { pst.ball.x = CX; pst.ball.y = 300; } savePst(); render(); pushHistory(); }
+    else updateShadow();
+  });
+  syncShadowBtn();
   function syncZonesBtn() { $('zonesBtn').classList.toggle('on', zonesOn); }
   $('zonesBtn').addEventListener('click', function () { zonesOn = !zonesOn; try { localStorage.setItem(ZONES_KEY, zonesOn ? '1' : '0'); } catch (e) {} syncZonesBtn(); render(); });
   syncZonesBtn();
@@ -1950,7 +2036,7 @@ function saveSharedTeams(teamsObj) {
         var x = f[0] + (to[0] - f[0]) * e, y = f[1] + (to[1] - f[1]) * e;
         g.__pos = [x, y]; g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
       });
-      layoutLabels();
+      layoutLabels(); queueShadow();
       if (k < 1) requestAnimationFrame(step); else { tween = null; savePositions(); }
     }
     requestAnimationFrame(step);
