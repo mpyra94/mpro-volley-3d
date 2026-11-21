@@ -1566,7 +1566,7 @@ function saveSharedTeams(teamsObj) {
   }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; anim3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
-  var angle3d = 30, zoom3d = 1, pan3d = 3, // domyślnie kamera jest już przesunięta 3 m do przodu (jak po kilku kliknięciach ▲): siatka wyżej, nasza połowa większa
+  var angle3d = 30, zoom3d = 1, pan3d = 0, // dodatkowe przesunięcie kamery (▲▼); kadr sam mieści całą naszą połowę z 2 m za linią końcową
  queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
   function render3dAngle() { // nowy obraz po zmianie kąta / przybliżenia (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
     if (!frame3d || !ready3d || anim3d) return;
