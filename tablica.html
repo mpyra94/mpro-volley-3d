@@ -948,10 +948,16 @@ function saveSharedTeams(teamsObj) {
     el('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.42' }, gr); el('stop', { offset: '.55', 'stop-color': '#ffffff', 'stop-opacity': '0' }, gr); el('stop', { offset: '1', 'stop-color': '#0a1030', 'stop-opacity': '.38' }, gr);
     el('circle', { r: 15, fill: '#f6cf16' }, g);
     var cg = el('g', { 'clip-path': 'url(#ballClip)' }, g);
-    [0, 120, 240].forEach(function (a) { // jeden pas obrócony trzykrotnie o 120°: szeroki, wygięty, od środka do krawędzi
-      el('path', { d: 'M0 0 C3 -5 8 -8 17 -7 L17 -17 C6 -16 -3 -12 -4 -3 Z', fill: '#1b3a96', transform: 'rotate(' + a + ')' }, cg);
-      el('path', { d: 'M0 0 C3 -5 8 -8 17 -7', fill: 'none', stroke: 'rgba(8,16,60,.5)', 'stroke-width': .8, transform: 'rotate(' + a + ')' }, cg);
-    });
+    // trzy niebieskie pasy wychodzą ze środka i zakręcają się ku krawędzi; każdy zajmuje ok. 58% swojego sektora 120° (niebieski szerszy niż żółty)
+    for (var bi = 0; bi < 3; bi++) {
+      var lo = [], hi = [], n = 32, W = 0.6 * 2 * Math.PI / 3;
+      for (var ii = 0; ii <= n; ii++) {
+        var rr = 19 * ii / n, th = Math.asin(Math.min(1, rr / 15)), a = bi * 2 * Math.PI / 3 + 1.0 * th;
+        lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
+      }
+      var pts = lo.concat(hi.reverse()), dd = 'M' + pts.map(function (p) { return p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('L') + 'Z';
+      el('path', { d: dd, fill: '#1b3a96', stroke: 'rgba(8,16,60,.55)', 'stroke-width': .6, 'stroke-linejoin': 'round' }, cg);
+    }
     el('circle', { r: 15, fill: 'url(#ballShade)' }, g);
     el('circle', { r: 14.7, fill: 'none', stroke: '#9a8512', 'stroke-width': .8 }, g);
     var drag = null;

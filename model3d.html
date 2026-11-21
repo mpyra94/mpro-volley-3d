@@ -2639,9 +2639,9 @@ function boardBallTexture() { // żółta piłka z trzema szerokimi, zakręconym
     for (let i = 0; i < W; i++) {
       const ph = (i + 0.5) / W * Math.PI * 2;
       const x = -Math.cos(ph) * Math.sin(th), y = Math.cos(th), z = Math.sin(ph) * Math.sin(th);
-      let s = ((Math.atan2(z, x) + 1.25 * Math.acos(y)) / (Math.PI * 2) * 3) % 1; if (s < 0) s += 1; // trzy pasy wychodzące z bieguna i zakręcające się ku równikowi
-      const e = Math.min(Math.abs(s - 0.0), Math.abs(s - 1), Math.abs(s - 0.5)), seam = e < 0.012; // krawędzie niebieskiego pasa = szwy
-      const col = seam ? SEAM : (s < 0.5 ? BLU : YEL), k = (j * W + i) * 4;
+      let s = ((Math.atan2(z, x) + 1.0 * Math.acos(y)) / (Math.PI * 2) * 3) % 1; if (s < 0) s += 1; // trzy pasy wychodzące z bieguna i zakręcające się ku równikowi
+      const e = Math.min(Math.abs(s - 0.0), Math.abs(s - 1), Math.abs(s - 0.6)), seam = e < 0.012; // krawędzie niebieskiego pasa = szwy; niebieski zajmuje 60% sektora (szerszy niż żółty)
+      const col = seam ? SEAM : (s < 0.6 ? BLU : YEL), k = (j * W + i) * 4;
       d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = 255;
     }
   }
