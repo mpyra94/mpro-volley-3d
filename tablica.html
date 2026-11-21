@@ -446,7 +446,7 @@ function saveSharedTeams(teamsObj) {
         <span id="cropWm">mPro Volley 3D</span>
       </div>
     </div>
-    <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony). Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.</div>
+    <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
     <div class="shotBtns"><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
   </div>
 </div>
@@ -603,7 +603,7 @@ function saveSharedTeams(teamsObj) {
     ['Przywróć domyślne rozstawienie, rotację P1 i ustawienie bazowe', 'Restore the default setup, rotation P1 and the base formation', 'Ripristina lo schieramento predefinito, la rotazione P1 e lo schieramento base'],
     ['Zrzut ekranu', 'Screenshot', 'Screenshot'],
     ['Zamknij', 'Close', 'Chiudi'],
-    ['Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony). Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.', 'The preview shows the whole court – drag the frame or its handles to choose an area (also zoomed out). The “mPro Volley 3D” watermark will be added in the bottom-right corner of the image.', 'L’anteprima mostra tutto il campo: trascina il riquadro o le sue maniglie per scegliere una porzione (anche ridotta). La filigrana «mPro Volley 3D» verrà aggiunta nell’angolo in basso a destra.'],
+    ['Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).', 'The preview shows the whole court – drag the frame or its handles to choose an area (also zoomed out).', 'L’anteprima mostra tutto il campo: trascina il riquadro o le sue maniglie per scegliere una porzione (anche ridotta).'],
     ['Cały parkiet', 'Whole court', 'Tutto il campo'],
     ['Ramka na cały parkiet', 'Frame the whole court', 'Riquadro su tutto il campo'],
     ['Jak na ekranie', 'As on screen', 'Come sullo schermo'],
@@ -1373,6 +1373,7 @@ function saveSharedTeams(teamsObj) {
   // widok połowy: wycinek planszy z połową wybranej drużyny (od siatki do nazwy drużyny i logo) – przy 100% wypełnia pole planszy
   // zawsze dolna połowa (drużyna A), plus 4 m boiska rywala za siatką; dalszą część rywala i jego pionki ukrywamy
   var HALF = { x: -140, y: 290, w: 680, h: 646 };
+  var SHOT = { x: -20, y: -60, w: 540, h: 1020 }; // obszar zrzutu ekranu: boisko z marginesem, bez ławek
   function baseView() { return viewMode === 'half' ? HALF : FULL; } // obszar widoczny przy przybliżeniu 100%
   function resetView() { var B = baseView(); view.cx = B.x + B.w / 2; view.cy = B.y + B.h / 2; view.z = 1; }
   function clampView() {
@@ -1445,7 +1446,7 @@ function saveSharedTeams(teamsObj) {
       '.teamLabel{font-size:18px;font-weight:800;font-style:italic;text-transform:uppercase;text-anchor:middle}';
     clone.insertBefore(style, clone.firstChild);
     // zawsze cały parkiet (z marginesem) – ramką kadrowania wybierasz potem dowolny fragment, także oddalony
-    var vb = [FULL.x, FULL.y, FULL.w, FULL.h], k = 2000 / Math.max(FULL.w, FULL.h);
+    var vb = [SHOT.x, SHOT.y, SHOT.w, SHOT.h], k = 2000 / Math.max(SHOT.w, SHOT.h); // obszar zrzutu: bez pasa z ławką
     clone.setAttribute('viewBox', vb.join(' '));
     var W = Math.round(vb[2] * k), H = Math.round(vb[3] * k);
     clone.setAttribute('xmlns', NS); clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
@@ -1516,8 +1517,11 @@ function saveSharedTeams(teamsObj) {
   }
   function wholeCrop() { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); }
   function screenCrop() { // ramka = fragment widoczny teraz na ekranie (przy przybliżeniu 100% – cały parkiet)
-    var B = baseView(), w = B.w / view.z, h = B.h / view.z, sx = shotDisp.w / FULL.w, sy = shotDisp.h / FULL.h;
-    crop = { x: (view.cx - w / 2 - FULL.x) * sx, y: (view.cy - h / 2 - FULL.y) * sy, w: w * sx, h: h * sy }; placeCrop();
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z, sx = shotDisp.w / SHOT.w, sy = shotDisp.h / SHOT.h;
+    var x0 = Math.max(SHOT.x, view.cx - w / 2), x1 = Math.min(SHOT.x + SHOT.w, view.cx + w / 2); // część widoczna na ekranie, która mieści się w obrazie
+    var y0 = Math.max(SHOT.y, view.cy - h / 2), y1 = Math.min(SHOT.y + SHOT.h, view.cy + h / 2);
+    if (x1 - x0 < 10 || y1 - y0 < 10) { wholeCrop(); return; }
+    crop = { x: (x0 - SHOT.x) * sx, y: (y0 - SHOT.y) * sy, w: (x1 - x0) * sx, h: (y1 - y0) * sy }; placeCrop();
   }
   function closeShot() { $('shotModal').hidden = true; shotCv = null; }
   function saveShot() {
