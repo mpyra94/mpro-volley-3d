@@ -1603,16 +1603,22 @@ function saveSharedTeams(teamsObj) {
         items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: R3D, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b' }); // widok 3D tylko z pionkami drużyny A
       }
       // pionki, które na tablicy się stykają (np. blok przy siatce), mają się stykać także po zmniejszeniu: grupa jest skalowana wokół swojego środka
-      var vis = items.filter(function (q) { return !q.hidden && Math.abs(q.z) < 5.1 && Math.abs(q.x) < 9.6; }), par = vis.map(function (_, i) { return i; });
+      // „stykają się” = odstęp środków do 1,3 × suma promieni (pionki na tablicy nie mogą być bliżej niż ok. 1,05 ×, a przy ślizganiu po sobie zostaje szczelina)
+      var vis = items.filter(function (q) { return !q.hidden && q.z >= -5.7 && Math.abs(q.x) < 10.8; }), par = vis.map(function (_, i) { return i; }), edges = [];
       var find = function (i) { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
       for (var i = 0; i < vis.length; i++) for (var j = i + 1; j < vis.length; j++)
-        if (Math.hypot(vis[i].x - vis[j].x, vis[i].z - vis[j].z) < (vis[i].r2 + vis[j].r2) * 1.12) par[find(i)] = find(j);
-      var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(q); });
+        if (Math.hypot(vis[i].x - vis[j].x, vis[i].z - vis[j].z) < (vis[i].r2 + vis[j].r2) * 1.3) { par[find(i)] = find(j); edges.push([i, j]); }
+      var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(i); });
       Object.keys(groups).forEach(function (k) {
         var g = groups[k]; if (g.length < 2) return;
-        var cx = 0, cz = 0; g.forEach(function (q) { cx += q.x / g.length; cz += q.z / g.length; });
-        var f = R3D / g[0].r2;
-        g.forEach(function (q) { q.x = cx + (q.x - cx) * f; q.z = cz + (q.z - cz) * f; });
+        var cx = 0, cz = 0; g.forEach(function (i) { cx += vis[i].x / g.length; cz += vis[i].z / g.length; });
+        var f = R3D / vis[g[0]].r2;
+        g.forEach(function (i) { vis[i].x = cx + (vis[i].x - cx) * f; vis[i].z = cz + (vis[i].z - cz) * f; }); // pionki są mniejsze niż na tablicy – grupa kurczy się wokół środka
+        for (var it = 0; it < 60; it++) edges.forEach(function (e) { // każda para sąsiadów ma się stykać dokładnie (odstęp środków = 2 × promień pionka w 3D)
+          var a = vis[e[0]], b = vis[e[1]]; if (find(e[0]) !== +k) return;
+          var dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1e-6, c = (d - 2 * R3D) / 2 / d;
+          a.x += dx * c; a.z += dz * c; b.x -= dx * c; b.z -= dz * c;
+        });
       });
       items.forEach(function (q) { list.push(q); });
     });
