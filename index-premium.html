@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>mPro Volley 3D</title>
+<!-- © 2026 Michał Pyra · mPro Volley 3D. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
+<script>(function(){var t='light';try{t=localStorage.getItem('mpv:theme')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f6fc; --glass: rgba(255, 255, 255, 0.96); --glass2: #ffffff; --line: #d3dff0; --field: #ffffff; --card: #f8fbff;
+    --text: #0e1b3d; --muted: #5a6b88; --accent: #ff8a00; --a: #ff3b5c; --b: #1e88ff;
+    --font: "Exo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --glass2: #111a2a; --line: #27364d;
+    --text: #e6edf7; --muted: #93a3bd; --field: #1a2638; --card: #131e30;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.5 var(--font); }
+  /* strona główna mieści się w jednym ekranie – bez przewijania: nagłówek, kafelki i stopka dzielą wysokość okna */
+  body { display: flex; flex-direction: column; align-items: stretch; height: 100vh; height: 100dvh; padding: 0; gap: 0; overflow: hidden; }
+  @media (max-height: 400px) { html, body { height: auto; } body { height: auto; overflow: auto; } } /* skrajnie niskie okno: przewijanie jako awaryjne wyjście */
+  .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; }
+  button, select, input { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line);
+    border-radius: 9px; padding: 7px 12px; }
+  button { cursor: pointer; font-weight: 600; transition: background .15s, border-color .15s, box-shadow .15s; }
+  button:hover { border-color: var(--accent); box-shadow: 0 2px 10px -4px rgba(255, 138, 0, .6); }
+  button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ---------- Hero ---------- */
+  :root { --cut: clamp(24px, 6vh, 64px); --ballW: clamp(90px, min(26vw, 36vh), 300px); }
+  .hero { position: relative; overflow: hidden; flex: 0 0 auto; padding: clamp(20px, 6vh, 64px) 24px calc(var(--cut) + clamp(30px, 8vh, 80px));
+    background: linear-gradient(115deg, #071a52 0%, #0c3fd0 52%, #1b8cff 100%);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), 0 100%); }
+  .scene { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .ball { position: absolute; right: clamp(2%, 7vw, 12%); top: 50%; width: var(--ballW);
+    margin-top: calc(var(--ballW) / -2 - 8px); pointer-events: none;
+    filter: drop-shadow(0 26px 30px rgba(3, 10, 50, .55)); animation: float 6s ease-in-out infinite; }
+  .ball svg { display: block; width: 100%; height: auto; }
+  @keyframes float { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-10px) rotate(-3deg); } }
+  .brand { position: relative; z-index: 2; width: min(1000px, 100%); margin: 0 auto; color: #fff; text-align: left; }
+  .kicker { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; letter-spacing: .28em;
+    text-transform: uppercase; color: #9fd0ff; }
+  .kicker::before { content: ""; width: 44px; height: 3px; background: #ffd60a; border-radius: 2px; }
+  .brand h1 { margin: clamp(6px, 1.6vh, 16px) 0 0; font-size: clamp(34px, min(10vw, 13vh), 104px); line-height: .92; font-weight: 900; font-style: italic;
+    text-transform: uppercase; letter-spacing: -.01em; }
+  .brand h1 span { display: block; }
+  .brand h1 span:first-child { text-transform: none; } /* „mPro” zawsze pisane dokładnie tak: małe m, wielkie P */
+  .brand h1 .l2 { color: #ffd60a; }
+  .brand p { margin: clamp(6px, 2vh, 20px) 0 0; font-size: clamp(14px, 2.2vh, 18px); font-weight: 500; color: #cfe3ff; max-width: 30ch; }
+
+  /* ---------- Menu ---------- */
+  .menu { position: relative; z-index: 3; flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: minmax(0, auto); align-content: center; gap: clamp(10px, 2vh, 20px);
+    width: min(1100px, calc(100% - 32px)); margin: calc(-1 * clamp(28px, 7vh, 72px)) auto 0; padding-bottom: clamp(6px, 1.4vh, 14px); }
+  @media (max-height: 640px) and (min-width: 821px) { .tile span.desc { display: none; } } /* niskie okno: bez opisu, żeby miniatura i przycisk się mieściły */
+  @media (max-width: 820px) {
+    .menu { grid-template-columns: 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+    .hero { padding-bottom: calc(var(--cut) + 24px); }
+    .ball { top: auto; bottom: 22px; margin-top: 0; right: -14px; width: clamp(70px, 18vh, 130px); opacity: .95; }
+  }
+  .tile { position: relative; overflow: hidden; border-radius: 16px; padding: clamp(12px, 2.6vh, 24px) clamp(14px, 2vw, 24px); min-height: 0;
+    color: #fff; font: inherit; text-decoration: none; display: flex; flex-direction: column; gap: 8px;
+    background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 16px);
+    box-shadow: 0 18px 34px -18px var(--shadow, rgba(14, 27, 61, .5));
+    transition: transform .18s ease, box-shadow .18s ease; }
+  .tile:hover { transform: translateY(-6px); box-shadow: 0 28px 40px -18px var(--shadow, rgba(14, 27, 61, .55)); }
+  .tile:focus-visible { outline: 4px solid #ffd60a; outline-offset: 3px; }
+  .tile > * { position: relative; z-index: 1; }
+  .tile .thumb { flex: 0 0 auto; aspect-ratio: 2 / 1; border-radius: 10px; overflow: hidden; margin: -2px -2px 8px;
+    border: 1.5px solid rgba(255, 255, 255, .55); box-shadow: 0 10px 18px -10px rgba(0, 0, 0, .45); background: rgba(255, 255, 255, .15); } /* miniatura zawsze w proporcji 2:1 – ikona nie jest obcinana ani rozciągana */
+  .tile .thumb svg { display: block; width: 100%; height: 100%; transition: transform .35s ease; }
+  .tile:hover .thumb svg { transform: scale(1.06); }
+  .tile .tx { display: contents; }
+  .tile b { font-size: clamp(18px, 3.2vh, 25px); font-weight: 800; line-height: 1.1; text-transform: uppercase; font-style: italic; letter-spacing: .01em; }
+  .tile span.desc { font-size: clamp(12px, 1.8vh, 14px); line-height: 1.4; font-weight: 500; opacity: .96; overflow: hidden; }
+  .tile .go { margin-top: auto; align-self: flex-start; font-weight: 800; font-size: 13px; letter-spacing: .1em;
+    text-transform: uppercase; background: #fff; color: var(--go, #0e1b3d);
+    border-radius: 8px; padding: clamp(6px, 1.2vh, 9px) 16px; transition: transform .18s; }
+  .tile:hover .go { transform: translateX(4px); }
+  .tile.t1 { background-color: #1260f0; background-image: linear-gradient(135deg, #17b4ff 0%, #1247e0 100%), repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 2px, transparent 2px 16px); background-blend-mode: normal; --shadow: rgba(18, 71, 224, .65); --go: #1247e0; }
+  .tile.t2 { background-image: linear-gradient(135deg, #ffcc00 0%, #ff7a00 100%); --shadow: rgba(255, 122, 0, .65); --go: #b84f00; color: #2e1a00; }
+  .tile.t3 { background-image: linear-gradient(135deg, #ff3d8b 0%, #7a2cf0 100%); --shadow: rgba(122, 44, 240, .6); --go: #7a2cf0; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    background: #2e1a00; color: #ffd60a; border-radius: 4px; padding: 3px 9px; align-self: flex-start; }
+  /* kafelki Gameplan/Model 3D: domyślnie zablokowane (brak konta) - plakietka Premium + przycisk prowadzi do logowania zamiast narzędzia */
+  .tile .goLogin { display: none; }
+  .tile.unlocked .goOpen { display: inline; }
+  .tile.unlocked .goLogin { display: none; }
+  .tile.unlocked .badge { display: none; }
+  .tile.locked .goOpen { display: none; }
+  .tile.locked .goLogin { display: inline; }
+
+  @media (max-width: 820px) { /* na wąskim ekranie kafelki są poziome: miniatura po lewej, opis po prawej – trzy kafelki mieszczą się w jednym ekranie */
+    .tile { flex-direction: row; align-items: center; gap: 12px; padding: 8px 12px; }
+    .tile .thumb { flex: 0 0 min(36vw, 150px); height: auto; align-self: center; margin: 0; aspect-ratio: 2 / 1; }
+    .tile .tx { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+    .tile .go { margin-top: 2px; padding: 5px 12px; }
+    .tile span.desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; }
+    .tile b { font-size: 18px; }
+  }
+  .tile.soon { filter: grayscale(1) brightness(1.08) contrast(.85); pointer-events: none; cursor: default; box-shadow: none; }
+  .tile.soon .go { display: none; }
+  .tile.soon .badge { background: #3b4252; color: #fff; }
+  #topRight { position: fixed; top: 16px; right: 16px; z-index: 10; display: flex; align-items: center; gap: 10px; }
+  #settingsBtn { box-shadow: 0 6px 18px -8px rgba(14, 27, 61, .5); }
+  /* przełącznik języka (flagi) – w prawym górnym rogu, jak w tablicy */
+  #langSw { display: inline-flex; gap: 4px; align-items: center; padding: 3px; border-radius: 12px; background: rgba(7, 26, 82, .45); box-shadow: 0 6px 18px -8px rgba(14, 27, 61, .5); }
+  #langSw button { padding: 3px; line-height: 0; border-radius: 8px; opacity: .65; border: 2px solid transparent; background: transparent; box-shadow: none; }
+  #langSw button:hover { opacity: 1; background: rgba(255, 255, 255, .18); box-shadow: none; }
+  #langSw button.on { opacity: 1; border-color: #ffd60a; background: rgba(255, 255, 255, .12); }
+  #langSw svg { width: 28px; height: 19px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  @media (max-width: 820px) { #topRight { top: 10px; right: 10px; gap: 6px; } #langSw svg { width: 24px; height: 16px; } }
+  footer { flex: 0 0 auto; color: var(--muted); font-size: 11px; line-height: 1.2; text-align: center; margin: 0; padding: 2px 0 6px; }
+
+  /* ---------- Ustawienia ---------- */
+  #settingsOverlay { position: fixed; inset: 0; z-index: 200; background: rgba(14, 27, 61, .55);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #settingsOverlay[hidden] { display: none; }
+  .setBox { position: relative; width: min(760px, 100%); max-height: 88vh; overflow: auto; padding: 24px;
+    box-shadow: 0 30px 60px -20px rgba(14, 27, 61, .6); }
+  .setBox h2 { margin: 0 0 4px; font-weight: 800; }
+  .setBox .x { position: absolute; top: 14px; right: 14px; }
+  .teamsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 16px; }
+  @media (max-width: 600px) { .teamsGrid { grid-template-columns: 1fr; } }
+  .teamCard { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--card); }
+  .teamCard h3 { margin: 0 0 10px; font-weight: 800; }
+  .teamCard[data-team="a"] h3 { color: var(--a); }
+  .teamCard[data-team="b"] h3 { color: var(--b); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px; }
+  input[type=text] { width: 100%; }
+  input[type=color] { width: 40px; height: 32px; padding: 2px; cursor: pointer; }
+  .colorRow { display: flex; gap: 10px; flex-wrap: wrap; }
+  .colorItem { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+  .logoPrev { width: 40px; height: 40px; border-radius: 8px; background: var(--field); border: 1px solid var(--line); object-fit: contain; }
+  .themeRow { margin: 14px 0 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .themeRow label { margin: 0 8px 0 0; font-size: 13px; }
+  .hint { font-size: 13px; color: var(--muted); }
+
+  /* ---------- Logowanie (na razie tylko lokalnie w przeglądarce - docelowo konto Supabase) ---------- */
+  #loginOverlay { position: fixed; inset: 0; z-index: 210; background: rgba(14, 27, 61, .55);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #loginOverlay[hidden] { display: none; }
+  .loginBox { width: min(380px, 100%); }
+  .loginBox form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .loginBox input[type=email] { width: 100%; }
+  #acctBtn #acctIn { display: none; }
+  #acctBtn.loggedIn #acctOut { display: none; }
+  #acctBtn.loggedIn #acctIn { display: inline; }
+
+  @media (prefers-reduced-motion: reduce) { .ball { animation: none; } .tile, .tile .go { transition: none; } }
+</style>
+<script>
+// ---------- Wspólne dane zespołów ----------
+var SHARED_TEAMS_KEY = 'mpv:teams';
+var TEAM_SHARED_FIELDS = ['name', 'logo', 'jersey', 'shorts', 'libero', 'shoes', 'gender', 'floorLogo'];
+var DEFAULT_SHARED_TEAMS = {
+  a: { jersey: '#d94848', shorts: '#2b2b33', libero: '#f2d23d', shoes: '#f0f0f0', name: '', logo: '', gender: 'm', floorLogo: true },
+  b: { jersey: '#3b7ddd', shorts: '#1d2a44', libero: '#3fd08a', shoes: '#222831', name: '', logo: '', gender: 'm', floorLogo: true },
+};
+function loadSharedTeams() {
+  try { return JSON.parse(localStorage.getItem(SHARED_TEAMS_KEY) || 'null'); }
+  catch (e) { return null; }
+}
+function saveSharedTeams(teamsObj) {
+  var out = {};
+  ['a', 'b'].forEach(function (t) {
+    out[t] = {};
+    TEAM_SHARED_FIELDS.forEach(function (k) { out[t][k] = teamsObj[t][k]; });
+  });
+  try { localStorage.setItem(SHARED_TEAMS_KEY, JSON.stringify(out)); } catch (e) {}
+}
+// ---------- Wersje językowe: polski (domyślnie), English, Italiano (wybór wspólny z Tablicą Taktyczną: klucz mpv:lang) ----------
+var LANG_KEY = 'mpv:lang', lang = 'pl';
+try { var lg0 = localStorage.getItem(LANG_KEY); if (lg0 === 'en' || lg0 === 'it') lang = lg0; } catch (e) {}
+var I18N = { en: {}, it: {} };
+[ // [polski, English, Italiano]
+  ['Siatkówka · Taktyka · 3D', 'Volleyball · Tactics · 3D', 'Pallavolo · Tattica · 3D'],
+  ['Wybierz narzędzie', 'Choose a tool', 'Scegli lo strumento'],
+  ['Tablica Taktyczna', 'Tactical Board', 'Lavagna Tattica'],
+  ['Rzut boiska z góry z uproszczonym widokiem pionków — szybkie ustawianie formacji.', 'Top-down court view with simplified pawns — quick formation setup.', 'Vista dall’alto del campo con pedine semplificate — schieramenti rapidi.'],
+  ['Konfigurator 3-stronicowego gameplanu przeciwnika: ustawienie i dystrybucja, atak, zagrywka. Eksport do PDF (A4).', 'Configurator for a 3-page opponent game plan: setup and distribution, attack, serve. PDF export (A4).', 'Configuratore di un game plan avversario di 3 pagine: schieramento e distribuzione, attacco, battuta. Esportazione in PDF (A4).'],
+  ['Pełny model 3D boiska, zawodników i formacji, z dowolnym obrotem kamery.', 'Full 3D model of the court, players and formations, with free camera rotation.', 'Modello 3D completo di campo, giocatori e schieramenti, con rotazione libera della telecamera.'],
+  ['Otwórz →', 'Open →', 'Apri →'],
+  ['⚙️ Ustawienia', '⚙️ Settings', '⚙️ Impostazioni'],
+  ['Ustawienia zespołów', 'Team settings', 'Impostazioni squadre'],
+  ['Zamknij', 'Close', 'Chiudi'],
+  ['Nazwa, logo, kolory i płeć — wspólne dla Tablicy Taktycznej i Modelu 3D.', 'Name, logo, colours and category — shared by the Tactical Board and the 3D Model.', 'Nome, logo, colori e categoria — comuni a Lavagna Tattica e Modello 3D.'],
+  ['Motyw', 'Theme', 'Tema'],
+  ['☀️ Jasny', '☀️ Light', '☀️ Chiaro'],
+  ['🌙 Ciemny', '🌙 Dark', '🌙 Scuro'],
+  ['Przywróć domyślne kolory', 'Restore default colours', 'Ripristina i colori predefiniti'],
+  ['Drużyna', 'Team', 'Squadra'], ['Nazwa', 'Name', 'Nome'], ['Wgraj logo', 'Upload logo', 'Carica logo'], ['Usuń logo', 'Remove logo', 'Rimuovi logo'],
+  ['Płeć', 'Category', 'Categoria'], ['Mężczyźni', 'Men', 'Uomini'], ['Kobiety', 'Women', 'Donne'],
+  ['Koszulka', 'Jersey', 'Maglia'], ['Spodenki', 'Shorts', 'Pantaloncini'], ['Libero', 'Libero', 'Libero'], ['Buty', 'Shoes', 'Scarpe'],
+  ['Wyświetlaj na parkiecie', 'Show on the court', 'Mostra sul campo'],
+  // ---------- Logowanie (na razie tylko lokalnie w przeglądarce - docelowo konto Supabase) ----------
+  ['👤 Zaloguj się', '👤 Log in', '👤 Accedi'],
+  ['Wyloguj', 'Log out', 'Esci'],
+  ['Zaloguj się →', 'Log in →', 'Accedi →'],
+  ['Premium', 'Premium', 'Premium'],
+  ['Konto Premium odblokowuje Gameplan i Model 3D.', 'A Premium account unlocks Gameplan and the 3D Model.', 'Un account Premium sblocca Gameplan e Modello 3D.'],
+  ['E-mail', 'Email', 'E-mail'],
+  ['twój e-mail', 'your email', 'la tua e-mail'],
+].forEach(function (r) { I18N.en[r[0]] = r[1]; I18N.it[r[0]] = r[2]; });
+function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
+</script>
+</head>
+<body>
+
+<div id="topRight">
+  <div id="langSw" role="group" aria-label="Language">
+    <button type="button" data-lang="pl" title="Polski" aria-label="Polski"><svg viewBox="0 0 16 10" aria-hidden="true"><rect width="16" height="5" fill="#fff"/><rect y="5" width="16" height="5" fill="#dc143c"/></svg></button>
+    <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
+    <button type="button" data-lang="it" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg></button>
+  </div>
+  <button id="acctBtn" class="glass" title="Konto">
+    <span id="acctOut">👤 Zaloguj się</span><span id="acctIn">👤 <b id="acctEmail"></b> · Wyloguj</span>
+  </button>
+  <button id="settingsBtn" class="glass" title="Ustawienia zespołów">⚙️ Ustawienia</button>
+</div>
+
+<header class="hero">
+  <svg class="scene" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="fadeL" x1="0" x2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".9"/>
+      </linearGradient>
+      <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#4fc3ff" stop-opacity=".55"/><stop offset="1" stop-color="#4fc3ff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- poświata za piłką -->
+    <circle cx="930" cy="230" r="330" fill="url(#glow)"/>
+    <!-- ukośne pasy -->
+    <g fill="#fff">
+      <polygon points="560,0 640,0 380,520 300,520" opacity=".05"/>
+      <polygon points="680,0 700,0 440,520 420,520" opacity=".09"/>
+      <polygon points="760,0 880,0 620,520 500,520" opacity=".04"/>
+    </g>
+    <!-- napis w tle -->
+    <text x="-10" y="470" font-family="'Exo 2', sans-serif" font-size="330" font-weight="900" font-style="italic"
+          fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="2">VOLLEY</text>
+    <!-- boisko w perspektywie -->
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" opacity=".28">
+      <polygon points="120,520 1080,520 880,330 320,330" stroke-width="3"/>
+      <line x1="220" y1="425" x2="980" y2="425" stroke-width="3"/>
+      <line x1="196" y1="455" x2="1004" y2="455" stroke-width="2" stroke-dasharray="2 10"/>
+      <line x1="600" y1="330" x2="600" y2="520" stroke-width="2" stroke-dasharray="2 10"/>
+    </g>
+    <!-- linie prędkości -->
+    <g stroke-linecap="round">
+      <line x1="540" y1="190" x2="740" y2="150" stroke="url(#fadeL)" stroke-width="5"/>
+      <line x1="500" y1="240" x2="720" y2="216" stroke="url(#fadeL)" stroke-width="3" opacity=".8"/>
+      <line x1="580" y1="280" x2="740" y2="266" stroke="url(#fadeL)" stroke-width="2" opacity=".6"/>
+    </g>
+  </svg>
+
+  <div class="ball" aria-hidden="true">
+    <svg viewBox="-110 -110 220 220">
+      <defs>
+        <clipPath id="bc"><circle r="100"/></clipPath>
+        <linearGradient id="pBand" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e4e6eb"/>
+        </linearGradient>
+        <linearGradient id="pLeft" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f1f2f5"/><stop offset="1" stop-color="#d3d6dd"/>
+        </linearGradient>
+        <radialGradient id="shade" cx=".36" cy=".3" r=".85">
+          <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+          <stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+          <stop offset=".78" stop-color="#3a4668" stop-opacity=".14"/>
+          <stop offset="1" stop-color="#2a3556" stop-opacity=".48"/>
+        </radialGradient>
+      </defs>
+      <circle r="100" fill="#fbfbfd"/>
+      <g clip-path="url(#bc)">
+        <!-- lewy duży panel -->
+        <path d="M-30 -98 C-4 -72 -50 -34 -46 4 C-44 34 -42 58 -64 76 L-130 100 L-130 -100 Z" fill="url(#pLeft)"/>
+        <!-- trzy panele środkowe -->
+        <path d="M-8 -66 C30 -56 60 -48 130 -30 L130 12 C60 -8 10 -14 -42 -22 C-30 -40 -20 -56 -8 -66 Z" fill="url(#pBand)"/>
+        <path d="M-42 -22 C10 -14 60 -8 130 12 L130 50 C60 30 10 16 -46 8 Z" fill="url(#pBand)"/>
+        <path d="M-46 8 C10 16 60 30 130 50 L130 100 L90 90 C50 74 10 66 -42 56 Z" fill="url(#pBand)"/>
+        <!-- szwy -->
+        <g fill="none" stroke="#aeb4c0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M-30 -98 C-4 -72 -50 -34 -46 4 C-44 34 -42 58 -64 76"/>
+          <path d="M-52 -90 C-90 -50 -96 26 -58 84" stroke-width="2"/>
+          <path d="M-8 -66 C30 -56 60 -48 130 -30"/>
+          <path d="M-42 -22 C10 -14 60 -8 130 12"/>
+          <path d="M-46 8 C10 16 60 30 130 50"/>
+          <path d="M-42 56 C10 66 50 74 90 90"/>
+          <path d="M14 -104 C28 -90 40 -72 44 -54"/>
+          <path d="M58 -90 C64 -76 68 -60 68 -44"/>
+          <path d="M14 68 C4 82 -6 92 -18 104"/>
+          <path d="M42 76 C38 90 32 100 26 108"/>
+        </g>
+        <!-- jasna krawędź szwów -->
+        <g fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1" stroke-linecap="round" transform="translate(0 2.6)">
+          <path d="M-8 -66 C30 -56 60 -48 130 -30"/>
+          <path d="M-42 -22 C10 -14 60 -8 130 12"/>
+          <path d="M-46 8 C10 16 60 30 130 50"/>
+        </g>
+      </g>
+      <circle r="100" fill="url(#shade)"/>
+      <circle r="99.3" fill="none" stroke="#2a3556" stroke-opacity=".25" stroke-width="1.4"/>
+    </svg>
+  </div>
+
+  <div class="brand">
+    <span class="kicker">Siatkówka · Taktyka · 3D</span>
+    <h1><span>mPro</span><span class="l2">Volley 3D</span></h1>
+    <p>Wybierz narzędzie</p>
+  </div>
+</header>
+
+<main class="menu">
+  <a class="tile t1" data-num="01" href="tablica.html" target="_blank" rel="noopener">
+    <div class="thumb">
+      <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect x="0" y="0" width="240" height="120" fill="#0e3fb8" fill-opacity=".45"/>
+        <rect x="22" y="10" width="196" height="100" rx="3" fill="#ff9d47"/>
+        <g fill="none" stroke="#fff" stroke-width="2.2">
+          <rect x="22" y="10" width="196" height="100" rx="3"/>
+          <line x1="120" y1="6" x2="120" y2="114" stroke-width="3.2"/>
+          <line x1="82" y1="10" x2="82" y2="110"/><line x1="158" y1="10" x2="158" y2="110"/>
+        </g>
+        <g fill="#e8274b" stroke="#fff" stroke-width="2">
+          <circle cx="58" cy="30" r="8"/><circle cx="100" cy="30" r="8"/><circle cx="58" cy="60" r="8"/>
+          <circle cx="100" cy="60" r="8"/><circle cx="58" cy="90" r="8"/><circle cx="100" cy="90" r="8"/>
+        </g>
+        <g fill="#14b0ff" stroke="#fff" stroke-width="2">
+          <circle cx="140" cy="30" r="8"/><circle cx="182" cy="30" r="8"/><circle cx="140" cy="60" r="8"/>
+          <circle cx="182" cy="60" r="8"/><circle cx="140" cy="90" r="8"/><circle cx="182" cy="90" r="8"/>
+        </g>
+        <path d="M100 60 C112 44 126 40 138 32" fill="none" stroke="#fff" stroke-width="2.6" stroke-dasharray="5 5" stroke-linecap="round"/>
+        <path d="M133 29l8 2-5 7z" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="tx"><b>Tablica Taktyczna</b>
+    <span class="desc">Rzut boiska z góry z uproszczonym widokiem pionków — szybkie ustawianie formacji.</span>
+    <span class="go">Otwórz →</span></div>
+  </a>
+  <a class="tile t2 locked" data-num="02" href="gameplan-premium.html" target="_blank" rel="noopener">
+    <div class="thumb">
+      <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect x="0" y="0" width="240" height="120" fill="#ff7a00" fill-opacity=".3"/>
+        <g transform="rotate(-4 120 60)">
+          <rect x="62" y="8" width="116" height="118" rx="5" fill="#fff"/>
+          <rect x="62" y="8" width="116" height="20" rx="5" fill="#0e1b3d"/>
+          <text x="72" y="22" font-family="'Exo 2',sans-serif" font-size="10" font-weight="800" font-style="italic" fill="#ffd60a">GAMEPLAN</text>
+          <rect x="72" y="36" width="42" height="30" rx="2" fill="#ff9d47"/>
+          <g fill="none" stroke="#fff" stroke-width="1.4"><rect x="72" y="36" width="42" height="30"/><line x1="93" y1="36" x2="93" y2="66"/></g>
+          <g fill="#e8274b"><circle cx="82" cy="46" r="3"/><circle cx="82" cy="58" r="3"/></g>
+          <g fill="#14b0ff"><circle cx="104" cy="46" r="3"/><circle cx="104" cy="58" r="3"/></g>
+          <g fill="#1247e0"><rect x="122" y="56" width="9" height="10"/><rect x="134" y="46" width="9" height="20" fill="#ff7a00"/><rect x="146" y="38" width="9" height="28" fill="#17b4ff"/><rect x="158" y="50" width="9" height="16" fill="#ffc400"/></g>
+          <g stroke="#c9d3e6" stroke-width="3" stroke-linecap="round"><line x1="72" y1="78" x2="166" y2="78"/><line x1="72" y1="88" x2="150" y2="88"/><line x1="72" y1="98" x2="160" y2="98"/><line x1="72" y1="108" x2="130" y2="108"/></g>
+        </g>
+      </svg>
+    </div>
+    <div class="tx"><span class="badge" id="badgeGameplan">Premium</span><b>Gameplan</b>
+    <span class="desc">Konfigurator 3-stronicowego gameplanu przeciwnika: ustawienie i dystrybucja, atak, zagrywka. Eksport do PDF (A4).</span>
+    <span class="go goOpen">Otwórz →</span><span class="go goLogin">Zaloguj się →</span></div>
+  </a>
+  <a class="tile t3 locked" data-num="03" href="model3d-premium.html" target="_blank" rel="noopener">
+    <div class="thumb">
+      <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <pattern id="m3" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M7 0H0V7" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".8"/></pattern>
+        </defs>
+        <rect x="0" y="0" width="240" height="120" fill="#3a0f8f" fill-opacity=".4"/>
+        <polygon points="14,116 226,116 178,40 62,40" fill="#ff9d47"/>
+        <g fill="none" stroke="#fff" stroke-width="2"><polygon points="14,116 226,116 178,40 62,40"/><line x1="40" y1="84" x2="200" y2="84" stroke-dasharray="3 5"/></g>
+        <rect x="30" y="62" width="180" height="20" fill="url(#m3)"/>
+        <rect x="30" y="59" width="180" height="4" fill="#fff"/>
+        <rect x="28" y="52" width="4" height="36" fill="#0e1b3d"/><rect x="208" y="52" width="4" height="36" fill="#0e1b3d"/>
+        <g fill="#e8274b" stroke="#fff" stroke-width="1.4"><circle cx="82" cy="94" r="5"/><rect x="77" y="98" width="10" height="14" rx="4"/><circle cx="118" cy="90" r="5"/><rect x="113" y="94" width="10" height="14" rx="4"/></g>
+        <g fill="#14b0ff" stroke="#fff" stroke-width="1.4"><circle cx="100" cy="46" r="4"/><rect x="96" y="49" width="8" height="11" rx="3"/><circle cx="142" cy="46" r="4"/><rect x="138" y="49" width="8" height="11" rx="3"/></g>
+        <ellipse cx="120" cy="74" rx="106" ry="32" fill="none" stroke="#fff" stroke-width="2.4" stroke-dasharray="6 7" stroke-linecap="round" opacity=".9"/>
+        <path d="M222 78l-9-9 1 12z" fill="#fff"/>
+        <text x="12" y="20" font-family="'Exo 2',sans-serif" font-size="15" font-weight="900" font-style="italic" fill="#fff">360°</text>
+      </svg>
+    </div>
+    <div class="tx"><span class="badge" id="badgeModel3d">Premium</span><b>Model 3D</b>
+    <span class="desc">Pełny model 3D boiska, zawodników i formacji, z dowolnym obrotem kamery.</span>
+    <span class="go goOpen">Otwórz →</span><span class="go goLogin">Zaloguj się →</span></div>
+  </a>
+</main>
+
+<footer>© 2026 Michał Pyra · mPro Volley 3D</footer>
+
+<div id="settingsOverlay" hidden>
+  <div class="setBox glass">
+    <button class="x" id="setClose" title="Zamknij">✕</button>
+    <h2>Ustawienia zespołów</h2>
+    <p class="hint">Nazwa, logo, kolory i płeć — wspólne dla Tablicy Taktycznej i Modelu 3D.</p>
+    <div class="row themeRow">
+      <label>Motyw</label>
+      <button type="button" class="themeBtn" data-theme="light">☀️ Jasny</button>
+      <button type="button" class="themeBtn" data-theme="dark">🌙 Ciemny</button>
+    </div>
+    <div class="teamsGrid" id="teamsGrid"></div>
+    <div class="row" style="margin-top:14px"><button type="button" id="resetTeamsBtn">Przywróć domyślne kolory</button></div>
+  </div>
+</div>
+
+<div id="loginOverlay" hidden>
+  <div class="setBox loginBox glass">
+    <button class="x" id="loginClose" title="Zamknij">✕</button>
+    <h2>Zaloguj się</h2>
+    <p class="hint">Konto Premium odblokowuje Gameplan i Model 3D.</p>
+    <form id="loginForm">
+      <div><label for="loginEmail">E-mail</label><input id="loginEmail" type="email" required placeholder="twój e-mail" autocomplete="email"></div>
+      <button type="submit">Zaloguj się →</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var teams = loadSharedTeams() || JSON.parse(JSON.stringify(DEFAULT_SHARED_TEAMS));
+  ['a', 'b'].forEach(function (t) { teams[t] = Object.assign({}, DEFAULT_SHARED_TEAMS[t], teams[t] || {}); });
+
+  function save() { saveSharedTeams(teams); }
+
+  var COLOR_FIELDS = [['jersey', 'Koszulka'], ['shorts', 'Spodenki'], ['libero', 'Libero'], ['shoes', 'Buty']]; // etykiety tłumaczone przez T()
+  var esc = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+
+  function teamCardHTML(t, label) {
+    var tm = teams[t];
+    var colorsHtml = COLOR_FIELDS.map(function (f) {
+      return '<div class="colorItem"><input type="color" data-team="' + t + '" data-key="' + f[0] + '" value="' + esc(tm[f[0]]) + '"><span>' + T(f[1]) + '</span></div>';
+    }).join('');
+    return (
+      '<div class="teamCard" data-team="' + t + '">' +
+      '<h3>' + T('Drużyna') + ' ' + label + '</h3>' +
+      '<div class="row"><div style="flex:1;min-width:0"><label>' + T('Nazwa') + '</label>' +
+      '<input type="text" class="nameInput" data-team="' + t + '" placeholder="' + T('Drużyna') + ' ' + label + '" value="' + esc(tm.name) + '"></div></div>' +
+      '<div class="row">' +
+      '<img class="logoPrev" data-team="' + t + '" src="' + esc(tm.logo) + '" style="' + (tm.logo ? '' : 'display:none') + '">' +
+      '<input type="file" accept="image/*" class="logoInput" data-team="' + t + '" style="display:none">' +
+      '<button type="button" class="logoBtn" data-team="' + t + '">' + T('Wgraj logo') + '</button>' +
+      '<button type="button" class="logoClear" data-team="' + t + '" style="' + (tm.logo ? '' : 'display:none') + '">' + T('Usuń logo') + '</button>' +
+      '</div>' +
+      '<div class="row"><label style="margin:0 8px 0 0">' + T('Płeć') + '</label>' +
+      '<select class="genderSel" data-team="' + t + '">' +
+      '<option value="m"' + (tm.gender !== 'k' ? ' selected' : '') + '>' + T('Mężczyźni') + '</option>' +
+      '<option value="k"' + (tm.gender === 'k' ? ' selected' : '') + '>' + T('Kobiety') + '</option>' +
+      '</select></div>' +
+      '<div class="row colorRow">' + colorsHtml + '</div>' +
+      '<div class="row"><button type="button" class="floorLogoBtn' + (tm.floorLogo !== false ? ' on' : '') + '" data-team="' + t + '">' + T('Wyświetlaj na parkiecie') + '</button></div>' +
+      '</div>'
+    );
+  }
+
+  function render() {
+    document.getElementById('teamsGrid').innerHTML = teamCardHTML('a', 'A') + teamCardHTML('b', 'B');
+  }
+  render(); window.mpvRenderTeams = render; // przerysowanie kart zespołów po zmianie języka
+
+  var grid = document.getElementById('teamsGrid');
+
+  grid.addEventListener('input', function (e) {
+    var el = e.target, t = el.dataset.team; if (!t) return;
+    if (el.classList.contains('nameInput')) { teams[t].name = el.value; save(); }
+    else if (el.type === 'color') { teams[t][el.dataset.key] = el.value; save(); }
+  });
+
+  grid.addEventListener('change', function (e) {
+    var el = e.target, t = el.dataset.team; if (!t) return;
+    if (el.classList.contains('genderSel')) { teams[t].gender = el.value; save(); }
+    else if (el.classList.contains('logoInput')) {
+      var f = el.files[0]; if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var w = img.naturalWidth || 256, h = img.naturalHeight || 256;
+          var k = f.type === 'image/svg+xml' ? 256 / Math.max(w, h) : Math.min(1, 256 / Math.max(w, h));
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          teams[t].logo = c.toDataURL('image/png');
+          save(); render();
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(f);
+    }
+  });
+
+  grid.addEventListener('click', function (e) {
+    var el = e.target, t = el.dataset.team; if (!t) return;
+    if (el.classList.contains('logoBtn')) { el.parentElement.querySelector('.logoInput').click(); }
+    else if (el.classList.contains('logoClear')) { teams[t].logo = ''; save(); render(); }
+    else if (el.classList.contains('floorLogoBtn')) { teams[t].floorLogo = teams[t].floorLogo === false; save(); render(); }
+  });
+
+  document.getElementById('resetTeamsBtn').addEventListener('click', function () {
+    ['a', 'b'].forEach(function (t) {
+      teams[t].jersey = DEFAULT_SHARED_TEAMS[t].jersey;
+      teams[t].shorts = DEFAULT_SHARED_TEAMS[t].shorts;
+      teams[t].libero = DEFAULT_SHARED_TEAMS[t].libero;
+      teams[t].shoes = DEFAULT_SHARED_TEAMS[t].shoes;
+    });
+    save(); render();
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', function () {
+    document.getElementById('settingsOverlay').hidden = false;
+  });
+  document.getElementById('setClose').addEventListener('click', function () {
+    document.getElementById('settingsOverlay').hidden = true;
+  });
+
+  if (location.hash === '#settings') document.getElementById('settingsOverlay').hidden = false;
+})();
+</script>
+<script>
+(function () { // tłumaczenie statycznego tekstu i atrybutów strony; oryginał polski jest zapamiętany, więc można wrócić do PL
+  var txt = new WeakMap(), attr = new WeakMap();
+  function applyI18n() {
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+      return /^(SCRIPT|STYLE|TEXTAREA|OPTION)$/i.test(n.parentNode.nodeName) || n.parentNode.closest('svg') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach(function (n) {
+      if (!txt.has(n)) txt.set(n, n.nodeValue);
+      var orig = txt.get(n), key = orig.replace(/\s+/g, ' ').trim(); if (!key) return;
+      var tr = lang === 'pl' ? key : T(key);
+      var want = tr === key ? orig : orig.replace(/^(\s*)[\s\S]*?(\s*)$/, function (m, a, b) { return a + tr + b; });
+      if (n.nodeValue !== want) n.nodeValue = want;
+    });
+    document.body.querySelectorAll('[title],[placeholder],[aria-label]').forEach(function (el) {
+      var m = attr.get(el); if (!m) attr.set(el, m = {});
+      ['title', 'placeholder', 'aria-label'].forEach(function (a) {
+        if (!el.hasAttribute(a)) return;
+        if (!(a in m)) m[a] = el.getAttribute(a);
+        var key = m[a].replace(/\s+/g, ' ').trim(), tr = lang === 'pl' ? key : T(key), want = tr === key ? m[a] : tr;
+        if (el.getAttribute(a) !== want) el.setAttribute(a, want);
+      });
+    });
+  }
+  function setLang(l) {
+    lang = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.classList.toggle('on', b.dataset.lang === l); b.setAttribute('aria-pressed', b.dataset.lang === l ? 'true' : 'false'); });
+    if (window.mpvRenderTeams) window.mpvRenderTeams();
+    applyI18n();
+  }
+  document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  setLang(lang);
+})();
+</script>
+<script>
+(function () {
+  var btns = document.querySelectorAll('.themeBtn');
+  function mark() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'light';
+    btns.forEach(function (b) { b.classList.toggle('on', b.dataset.theme === cur); });
+  }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.documentElement.setAttribute('data-theme', b.dataset.theme);
+      try { localStorage.setItem('mpv:theme', b.dataset.theme); } catch (e) {}
+      mark();
+    });
+  });
+  mark();
+})();
+</script>
+<script>
+// ---------- Logowanie: na razie tylko w localStorage przeglądarki (mpv:user) - makieta pod przyszłe konto Supabase ----------
+(function () {
+  var USER_KEY = 'mpv:user';
+  function getUser() { try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch (e) { return null; } }
+  function setUser(u) { try { u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY); } catch (e) {} }
+
+  var acctBtn = document.getElementById('acctBtn'), acctEmail = document.getElementById('acctEmail');
+  var overlay = document.getElementById('loginOverlay');
+  var gatedTiles = [document.getElementById('badgeGameplan').closest('a.tile'), document.getElementById('badgeModel3d').closest('a.tile')];
+
+  function render() {
+    var u = getUser();
+    acctBtn.classList.toggle('loggedIn', !!u);
+    acctEmail.textContent = u ? u.email : '';
+    gatedTiles.forEach(function (a) { a.classList.toggle('unlocked', !!u); a.classList.toggle('locked', !u); });
+  }
+
+  acctBtn.addEventListener('click', function () {
+    if (getUser()) { setUser(null); render(); } else { overlay.hidden = false; document.getElementById('loginEmail').focus(); }
+  });
+  document.getElementById('loginClose').addEventListener('click', function () { overlay.hidden = true; });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.hidden = true; });
+  document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = document.getElementById('loginEmail').value.trim();
+    if (!email) return;
+    setUser({ email: email });
+    overlay.hidden = true;
+    render();
+  });
+  gatedTiles.forEach(function (a) {
+    a.addEventListener('click', function (e) { if (!getUser()) { e.preventDefault(); overlay.hidden = false; document.getElementById('loginEmail').focus(); } });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
