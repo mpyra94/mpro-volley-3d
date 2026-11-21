@@ -948,9 +948,9 @@ function saveSharedTeams(teamsObj) {
     el('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.42' }, gr); el('stop', { offset: '.55', 'stop-color': '#ffffff', 'stop-opacity': '0' }, gr); el('stop', { offset: '1', 'stop-color': '#0a1030', 'stop-opacity': '.38' }, gr);
     el('circle', { r: 15, fill: '#f6cf16' }, g);
     var cg = el('g', { 'clip-path': 'url(#ballClip)' }, g);
-    // trzy niebieskie pasy wychodzą ze środka i zakręcają się ku krawędzi; każdy zajmuje ok. 58% swojego sektora 120° (niebieski szerszy niż żółty)
+    // trzy wąskie niebieskie pasy wychodzą ze środka i zakręcają się ku krawędzi; każdy zajmuje ok. 42% swojego sektora 120° (żółtego jest więcej, jak na zdjęciu)
     for (var bi = 0; bi < 3; bi++) {
-      var lo = [], hi = [], n = 32, W = 0.6 * 2 * Math.PI / 3;
+      var lo = [], hi = [], n = 32, W = 0.42 * 2 * Math.PI / 3;
       for (var ii = 0; ii <= n; ii++) {
         var rr = 19 * ii / n, th = Math.asin(Math.min(1, rr / 15)), a = bi * 2 * Math.PI / 3 + 1.0 * th;
         lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
