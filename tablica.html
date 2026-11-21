@@ -1622,24 +1622,26 @@ function saveSharedTeams(teamsObj) {
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
     if (d.type === 'mpv-ready') { ready3d = true; if (pend3d) frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); }
-    else if (d.type === 'mpv-rendered' && d.id === pend3d && anim3d) { // kolejna klatka animacji
-      clearTimeout(timer3d); pend3d = null;
-      if (d.error || !d.dataUrl) { fail3d(); return; }
-      anim3d.frames.push(d.dataUrl); anim3d.i++;
-      if (anim3d.i < anim3d.n) nextAnimFrame3d(); else finishAnim3d();
+    else if (d.type === 'mpv-rendered' && anim3d && d.id >= anim3d.base && d.id <= anim3d.base + anim3d.n) { // klatka animacji (wszystkie zlecone naraz, wracają po kolei)
+      if (d.error || !d.blob) { fail3d(); return; }
+      anim3d.frames[d.id - anim3d.base] = URL.createObjectURL(d.blob); anim3d.got++;
+      clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+      var pct = Math.round(100 * anim3d.got / (anim3d.n + 1)); busy3d(true, T('Generowanie animacji…') + ' ' + pct + '%', pct);
+      if (anim3d.got > anim3d.n) finishAnim3d();
     }
     else if (d.type === 'mpv-rendered' && d.id === pend3d) {
       clearTimeout(timer3d); pend3d = null;
-      if (d.error || !d.dataUrl) { fail3d(); return; }
-      var img = new Image();
+      if (d.error || !(d.blob || d.dataUrl)) { fail3d(); return; }
+      var img = new Image(), imgUrl = d.blob ? URL.createObjectURL(d.blob) : d.dataUrl;
       img.onload = function () {
+        if (d.blob) URL.revokeObjectURL(imgUrl);
         var cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0);
         busy3d(false);
         if (shotCv && shotKind === '3d' && !$('shotModal').hidden) { shotCv = cv; $('shotCanvas').getContext('2d').drawImage(cv, 0, 0); } // zmiana kąta: ten sam podgląd i kadr
         else openShot(cv, '3d');
         if (queued3d) { queued3d = false; render3dAngle(); }
       };
-      img.onerror = fail3d; img.src = d.dataUrl;
+      img.onerror = fail3d; img.src = imgUrl;
     }
   });
   // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem. Renderujemy tylko drogę w dół (z powrotem klatki
@@ -1647,20 +1649,16 @@ function saveSharedTeams(teamsObj) {
   var anim3d = null, animPlay = null, ANIM = { W: 1200, H: 900, fps: 24, steps: 72 }; // 73 klatki w jedną stronę → 6 s w pętli (w dół i w górę)
   function animAngle(i, n) { return 90 - 80 * (1 - Math.cos(Math.PI * i / n)) / 2; } // 90° → 10° z łagodnym startem i końcem
   function animSeq(n) { var s = [], i; for (i = 0; i < n; i++) s.push(i); for (i = n - 2; i > 0; i--) s.push(i); return s; } // kolejność odtwarzania: w dół i z powrotem w górę
-  function nextAnimFrame3d() {
-    var a = anim3d; if (!a || !frame3d) return;
-    var pct = Math.round(100 * a.i / (a.n + 1));
-    busy3d(true, T('Generowanie animacji…') + ' ' + pct + '%', pct);
-    pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
-    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: animAngle(a.i, a.n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, ss: 2, fmt: 'jpeg' }, '*');
-  }
-  function startAnim3d() {
+  function startAnim3d() { // wszystkie klatki zlecamy naraz: ukryta ramka renderuje je jedna po drugiej bez przerw, a kodowanie JPEG idzie w tle
     if (anim3d || pend3d || !frame3d || !ready3d) return;
-    anim3d = { n: ANIM.steps, i: 0, frames: [] }; nextAnimFrame3d();
+    var n = ANIM.steps, base = rid3d + 1; rid3d += n + 1;
+    anim3d = { n: n, base: base, got: 0, frames: [] }; pend3d = base;
+    busy3d(true, T('Generowanie animacji…') + ' 0%', 0); clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+    for (var i = 0; i <= n; i++) frame3d.contentWindow.postMessage({ type: 'mpv-render', id: base + i, angleOnly: true, angle: animAngle(i, n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, ss: 2, fmt: 'jpeg', keep: true, last: i === n }, '*');
   }
   function finishAnim3d() { // wszystkie klatki gotowe: otwieramy okno z odtwarzaniem
-    var frames = anim3d.frames; anim3d = null; busy3d(false);
-    animPlay = { imgs: frames.map(function (u) { var im = new Image(); im.src = u; return im; }), seq: animSeq(frames.length), pos: 0, prev: 0, last: -1, playing: true, raf: 0, saving: false };
+    var frames = anim3d.frames; anim3d = null; pend3d = null; clearTimeout(timer3d); busy3d(false);
+    animPlay = { urls: frames, imgs: frames.map(function (u) { var im = new Image(); im.src = u; return im; }), seq: animSeq(frames.length), pos: 0, prev: 0, last: -1, playing: true, raf: 0, saving: false };
     var cv = $('animCanvas'); cv.width = ANIM.W; cv.height = ANIM.H;
     $('animPlay').textContent = T('⏸ Pauza'); $('animModal').hidden = false;
     animPlay.raf = requestAnimationFrame(animTick);
@@ -1674,7 +1672,7 @@ function saveSharedTeams(teamsObj) {
     if (idx !== p.last && im.complete && im.naturalWidth) { drawAnimFrame($('animCanvas').getContext('2d'), im); p.last = idx; }
     p.raf = requestAnimationFrame(animTick);
   }
-  function closeAnim3d() { if (animPlay) { cancelAnimationFrame(animPlay.raf); animPlay = null; } $('animModal').hidden = true; }
+  function closeAnim3d() { if (animPlay) { cancelAnimationFrame(animPlay.raf); animPlay.urls.forEach(function (u) { URL.revokeObjectURL(u); }); animPlay = null; } $('animModal').hidden = true; }
   $('animPlay').addEventListener('click', function () { if (!animPlay) return; animPlay.playing = !animPlay.playing; this.textContent = T(animPlay.playing ? '⏸ Pauza' : '▶ Odtwórz'); });
   $('animClose').addEventListener('click', closeAnim3d);
   $('animX').addEventListener('click', closeAnim3d);
