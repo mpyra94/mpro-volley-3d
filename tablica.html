@@ -1043,8 +1043,9 @@ function saveSharedTeams(teamsObj) {
     }
     return rects;
   }
+  var shState = null; // ostatnio policzony cień bloku (do widoku 3D)
   function updateShadow() {
-    if (shG && shG.parentNode) shG.parentNode.removeChild(shG); shG = null;
+    if (shG && shG.parentNode) shG.parentNode.removeChild(shG); shG = null; shState = null;
     var st = $('shStat'); if (!st) return;
     if (!shadowOn || !pst.ball.on) { st.hidden = true; return; }
     var Bx = (CY - pst.ball.y) / UNIT, Bz = (pst.ball.x - CX) / UNIT; st.hidden = false;
@@ -1074,13 +1075,15 @@ function saveSharedTeams(teamsObj) {
     rects.forEach(function (rc) { // pasy blokujących na siatce
       el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
     });
+    var rayZ = [], endX = def === 'a' ? -9 : 9;
     if (rects.length) { // dwa skrajne promienie: od piłki przez krawędzie bloku do końca boiska
-      var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; }), endX = def === 'a' ? -9 : 9;
+      var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; });
       [[left, left.zmin], [right, right.zmax]].forEach(function (a) {
-        var t = (endX - Bx) / (a[0].x - Bx), hz = Bz + t * (a[1] - Bz);
+        var t = (endX - Bx) / (a[0].x - Bx), hz = Bz + t * (a[1] - Bz); rayZ.push(hz);
         el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
       });
     }
+    shState = { def: def, rects: rects.map(function (q) { return { x: q.x, zmin: q.zmin, zmax: q.zmax }; }), Bx: Bx, Bz: Bz, endX: endX, rayZ: rayZ, png: shCv.toDataURL() };
     if (annotG && annotG.parentNode === svg) svg.insertBefore(shG, annotG); // pod rysunkami i pionkami
     var total = SH_N * SH_N;
     st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + rects.length + '</b>') + '<br>' +
@@ -1751,7 +1754,9 @@ function saveSharedTeams(teamsObj) {
         var ax = t === 'a' ? x : -x, pose = 'stand'; // ax = odległość od siatki po stronie własnej (ujemna dla A)
         if (mode === 'def') pose = ax > -3.4 ? 'block' : 'defense'; else if (mode === 'recv') pose = ax < -3.4 ? 'pass' : 'stand';
         var pk = labels[pawnKey()], txt = pk === 'role' ? RL(r.role || '–') : pk === 'none' ? ' ' : String(r.num); // napis na pionku jak na tablicy: numer / litera pozycji / nic
-        items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b' }); // widok 3D tylko z pionkami drużyny A
+        var pi = pillInfo(t, n); // etykieta przy pionku (nazwisko / pozycja) – tak samo jak na tablicy
+        items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b', // widok 3D tylko z pionkami drużyny A
+          label: pi ? pi.lines.map(function (l) { return { t: l.t, b: !!l.b }; }) : null });
       }
       // pionki, które na tablicy się stykają (np. blok przy siatce), mają się stykać także po zmniejszeniu: grupa jest skalowana wokół swojego środka
       // „stykają się” = odstęp środków do 1,3 × suma promieni (pionki na tablicy nie mogą być bliżej niż ok. 1,05 ×, a przy ślizganiu po sobie zostaje szczelina)
@@ -1782,7 +1787,8 @@ function saveSharedTeams(teamsObj) {
       items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
-    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    updateShadow(); // cień bloku zgodnie z filtrem na tablicy (shState = null, gdy filtr wyłączony lub brak piłki po jednej ze stron)
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, shadow: shState, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;

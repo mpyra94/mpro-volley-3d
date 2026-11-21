@@ -2663,6 +2663,36 @@ function boardBallTexture() { // żółta piłka z trzema szerokimi, zakręconym
 let boardBallBump = null;
 // Ustawia zawodników dokładnie tak, jak przysłała tablica. Wywoływane przed KAŻDYM obrazem – nawet gdyby model sam coś przesunął
 // (np. libero na krzesełko), pozycje z tablicy zawsze wygrywają.
+const boardLabelCache = {};
+function boardLabelTex(lines) { // etykieta nad pionkiem (nazwisko / pozycja) jak na tablicy: ciemna plakietka z białym tekstem
+  const key = JSON.stringify(lines); if (boardLabelCache[key]) return boardLabelCache[key];
+  const fs = 46, lh = fs + 14, c = document.createElement('canvas'), g = c.getContext('2d');
+  g.font = `800 ${fs}px system-ui, sans-serif`;
+  const w = Math.ceil(Math.max(...lines.map(l => { g.font = `${l.b ? 800 : 600} ${fs}px system-ui, sans-serif`; return g.measureText(l.t).width; }))) + 48, h = lines.length * lh + 22;
+  c.width = w; c.height = h;
+  g.fillStyle = 'rgba(14,27,61,.92)'; g.beginPath(); g.roundRect(0, 0, w, h, 22); g.fill();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  lines.forEach((l, i) => { g.font = `${l.b ? 800 : 600} ${fs}px system-ui, sans-serif`; g.fillStyle = l.b ? '#fff' : '#dcebff'; g.fillText(l.t, w / 2, 11 + lh * (i + 0.5)); });
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  return boardLabelCache[key] = { tex, w, h };
+}
+let boardShadowObjs = [];
+async function addBoardShadow(sh) { // cień bloku z tablicy: tekstura na połowie obrońców, pasy blokujących nad siatką i dwa promienie po podłodze
+  boardShadowObjs.forEach(o => scene.remove(o)); boardShadowObjs = [];
+  if (!sh) return;
+  const img = new Image(); img.src = sh.png; await img.decode();
+  const tex = new THREE.Texture(img); tex.needsUpdate = true; tex.colorSpace = THREE.SRGBColorSpace;
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+  plane.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0))); // wiersze obrazu = x (do siatki), kolumny = z
+  plane.position.set(sh.def === 'a' ? -4.5 : 4.5, 0.014, 0); plane.renderOrder = 2; scene.add(plane); boardShadowObjs.push(plane);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x5b48c9, transparent: true, opacity: .5, side: THREE.DoubleSide, depthWrite: false });
+  for (const rc of sh.rects) {
+    const top = 3.1, bottom = NET_H - 0.25, m = new THREE.Mesh(new THREE.PlaneGeometry(rc.zmax - rc.zmin, top - bottom), mat);
+    m.rotation.y = Math.PI / 2; m.position.set(rc.x, (top + bottom) / 2, (rc.zmin + rc.zmax) / 2); scene.add(m); boardShadowObjs.push(m);
+  }
+  const pts = []; for (const hz of sh.rayZ) pts.push(new THREE.Vector3(sh.Bx, 0.03, sh.Bz), new THREE.Vector3(sh.endX, 0.03, hz));
+  if (pts.length) { const ln = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .95 })); scene.add(ln); boardShadowObjs.push(ln); }
+}
 function placeBoardPlayers() {
   tweens.length = 0;
   for (const p of players) {
@@ -2674,6 +2704,10 @@ function placeBoardPlayers() {
     p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
     setFacing(p, 0); applyPose(p);
     p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
+    if (q.label && q.label.length) { // etykieta (filtr „Etykieta” na tablicy): nad pionkiem
+      const lb = boardLabelTex(q.label); p.sprite.material.map = lb.tex; p.sprite.material.needsUpdate = true;
+      p.sprite.scale.set(lb.w / 105, lb.h / 105, 1); p.sprite.position.y = 2.1 + lb.h / 210 + 0.15; p.sprite.visible = true;
+    }
     // promień pionka = taki sam jak na tablicy (q.r w metrach), więc pionki, które się tam stykają, stykają się też tutaj; wysokość ok. 2 m (poniżej siatki 2,43 m)
     const k = (q.r || 0.5) / 0.24;
     p.pawn.scale.set(k, 1.4, k); p.disc.scale.set(k, k, 1);
@@ -2698,7 +2732,7 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   hemi.intensity = 1.15; sun.intensity = 1.0; fill.intensity = 0.5;
   tweens.length = 0; // jeszcze raz tuż przed ustawieniem pozycji (w trakcie oczekiwania na logo mogły wystartować nowe)
   try { const an = renderer.capabilities.getMaxAnisotropy(); if (netMat.map) { netMat.map.anisotropy = an; netMat.map.needsUpdate = true; } } catch (e) {} // ostrzejsza siatka pod kątem
-  boardPlayers = d.players; placeBoardPlayers();
+  boardPlayers = d.players; placeBoardPlayers(); await addBoardShadow(d.shadow);
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
   boardBall = bl || null;
