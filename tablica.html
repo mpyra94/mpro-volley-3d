@@ -1619,7 +1619,7 @@ function saveSharedTeams(teamsObj) {
     }
   });
   // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem; klatki z ukrytej ramki są nagrywane do pliku wideo ----
-  var anim3d = null, ANIM = { W: 960, H: 720, fps: 20, sec: 4.5 };
+  var anim3d = null, ANIM = { W: 960, H: 720, fps: 30, sec: 9 }; // 270 klatek: wolniej (9 s) i płynniej (30 kl./s)
   function animAngle(i, n) { var s = (1 - Math.cos(2 * Math.PI * i / n)) / 2; return 90 - 80 * s; } // 90° → 10° → 90°, płynnie (zwalnia na końcach)
   function nextAnimFrame3d() {
     var a = anim3d; if (!a || !frame3d) return;
@@ -1634,7 +1634,7 @@ function saveSharedTeams(teamsObj) {
   }
   function finishAnim3d() {
     var a = anim3d; busy3d(true, T('Zapisywanie animacji…'));
-    Promise.all(a.frames.map(function (u) { var im = new Image(); im.src = u; return im.decode().then(function () { return im; }); })).then(function (imgs) {
+    Promise.resolve().then(function () {
       var cv = document.createElement('canvas'); cv.width = ANIM.W; cv.height = ANIM.H; var g = cv.getContext('2d');
       var mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
       var stream = cv.captureStream(0), track = stream.getVideoTracks()[0], chunks = [];
@@ -1645,12 +1645,16 @@ function saveSharedTeams(teamsObj) {
         var name = 'tablica-3d-animacja-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
         downloadBlob(new Blob(chunks, { type: type }), name); busy3d(false); anim3d = null;
       };
-      var i = 0;
+      var i = 0, t0 = 0; // klatki dekodowane na bieżąco (nie trzymamy ich wszystkich w pamięci), tempo wg zegara – stała liczba klatek na sekundę
       (function draw() {
-        if (i >= imgs.length) { rec.stop(); return; }
-        g.drawImage(imgs[i], 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H);
-        if (track.requestFrame) track.requestFrame();
-        i++; setTimeout(draw, 1000 / ANIM.fps);
+        if (i >= a.frames.length) { setTimeout(function () { rec.stop(); }, 1000 / ANIM.fps); return; }
+        var im = new Image(); im.src = a.frames[i];
+        im.decode().then(function () {
+          if (!t0) t0 = performance.now();
+          g.drawImage(im, 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H);
+          if (track.requestFrame) track.requestFrame();
+          i++; setTimeout(draw, Math.max(0, t0 + i * 1000 / ANIM.fps - performance.now()));
+        }).catch(function () { rec.stop(); });
       })();
       rec.start();
     }).catch(function () { anim3d = null; fail3d(); });
