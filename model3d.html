@@ -2652,6 +2652,7 @@ async function renderFromBoard(d) {
     // pionek skalowany równomiernie (proporcje jak w modelu); pionki stykające się na tablicy tablica zbliża do siebie tak, by stykały się też tutaj
     const k = (q.r || 0.27) / 0.24;
     p.pawn.scale.set(k, k, k); p.disc.scale.set(k, k, 1);
+    if (p.pawn.children[3]) p.pawn.children[3].visible = false; // bez główki – sam walec z numerem i kopułami
   }
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
@@ -2660,7 +2661,7 @@ async function renderFromBoard(d) {
   const prevSize = renderer.getSize(new THREE.Vector2()), prevRatio = renderer.getPixelRatio();
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   const cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 250);
-  cam.position.set(-15.5, 3.6, 0); cam.lookAt(0, 0.8, 0); // zza drużyny A, z niskiej perspektywy, siatka na wprost
+  cam.position.set(-15.5, 4.4, 0); cam.lookAt(0, 0.8, 0); // zza drużyny A, z niskiej perspektywy, siatka na wprost
   const c = renderClean(cam);
   renderer.setPixelRatio(prevRatio); renderer.setSize(prevSize.x, prevSize.y, false); resize();
   return c.toDataURL('image/png');
