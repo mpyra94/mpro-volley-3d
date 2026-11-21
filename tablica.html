@@ -941,8 +941,19 @@ function saveSharedTeams(teamsObj) {
     if (!pst.ball.on) return;
     var g = el('g', { class: 'ballg', transform: 'translate(' + pst.ball.x + ',' + pst.ball.y + ')', style: 'cursor:grab' });
     el('ellipse', { cx: 2, cy: 14, rx: 13, ry: 4, fill: 'rgba(14,27,61,.28)' }, g);
-    el('circle', { r: 15, fill: '#ffffff', stroke: '#8b95a8', 'stroke-width': 1.6 }, g);
-    el('path', { d: 'M-15 0 C-8 -9 8 -9 15 0 M-15 0 C-8 9 8 9 15 0 M0 -15 C-7 -7 -7 7 0 15 M-10.5 -10.5 C-5 -4 -5 4 -10.5 10.5 M10.5 -10.5 C5 -4 5 4 10.5 10.5', fill: 'none', stroke: '#8b95a8', 'stroke-width': 1.2 }, g);
+    // piłka żółto-niebieska (trzy zakręcone niebieskie pasy schodzące się w jednym punkcie) z delikatnym cieniowaniem kuli
+    var defs = el('defs', {}, g);
+    var cp = el('clipPath', { id: 'ballClip' }, defs); el('circle', { r: 15 }, cp);
+    var gr = el('radialGradient', { id: 'ballShade', cx: '35%', cy: '30%', r: '75%' }, defs);
+    el('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.42' }, gr); el('stop', { offset: '.55', 'stop-color': '#ffffff', 'stop-opacity': '0' }, gr); el('stop', { offset: '1', 'stop-color': '#0a1030', 'stop-opacity': '.38' }, gr);
+    el('circle', { r: 15, fill: '#f6cf16' }, g);
+    var cg = el('g', { 'clip-path': 'url(#ballClip)' }, g);
+    [0, 120, 240].forEach(function (a) { // jeden pas obrócony trzykrotnie o 120°: szeroki, wygięty, od środka do krawędzi
+      el('path', { d: 'M0 0 C3 -5 8 -8 17 -7 L17 -17 C6 -16 -3 -12 -4 -3 Z', fill: '#1b3a96', transform: 'rotate(' + a + ')' }, cg);
+      el('path', { d: 'M0 0 C3 -5 8 -8 17 -7', fill: 'none', stroke: 'rgba(8,16,60,.5)', 'stroke-width': .8, transform: 'rotate(' + a + ')' }, cg);
+    });
+    el('circle', { r: 15, fill: 'url(#ballShade)' }, g);
+    el('circle', { r: 14.7, fill: 'none', stroke: '#9a8512', 'stroke-width': .8 }, g);
     var drag = null;
     function pt(e) { var c = svg.getScreenCTM(); if (!c) return [0, 0]; var i = c.inverse(); return [i.a * e.clientX + i.c * e.clientY + i.e, i.b * e.clientX + i.d * e.clientY + i.f]; }
     g.addEventListener('pointerdown', function (e) {
