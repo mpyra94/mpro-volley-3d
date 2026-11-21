@@ -89,6 +89,13 @@
   .tile.t3 { background-image: linear-gradient(135deg, #ff3d8b 0%, #7a2cf0 100%); --shadow: rgba(122, 44, 240, .6); --go: #7a2cf0; }
   .badge { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
     background: #2e1a00; color: #ffd60a; border-radius: 4px; padding: 3px 9px; align-self: flex-start; }
+  /* kafelki Gameplan/Model 3D: domyślnie zablokowane (brak konta) - plakietka Premium + przycisk prowadzi do logowania zamiast narzędzia */
+  .tile .goLogin { display: none; }
+  .tile.unlocked .goOpen { display: inline; }
+  .tile.unlocked .goLogin { display: none; }
+  .tile.unlocked .badge { display: none; }
+  .tile.locked .goOpen { display: none; }
+  .tile.locked .goLogin { display: inline; }
 
   @media (max-width: 820px) { /* na wąskim ekranie kafelki są poziome: miniatura po lewej, opis po prawej – trzy kafelki mieszczą się w jednym ekranie */
     .tile { flex-direction: row; align-items: center; gap: 12px; padding: 8px 12px; }
@@ -136,6 +143,18 @@
   .themeRow { margin: 14px 0 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
   .themeRow label { margin: 0 8px 0 0; font-size: 13px; }
   .hint { font-size: 13px; color: var(--muted); }
+
+  /* ---------- Logowanie (na razie tylko lokalnie w przeglądarce - docelowo konto Supabase) ---------- */
+  #loginOverlay { position: fixed; inset: 0; z-index: 210; background: rgba(14, 27, 61, .55);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #loginOverlay[hidden] { display: none; }
+  .loginBox { width: min(380px, 100%); }
+  .loginBox form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .loginBox input[type=email] { width: 100%; }
+  #acctBtn #acctIn { display: none; }
+  #acctBtn.loggedIn #acctOut { display: none; }
+  #acctBtn.loggedIn #acctIn { display: inline; }
+
   @media (prefers-reduced-motion: reduce) { .ball { animation: none; } .tile, .tile .go { transition: none; } }
 </style>
 <script>
@@ -181,7 +200,15 @@ var I18N = { en: {}, it: {} };
   ['Drużyna', 'Team', 'Squadra'], ['Nazwa', 'Name', 'Nome'], ['Wgraj logo', 'Upload logo', 'Carica logo'], ['Usuń logo', 'Remove logo', 'Rimuovi logo'],
   ['Płeć', 'Category', 'Categoria'], ['Mężczyźni', 'Men', 'Uomini'], ['Kobiety', 'Women', 'Donne'],
   ['Koszulka', 'Jersey', 'Maglia'], ['Spodenki', 'Shorts', 'Pantaloncini'], ['Libero', 'Libero', 'Libero'], ['Buty', 'Shoes', 'Scarpe'],
-  ['Wyświetlaj na parkiecie', 'Show on the court', 'Mostra sul campo']
+  ['Wyświetlaj na parkiecie', 'Show on the court', 'Mostra sul campo'],
+  // ---------- Logowanie (na razie tylko lokalnie w przeglądarce - docelowo konto Supabase) ----------
+  ['👤 Zaloguj się', '👤 Log in', '👤 Accedi'],
+  ['Wyloguj', 'Log out', 'Esci'],
+  ['Zaloguj się →', 'Log in →', 'Accedi →'],
+  ['Premium', 'Premium', 'Premium'],
+  ['Konto Premium odblokowuje Gameplan i Model 3D.', 'A Premium account unlocks Gameplan and the 3D Model.', 'Un account Premium sblocca Gameplan e Modello 3D.'],
+  ['E-mail', 'Email', 'E-mail'],
+  ['twój e-mail', 'your email', 'la tua e-mail'],
 ].forEach(function (r) { I18N.en[r[0]] = r[1]; I18N.it[r[0]] = r[2]; });
 function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
 </script>
@@ -194,6 +221,9 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
     <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
     <button type="button" data-lang="it" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg></button>
   </div>
+  <button id="acctBtn" class="glass" title="Konto">
+    <span id="acctOut">👤 Zaloguj się</span><span id="acctIn">👤 <b id="acctEmail"></b> · Wyloguj</span>
+  </button>
   <button id="settingsBtn" class="glass" title="Ustawienia zespołów">⚙️ Ustawienia</button>
 </div>
 
@@ -317,7 +347,7 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
     <span class="desc">Rzut boiska z góry z uproszczonym widokiem pionków — szybkie ustawianie formacji.</span>
     <span class="go">Otwórz →</span></div>
   </a>
-  <a class="tile t2" data-num="02" href="gameplan.html" target="_blank" rel="noopener">
+  <a class="tile t2 locked" data-num="02" href="gameplan.html" target="_blank" rel="noopener">
     <div class="thumb">
       <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <rect x="0" y="0" width="240" height="120" fill="#ff7a00" fill-opacity=".3"/>
@@ -334,11 +364,11 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
         </g>
       </svg>
     </div>
-    <div class="tx"><b>Gameplan</b>
+    <div class="tx"><span class="badge" id="badgeGameplan">Premium</span><b>Gameplan</b>
     <span class="desc">Konfigurator 3-stronicowego gameplanu przeciwnika: ustawienie i dystrybucja, atak, zagrywka. Eksport do PDF (A4).</span>
-    <span class="go">Otwórz →</span></div>
+    <span class="go goOpen">Otwórz →</span><span class="go goLogin">Zaloguj się →</span></div>
   </a>
-  <a class="tile t3" data-num="03" href="model3d.html" target="_blank" rel="noopener">
+  <a class="tile t3 locked" data-num="03" href="model3d.html" target="_blank" rel="noopener">
     <div class="thumb">
       <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
@@ -357,9 +387,9 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
         <text x="12" y="20" font-family="'Exo 2',sans-serif" font-size="15" font-weight="900" font-style="italic" fill="#fff">360°</text>
       </svg>
     </div>
-    <div class="tx"><b>Model 3D</b>
+    <div class="tx"><span class="badge" id="badgeModel3d">Premium</span><b>Model 3D</b>
     <span class="desc">Pełny model 3D boiska, zawodników i formacji, z dowolnym obrotem kamery.</span>
-    <span class="go">Otwórz →</span></div>
+    <span class="go goOpen">Otwórz →</span><span class="go goLogin">Zaloguj się →</span></div>
   </a>
 </main>
 
@@ -377,6 +407,18 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
     </div>
     <div class="teamsGrid" id="teamsGrid"></div>
     <div class="row" style="margin-top:14px"><button type="button" id="resetTeamsBtn">Przywróć domyślne kolory</button></div>
+  </div>
+</div>
+
+<div id="loginOverlay" hidden>
+  <div class="setBox loginBox glass">
+    <button class="x" id="loginClose" title="Zamknij">✕</button>
+    <h2>Zaloguj się</h2>
+    <p class="hint">Konto Premium odblokowuje Gameplan i Model 3D.</p>
+    <form id="loginForm">
+      <div><label for="loginEmail">E-mail</label><input id="loginEmail" type="email" required placeholder="twój e-mail" autocomplete="email"></div>
+      <button type="submit">Zaloguj się →</button>
+    </form>
   </div>
 </div>
 
@@ -530,6 +572,44 @@ function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
     });
   });
   mark();
+})();
+</script>
+<script>
+// ---------- Logowanie: na razie tylko w localStorage przeglądarki (mpv:user) - makieta pod przyszłe konto Supabase ----------
+(function () {
+  var USER_KEY = 'mpv:user';
+  function getUser() { try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch (e) { return null; } }
+  function setUser(u) { try { u ? localStorage.setItem(USER_KEY, JSON.stringify(u)) : localStorage.removeItem(USER_KEY); } catch (e) {} }
+
+  var acctBtn = document.getElementById('acctBtn'), acctEmail = document.getElementById('acctEmail');
+  var overlay = document.getElementById('loginOverlay');
+  var gatedTiles = [document.getElementById('badgeGameplan').closest('a.tile'), document.getElementById('badgeModel3d').closest('a.tile')];
+
+  function render() {
+    var u = getUser();
+    acctBtn.classList.toggle('loggedIn', !!u);
+    acctEmail.textContent = u ? u.email : '';
+    gatedTiles.forEach(function (a) { a.classList.toggle('unlocked', !!u); a.classList.toggle('locked', !u); });
+  }
+
+  acctBtn.addEventListener('click', function () {
+    if (getUser()) { setUser(null); render(); } else { overlay.hidden = false; document.getElementById('loginEmail').focus(); }
+  });
+  document.getElementById('loginClose').addEventListener('click', function () { overlay.hidden = true; });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.hidden = true; });
+  document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = document.getElementById('loginEmail').value.trim();
+    if (!email) return;
+    setUser({ email: email });
+    overlay.hidden = true;
+    render();
+  });
+  gatedTiles.forEach(function (a) {
+    a.addEventListener('click', function (e) { if (!getUser()) { e.preventDefault(); overlay.hidden = false; document.getElementById('loginEmail').focus(); } });
+  });
+
+  render();
 })();
 </script>
 </body>
