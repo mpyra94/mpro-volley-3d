@@ -1471,8 +1471,8 @@ function saveSharedTeams(teamsObj) {
   // pawn: co jest na pionku w widoku całego boiska, pawnHalf: w widoku połowy (domyślnie pozycja) – numer albo pozycja (pierwsza litera)
   var labels = { pawn: 'num', pawnHalf: 'role', name: false, role: false };
   try { var sl = JSON.parse(localStorage.getItem(LABELS_KEY) || 'null'); if (sl) Object.assign(labels, sl); } catch (e) {}
-  var VIEW_KEY = 'mpv:tablica:view:v1', viewMode = 'full'; // 'full' – całe boisko (domyślnie), 'half' – połowa boiska wybranej drużyny
-  try { if (localStorage.getItem(VIEW_KEY) === 'half') viewMode = 'half'; } catch (e) {}
+  var VIEW_KEY = 'mpv:tablica:view:v1', viewMode = 'half'; // 'half' – połowa boiska drużyny A (domyślnie), 'full' – całe boisko
+  try { if (localStorage.getItem(VIEW_KEY) === 'full') viewMode = 'full'; } catch (e) {}
   function pawnKey() { return viewMode === 'half' ? 'pawnHalf' : 'pawn'; }
   function saveLabels() { try { localStorage.setItem(LABELS_KEY, JSON.stringify(labels)); } catch (e) {} }
   function saveTeams() { saveSharedTeams(teams); }
