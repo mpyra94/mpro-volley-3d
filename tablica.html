@@ -397,7 +397,7 @@ function saveSharedTeams(teamsObj) {
       <summary>Pionki</summary>
       <div class="hint" style="margin-top:0">Aby usunąć pionek, przeciągnij go do kosza, który pojawia się w prawym dolnym rogu planszy. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).</div>
       <div class="row"><b>Rozmiar wszystkich</b></div>
-      <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset">100%</button></div>
+      <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset" title="Przywróć domyślny rozmiar pionków (100%)">100% (domyślny)</button></div>
       <div class="row"><button type="button" id="restoreGone" title="Przywróć pionki usunięte z boiska">Przywróć usunięte pionki <span id="goneN"></span></button></div>
     </details>
 
@@ -523,7 +523,9 @@ function saveSharedTeams(teamsObj) {
     ['Rozmiar wszystkich', 'Size of all pawns', 'Dimensione di tutte le pedine'],
     ['Pomniejsz wszystkie pionki', 'Make all pawns smaller', 'Riduci tutte le pedine'],
     ['Powiększ wszystkie pionki', 'Make all pawns larger', 'Ingrandisci tutte le pedine'],
-    ['Przywróć usunięte pionki', 'Restore removed pawns', 'Ripristina le pedine rimosse'],
+    ['100% (domyślny)', '100% (default)', '100% (predefinito)'],
+    ['Przywróć domyślny rozmiar pionków (100%)', 'Restore the default pawn size (100%)', 'Ripristina la dimensione predefinita delle pedine (100%)'],
+    ['Przywróć usunięte pionki','Restore removed pawns', 'Ripristina le pedine rimosse'],
     ['Przywróć pionki usunięte z boiska', 'Restore the pawns removed from the court', 'Ripristina le pedine rimosse dal campo'],
     ['Rysowanie', 'Drawing', 'Disegno'],
     ['✏️ Rysuj na boisku', '✏️ Draw on the court', '✏️ Disegna sul campo'],
@@ -664,7 +666,7 @@ function saveSharedTeams(teamsObj) {
 
   // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
   // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
-  var PAWN_BASE = 1.2; // 120% dawnego rozmiaru to obecne „100%” pionków (zmniejszone o 20% względem poprzedniego 100%)
+  var PAWN_BASE = 1.32; // domyślny rozmiar pionków = „100%” w panelu (o 10% większy niż poprzedni 120%)
   var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -100, x1: 480 };
   function clampPos(team, x, y, s) { // pionek (z uwzględnieniem rozmiaru) nie dotyka siatki
     var b = BOUNDS[team], m = 18 * (s || PAWN_BASE) + 6;
