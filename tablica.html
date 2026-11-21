@@ -738,7 +738,7 @@ function saveSharedTeams(teamsObj) {
 
   // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
   // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
-  var PAWN_BASE = 1.19; // domyślny rozmiar pionków = „100%” w panelu (o 10% mniejszy niż poprzednie 1,32)
+  var PAWN_BASE = 0.95; // domyślny rozmiar pionków = „100%” w panelu (o 20% mniejszy niż poprzednie 1,19)
   var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -100, x1: 480 };
   function clampPos(team, x, y, s) { // pionek (z uwzględnieniem rozmiaru) nie dotyka siatki
     var b = BOUNDS[team], m = 18 * (s || PAWN_BASE) + 6;
