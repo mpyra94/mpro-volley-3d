@@ -2633,21 +2633,26 @@ async function renderFromBoard(d) {
   applyTeamColors();
   await Promise.all(['a', 'b'].map(t => (logoCache[t] && logoCache[t].img.decode) ? logoCache[t].img.decode().catch(() => {}) : null));
   applyTeamColors(); // koszulki z numerami i logo po załadowaniu obrazów
-  const taken = { a: new Set(), b: new Set() };
+  // Widok uproszczony: jasna scena bez trybun, tablic i krzesełek – tylko boisko, siatka i pionki w pozycjach z tablicy.
+  scene.children.forEach(o => { if (o.isGroup && o !== netGroup && !players.some(p => p.group === o)) o.visible = false; });
+  try { applyFloorStyle('plain'); } catch (e) {}
+  const LIGHT = 0xeaf1fb;
+  scene.background = new THREE.Color(LIGHT); scene.fog = new THREE.Fog(LIGHT, 45, 110);
+  floor.material = new THREE.MeshBasicMaterial({ color: 0xdde7f5, toneMapped: false }); floor.scale.set(6, 6, 1); court.material.color.set(0xf5a04e); // jasna, nieoświetlana podłoga
+  hemi.intensity = 1.15; sun.intensity = 1.0; fill.intensity = 0.5;
   for (const p of players) {
     const q = d.players.find(x => x.id === p.id);
-    if (!q || q.hidden) { p.group.visible = false; continue; }
+    const off = q && (Math.abs(q.z) > COURT_W / 2 + 0.6 || Math.abs(q.x) > COURT_L / 2 + 0.6); // zawodnik na ławce nie jest na wykresie
+    if (!q || q.hidden || off) { p.group.visible = false; continue; }
     p.group.visible = true;
-    let x = q.x, z = q.z, pose = POSES[q.pose] ? q.pose : 'stand', face = 0;
-    if (Math.abs(z) > COURT_W / 2 + 0.6 || Math.abs(x) > COURT_L / 2 + 0.6) { // poza boiskiem → wolne krzesełko na ławce
-      const spots = chairSpots(p.team); let best = -1, bd = 1e9;
-      spots.forEach(([cx, cz], i) => { if (taken[p.team].has(i)) return; const dd = Math.hypot(x - cx, z - cz); if (dd < bd) { bd = dd; best = i; } });
-      if (best >= 0) { taken[p.team].add(best); [x, z] = spots[best]; pose = 'sit'; face = p.team === 'a' ? -90 : 90; }
-    }
-    p.group.position.set(x, 0, z);
-    p.pose = pose; p.poseCur = { ...POSES[pose].p };
-    setFacing(p, face); applyPose(p);
-    p.J.pelvis.visible = true; p.pawn.visible = false; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
+    p.group.position.set(q.x, 0, q.z);
+    p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
+    setFacing(p, 0); applyPose(p);
+    p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
+    // promień pionka taki jak na tablicy – pionki, które na tablicy się stykają (np. w bloku), stykają się też w 3D
+    const k = (q.r || 0.45) / 0.24;
+    const ky = 1.5; p.pawn.scale.set(k, ky, k); p.disc.scale.set(k, k, 1);
+    const head = p.pawn.children[3]; if (head) head.scale.set(1.5 / k, 1.5 / ky, 1.5 / k); // głowa zachowuje kształt kuli mimo skalowania korpusu
   }
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
@@ -2656,7 +2661,7 @@ async function renderFromBoard(d) {
   const prevSize = renderer.getSize(new THREE.Vector2()), prevRatio = renderer.getPixelRatio();
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   const cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 250);
-  cam.position.set(-15.5, 4.2, 0); cam.lookAt(0, 1.1, 0); // zza drużyny A, siatka na wprost
+  cam.position.set(-15.5, 3.6, 0); cam.lookAt(0, 0.8, 0); // zza drużyny A, z niskiej perspektywy, siatka na wprost
   const c = renderClean(cam);
   renderer.setPixelRatio(prevRatio); renderer.setSize(prevSize.x, prevSize.y, false); resize();
   return c.toDataURL('image/png');

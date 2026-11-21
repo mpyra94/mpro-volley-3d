@@ -1511,7 +1511,7 @@ function saveSharedTeams(teamsObj) {
         var p = pos[t][n], x = (CY - p[1]) / UNIT, z = (p[0] - CX) / UNIT, r = roster[t][n]; // tablica → układ modelu 3D (x wzdłuż boiska, A przy x < 0)
         var ax = t === 'a' ? x : -x, pose = 'stand'; // ax = odległość od siatki po stronie własnej (ujemna dla A)
         if (mode === 'def') pose = ax > -3.4 ? 'block' : 'defense'; else if (mode === 'recv') pose = ax < -3.4 ? 'pass' : 'stand';
-        list.push({ id: t + (n - 1), x: x, z: z, num: String(r.num), name: r.name || '', pose: pose, hidden: isGone(t, n) || (viewMode === 'half' && t === 'b') });
+        list.push({ id: t + (n - 1), x: x, z: z, num: String(r.num), name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || (viewMode === 'half' && t === 'b') });
       }
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
