@@ -474,8 +474,8 @@ function saveSharedTeams(teamsObj) {
         <button type="button" id="p3Back" title="Przesuń kamerę do tyłu">▼</button>
       </div>
       <span class="angleLbl">Kąt</span>
-      <input type="range" id="angleSlider" min="4" max="90" step="1" value="20" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
-      <b id="angleVal">20°</b>
+      <input type="range" id="angleSlider" min="4" max="90" step="1" value="30" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
+      <b id="angleVal">30°</b>
     </div>
     </div>
     <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
@@ -1543,7 +1543,7 @@ function saveSharedTeams(teamsObj) {
   function busy3d(on, txt) { if (on) $('busy3d').textContent = txt || T('Generowanie widoku 3D…'); $('busy3d').hidden = !on; }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; anim3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
-  var angle3d = 20, zoom3d = 1, pan3d = 0, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
+  var angle3d = 30, zoom3d = 1, pan3d = 0, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
   function render3dAngle() { // nowy obraz po zmianie kąta / przybliżenia (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
     if (!frame3d || !ready3d || anim3d) return;
     if (pend3d) { queued3d = true; return; }

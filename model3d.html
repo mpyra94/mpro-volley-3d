@@ -2668,7 +2668,7 @@ async function renderFromBoard(d) {
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   // kamera zza drużyny A; kąt (wysokość nad podłogą) wybiera suwak w tablicy, a odległość jest dobierana tak,
   // by przy każdym kącie mieściła się cała nasza połowa boiska (z siatką i 4 m boiska rywala) wraz z 2,5 m pasem za linią końcową i z boku
-  const phi = THREE.MathUtils.degToRad(d.angle == null ? 20 : d.angle);
+  const phi = THREE.MathUtils.degToRad(d.angle == null ? 30 : d.angle);
   const cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 250);
   const X0 = -COURT_L / 2 - 2.5, X1 = 4, ZM = COURT_W / 2 + 2.5, TGT = new THREE.Vector3((X0 + X1) / 2, 0, 0);
   const pts = [];
