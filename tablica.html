@@ -469,13 +469,17 @@ function saveSharedTeams(teamsObj) {
         <b id="z3Val" title="Przywróć 100%">100%</b>
         <button type="button" id="z3Out" title="Oddal widok 3D">−</button>
       </div>
+      <div class="zoomBtns panBtns" role="group" aria-label="Przesunięcie kamery">
+        <button type="button" id="p3Fwd" title="Przesuń kamerę do przodu (w stronę siatki)">▲</button>
+        <button type="button" id="p3Back" title="Przesuń kamerę do tyłu">▼</button>
+      </div>
       <span class="angleLbl">Kąt</span>
-      <input type="range" id="angleSlider" min="4" max="60" step="1" value="20" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
+      <input type="range" id="angleSlider" min="4" max="90" step="1" value="20" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
       <b id="angleVal">20°</b>
     </div>
     </div>
     <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
-    <div class="shotBtns"><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
+    <div class="shotBtns"><button type="button" id="shotAnim" hidden title="Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)">🎞 Stwórz animację</button><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
   </div>
 </div>
 <div id="busy3d" hidden role="status">Generowanie widoku 3D…</div>
@@ -643,6 +647,13 @@ function saveSharedTeams(teamsObj) {
     ['Zapisz', 'Save', 'Salva'],
     ['Wpisz tekst i Enter', 'Type the text and press Enter', 'Scrivi il testo e premi Invio'],
     ['Tekst na boisku', 'Text on the court', 'Testo sul campo'],
+    ['Przesuń kamerę do przodu (w stronę siatki)', 'Move the camera forward (towards the net)', 'Sposta la telecamera in avanti (verso la rete)'],
+    ['Przesuń kamerę do tyłu', 'Move the camera back', 'Sposta la telecamera indietro'],
+    ['🎞 Stwórz animację', '🎞 Create animation', '🎞 Crea animazione'],
+    ['Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)', 'Animation: the camera goes from the top view down to 10° and back (video file)', 'Animazione: la telecamera passa dalla vista dall’alto a 10° e torna indietro (file video)'],
+    ['Generowanie animacji…', 'Generating the animation…', 'Generazione dell’animazione…'],
+    ['Zapisywanie animacji…', 'Saving the animation…', 'Salvataggio dell’animazione…'],
+    ['Ta przeglądarka nie obsługuje zapisu animacji.', 'This browser cannot record animations.', 'Questo browser non supporta la registrazione di animazioni.'],
     ['Przybliż widok 3D (kółko myszy nad podglądem)', 'Zoom in the 3D view (mouse wheel over the preview)', 'Ingrandisci la vista 3D (rotella sopra l’anteprima)'],
     ['Oddal widok 3D', 'Zoom out the 3D view', 'Riduci la vista 3D'],
     ['Przywróć 100%', 'Reset to 100%', 'Ripristina il 100%'],
@@ -1529,19 +1540,28 @@ function saveSharedTeams(teamsObj) {
   var WATERMARK = 'mPro Volley 3D', shotCv = null, shotKind = 'png', crop = { x: 0, y: 0, w: 0, h: 0 }, shotDisp = { w: 0, h: 0, k: 1 };
   // ---- Widok 3D zza drużyny A: model3d.html w ukrytej ramce renderuje scenę (siatka, zawodnicy) z pozycji pionków i odsyła obraz ----
   var frame3d = null, ready3d = false, pend3d = null, rid3d = 0, timer3d = 0;
-  function busy3d(on) { $('busy3d').hidden = !on; }
+  function busy3d(on, txt) { if (on) $('busy3d').textContent = txt || T('Generowanie widoku 3D…'); $('busy3d').hidden = !on; }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
-  function fail3d() { clearTimeout(timer3d); pend3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
-  var angle3d = 20, zoom3d = 1, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
+  function fail3d() { clearTimeout(timer3d); pend3d = null; anim3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
+  var angle3d = 20, zoom3d = 1, pan3d = 0, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
   function render3dAngle() { // nowy obraz po zmianie kąta / przybliżenia (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
-    if (!frame3d || !ready3d) return;
+    if (!frame3d || !ready3d || anim3d) return;
     if (pend3d) { queued3d = true; return; }
     pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
-    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, W: 1200, H: 900 }, '*');
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, pan: pan3d, W: 1200, H: 900 }, '*');
   }
   function queue3d() { clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60); }
   $('angleSlider').addEventListener('input', function () { angle3d = +this.value; $('angleVal').textContent = angle3d + '°'; queue3d(); });
   function setZoom3d(z) { zoom3d = Math.max(0.5, Math.min(3, Math.round(z * 100) / 100)); $('z3Val').textContent = Math.round(zoom3d * 100) + '%'; queue3d(); }
+  function setPan3d(p) { pan3d = Math.max(-10, Math.min(10, Math.round(p * 10) / 10)); queue3d(); } // przesunięcie kamery wzdłuż boiska (m), + = w stronę siatki
+  function holdBtn(id, fn) { // przycisk ze strzałką: klik = jeden krok, przytrzymanie = powtarzanie
+    var b = $(id), t = 0, iv = 0;
+    function stop() { clearTimeout(t); clearInterval(iv); }
+    b.addEventListener('pointerdown', function () { fn(); stop(); t = setTimeout(function () { iv = setInterval(fn, 120); }, 350); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, stop); });
+  }
+  holdBtn('p3Fwd', function () { setPan3d(pan3d + 0.5); });
+  holdBtn('p3Back', function () { setPan3d(pan3d - 0.5); });
   $('z3In').addEventListener('click', function () { setZoom3d(zoom3d * 1.2); });
   $('z3Out').addEventListener('click', function () { setZoom3d(zoom3d / 1.2); });
   $('z3Val').addEventListener('click', function () { setZoom3d(1); });
@@ -1573,11 +1593,17 @@ function saveSharedTeams(teamsObj) {
       items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
-    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zoom: zoom3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
     if (d.type === 'mpv-ready') { ready3d = true; if (pend3d) frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); }
+    else if (d.type === 'mpv-rendered' && d.id === pend3d && anim3d) { // kolejna klatka animacji
+      clearTimeout(timer3d); pend3d = null;
+      if (d.error || !d.dataUrl) { fail3d(); return; }
+      anim3d.frames.push(d.dataUrl); anim3d.i++;
+      if (anim3d.i < anim3d.n) nextAnimFrame3d(); else finishAnim3d();
+    }
     else if (d.type === 'mpv-rendered' && d.id === pend3d) {
       clearTimeout(timer3d); pend3d = null;
       if (d.error || !d.dataUrl) { fail3d(); return; }
@@ -1592,6 +1618,44 @@ function saveSharedTeams(teamsObj) {
       img.onerror = fail3d; img.src = d.dataUrl;
     }
   });
+  // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem; klatki z ukrytej ramki są nagrywane do pliku wideo ----
+  var anim3d = null, ANIM = { W: 960, H: 720, fps: 20, sec: 4.5 };
+  function animAngle(i, n) { var s = (1 - Math.cos(2 * Math.PI * i / n)) / 2; return 90 - 80 * s; } // 90° → 10° → 90°, płynnie (zwalnia na końcach)
+  function nextAnimFrame3d() {
+    var a = anim3d; if (!a || !frame3d) return;
+    busy3d(true, T('Generowanie animacji…') + ' ' + a.i + '/' + a.n);
+    pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: animAngle(a.i, a.n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, fmt: 'jpeg' }, '*');
+  }
+  function startAnim3d() {
+    if (anim3d || pend3d || !frame3d || !ready3d) return;
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { alert(T('Ta przeglądarka nie obsługuje zapisu animacji.')); return; }
+    anim3d = { n: Math.round(ANIM.fps * ANIM.sec), i: 0, frames: [] }; nextAnimFrame3d();
+  }
+  function finishAnim3d() {
+    var a = anim3d; busy3d(true, T('Zapisywanie animacji…'));
+    Promise.all(a.frames.map(function (u) { var im = new Image(); im.src = u; return im.decode().then(function () { return im; }); })).then(function (imgs) {
+      var cv = document.createElement('canvas'); cv.width = ANIM.W; cv.height = ANIM.H; var g = cv.getContext('2d');
+      var mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
+      var stream = cv.captureStream(0), track = stream.getVideoTracks()[0], chunks = [];
+      var rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6000000 } : {});
+      rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = function () {
+        var type = rec.mimeType || mime || 'video/webm', d = new Date();
+        var name = 'tablica-3d-animacja-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
+        downloadBlob(new Blob(chunks, { type: type }), name); busy3d(false); anim3d = null;
+      };
+      var i = 0;
+      (function draw() {
+        if (i >= imgs.length) { rec.stop(); return; }
+        g.drawImage(imgs[i], 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H);
+        if (track.requestFrame) track.requestFrame();
+        i++; setTimeout(draw, 1000 / ANIM.fps);
+      })();
+      rec.start();
+    }).catch(function () { anim3d = null; fail3d(); });
+  }
+  $('shotAnim').addEventListener('click', startAnim3d);
   function export3D() {
     if (pend3d) return;
     pend3d = ++rid3d; busy3d(true);
@@ -1623,6 +1687,7 @@ function saveSharedTeams(teamsObj) {
     shotCv = cv; shotKind = kind;
     var cvs = $('shotCanvas'); cvs.width = cv.width; cvs.height = cv.height; cvs.getContext('2d').drawImage(cv, 0, 0);
     $('shotModal').hidden = false;
+    $('shotAnim').hidden = kind !== '3d';
     $('angleBox').hidden = kind !== '3d'; // suwak kąta widoku tylko przy widoku 3D
     var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900) - (kind === '3d' ? 60 : 0)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
     shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
@@ -1640,7 +1705,7 @@ function saveSharedTeams(teamsObj) {
     if (x1 - x0 < 10 || y1 - y0 < 10) { wholeCrop(); return; }
     crop = { x: (x0 - SHOT.x) * sx, y: (y0 - SHOT.y) * sy, w: (x1 - x0) * sx, h: (y1 - y0) * sy }; placeCrop();
   }
-  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
+  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; anim3d = null; busy3d(false); drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
   function saveShot() {
     if (!shotCv) return;
     var k = shotDisp.k, sx = Math.round(crop.x * k), sy = Math.round(crop.y * k);
