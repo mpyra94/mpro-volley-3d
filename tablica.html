@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tablica Taktyczna – mPro Volley 3D</title>
 <!-- © 2026 Michał Pyra · mPro Volley 3D. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
-<script>(function(){var t='light',b='floor';try{t=localStorage.getItem('mpv:theme')||'light';b=localStorage.getItem('mpv:tablica:bg')||'floor';}catch(e){}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bg',b);})();</script>
+<script>(function(){var t='light';try{t=localStorage.getItem('mpv:theme')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bg','light');})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
@@ -23,7 +23,8 @@
     --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --line: #27364d;
     --text: #e6edf7; --muted: #93a3bd; --field: #1a2638;
   }
-  :root[data-bg="light"] { --boardBg: #e6eefa; --boardZone: #cfe0f6; --benchFill: rgba(14, 27, 61, .06); --benchStroke: rgba(14, 27, 61, .3); --benchTxt: rgba(14, 27, 61, .6); }
+  /* jasne tło planszy w delikatnej zieleni (jedyny wariant) */
+  :root[data-bg="light"] { --boardBg: #e8f3ec; --boardZone: #d2e8db; --benchFill: rgba(22, 74, 46, .06); --benchStroke: rgba(22, 74, 46, .3); --benchTxt: rgba(22, 74, 46, .6); }
   .bgOuter { fill: var(--boardBg); }
   .bgZone { fill: var(--boardZone, var(--boardBg)); } /* jasne tło: jaśniejsza ramka wokół boiska jak wcześniej; parkiet: ten sam kolor co tło */
   .bench { fill: var(--benchFill); stroke: var(--benchStroke); stroke-width: 1.5; }
@@ -339,8 +340,7 @@ function saveSharedTeams(teamsObj) {
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
     <div class="hgrp wide"><span class="hl">Filtry</span>
-      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
-      <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor" title="Tło: parkiet">Parkiet</button><button type="button" data-bg="light" title="Tło: jasne">Jasne</button></span></div>
+      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
       <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button></span></div>
   </div>
@@ -658,14 +658,14 @@ function saveSharedTeams(teamsObj) {
   };
   var DEFENSE = { 4: [-0.7, -2.4], 3: [-0.7, 0], 2: [-0.7, 2.4], 5: [-4.8, -2.4], 6: [-6.0, 0], 1: [-4.8, 2.4] }; // druga linia symetrycznie: boki na tej samej głębokości i w tej samej odległości od osi co blok
   // ławka (libero / środkowy schodzący z boiska) – po lewej stronie boiska
-  var BENCH_MX = { libero: -5.3, mb: -3.7 }, BENCH_X = -50; // ławka 1 m dalej od boiska (większe pionki – większy odstęp między miejscami)
+  var BENCH_MX = { libero: -5.3, mb: -3.7 }, BENCH_X = -90; // ławka 2 m od linii bocznej (dodatkowy 1 m odstępu), większe pionki – większy odstęp między miejscami (większe pionki – większy odstęp między miejscami)
   function benchPos(team, key) { var mx = BENCH_MX[key]; return [BENCH_X, CY - (team === 'a' ? mx : -mx) * UNIT]; }
   var zoneFor = function (rot, slot) { return ((rot - 1 + slot) % 6) + 1; };
 
   // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
   // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
-  var PAWN_BASE = 1.5; // 150% to nowe „100%” rozmiaru pionków
-  var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -60, x1: 480 };
+  var PAWN_BASE = 1.2; // 120% dawnego rozmiaru to obecne „100%” pionków (zmniejszone o 20% względem poprzedniego 100%)
+  var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -100, x1: 480 };
   function clampPos(team, x, y, s) { // pionek (z uwzględnieniem rozmiaru) nie dotyka siatki
     var b = BOUNDS[team], m = 18 * (s || PAWN_BASE) + 6;
     var y0 = team === 'a' ? Math.max(b.y0, CY + m) : b.y0, y1 = team === 'b' ? Math.min(b.y1, CY - m) : b.y1;
@@ -732,8 +732,8 @@ function saveSharedTeams(teamsObj) {
     el('rect', { x: 28, y: -20, width: 444, height: 940, rx: 20, fill: '#cfe0f6', class: 'bgZone' });
     // ławki rezerwowych (libero / środkowy schodzący z boiska)
     [['a', 558, 702], ['b', 198, 342]].forEach(function (b) {
-      el('rect', { x: -84, y: b[1], width: 68, height: b[2] - b[1], rx: 10, class: 'bench' });
-      el('text', { x: -50, y: b[0] === 'a' ? b[1] - 5 : b[2] + 12, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, class: 'benchTxt' }).textContent = T('ŁAWKA');
+      el('rect', { x: -124, y: b[1], width: 68, height: b[2] - b[1], rx: 10, class: 'bench' });
+      el('text', { x: -90, y: b[0] === 'a' ? b[1] - 5 : b[2] + 12, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, class: 'benchTxt' }).textContent = T('ŁAWKA');
     });
     el('rect', { x: 70, y: 90, width: 360, height: 720, fill: '#ff9d47', stroke: '#fff', 'stroke-width': 3 });
     // strefa ataku (3 m od siatki) – ciemniejszy pomarańcz, jak w modelu 3D
@@ -1372,7 +1372,7 @@ function saveSharedTeams(teamsObj) {
   var FULL = { x: -140, y: -60, w: 680, h: 1020 }, view = { cx: FULL.x + FULL.w / 2, cy: FULL.y + FULL.h / 2, z: 1 }, ZMAX = 4;
   // widok połowy: wycinek planszy z połową wybranej drużyny (od siatki do nazwy drużyny i logo) – przy 100% wypełnia pole planszy
   // zawsze dolna połowa (drużyna A), plus 4 m boiska rywala za siatką; dalszą część rywala i jego pionki ukrywamy
-  var HALF = { x: -115, y: 290, w: 650, h: 646 };
+  var HALF = { x: -140, y: 290, w: 680, h: 646 };
   function baseView() { return viewMode === 'half' ? HALF : FULL; } // obszar widoczny przy przybliżeniu 100%
   function resetView() { var B = baseView(); view.cx = B.x + B.w / 2; view.cy = B.y + B.h / 2; view.z = 1; }
   function clampView() {
@@ -1426,6 +1426,12 @@ function saveSharedTeams(teamsObj) {
     var clone = svg.cloneNode(true);
     var layers = Array.prototype.filter.call(clone.children, function (c) { return c.tagName === 'g' && c.getAttribute('pointer-events') === 'none'; });
     layers.slice(1).forEach(function (g) { g.parentNode.removeChild(g); }); // bez uchwytów i podglądu rysowania
+    // ławki (wraz z pionkami na nich) nie trafiają na zrzut
+    Array.prototype.slice.call(clone.querySelectorAll('.bench, .benchTxt')).forEach(function (n) { n.parentNode.removeChild(n); });
+    Array.prototype.slice.call(clone.querySelectorAll('.pawn')).forEach(function (p) {
+      var m = /translate\(\s*(-?[\d.]+)/.exec(p.getAttribute('transform') || '');
+      if (m && parseFloat(m[1]) < -10) p.parentNode.removeChild(p);
+    });
     var cs = getComputedStyle(document.documentElement);
     function v(n, d) { return (cs.getPropertyValue(n) || '').trim() || d; }
     var style = document.createElementNS(NS, 'style');
@@ -1749,12 +1755,6 @@ function saveSharedTeams(teamsObj) {
   $('gsSmaller').addEventListener('click', function () { pst.gs = Math.max(0.6, Math.round((pst.gs - 0.1) * 100) / 100); commit(); });
   $('gsReset').addEventListener('click', function () { pst.gs = 1; commit(); });
   $('restoreGone').addEventListener('click', function () { ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (isGone(t, n)) pawnOwn(t, n).gone = false; }); commit(); });
-  // tło poza boiskiem: parkiet (niebieskozielone) albo jasne
-  function syncBg() { var b = document.documentElement.getAttribute('data-bg') || 'floor'; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.bg === b); }); }
-  document.querySelectorAll('#bgSeg button').forEach(function (x) {
-    x.addEventListener('click', function () { document.documentElement.setAttribute('data-bg', x.dataset.bg); try { localStorage.setItem('mpv:tablica:bg', x.dataset.bg); } catch (e) {} syncBg(); });
-  });
-  syncBg();
   updateLegend(); renderTeamsPanel(); syncFormUI(); render();
   // przełącznik języka (flagi w nagłówku); teksty tworzone w kodzie odbudowuje ponowne wyrenderowanie, resztę tłumaczy applyI18n()
   function setLang(l) {
