@@ -23,8 +23,8 @@
     --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --line: #27364d;
     --text: #e6edf7; --muted: #93a3bd; --field: #1a2638;
   }
-  /* jasne tło planszy w delikatnej zieleni (jedyny wariant) */
-  :root[data-bg="light"] { --boardBg: #e8f3ec; --boardZone: #d2e8db; --benchFill: rgba(22, 74, 46, .06); --benchStroke: rgba(22, 74, 46, .3); --benchTxt: rgba(22, 74, 46, .6); }
+  /* jasne tło planszy (jedyny wariant) */
+  :root[data-bg="light"] { --boardBg: #e6eefa; --boardZone: #cfe0f6; --benchFill: rgba(14, 27, 61, .06); --benchStroke: rgba(14, 27, 61, .3); --benchTxt: rgba(14, 27, 61, .6); }
   .bgOuter { fill: var(--boardBg); }
   .bgZone { fill: var(--boardZone, var(--boardBg)); } /* jasne tło: jaśniejsza ramka wokół boiska jak wcześniej; parkiet: ten sam kolor co tło */
   .bench { fill: var(--benchFill); stroke: var(--benchStroke); stroke-width: 1.5; }
