@@ -1503,16 +1503,30 @@ function saveSharedTeams(teamsObj) {
   function busy3d(on) { $('busy3d').hidden = !on; }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
+  var R3D = 0.27; // promień pionka w widoku 3D (m) – mniejszy niż na tablicy, żeby pionki nie były grube
   function payload3d(id) {
     var pos = positionsNow(), list = [];
     ['a', 'b'].forEach(function (t) {
-      var mode = formState.mode[t];
+      var mode = formState.mode[t], items = [];
       for (var n = 1; n <= 7; n++) {
         var p = pos[t][n], x = (CY - p[1]) / UNIT, z = (p[0] - CX) / UNIT, r = roster[t][n]; // tablica → układ modelu 3D (x wzdłuż boiska, A przy x < 0)
         var ax = t === 'a' ? x : -x, pose = 'stand'; // ax = odległość od siatki po stronie własnej (ujemna dla A)
         if (mode === 'def') pose = ax > -3.4 ? 'block' : 'defense'; else if (mode === 'recv') pose = ax < -3.4 ? 'pass' : 'stand';
-        list.push({ id: t + (n - 1), x: x, z: z, num: String(r.num), name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || (viewMode === 'half' && t === 'b') });
+        items.push({ id: t + (n - 1), x: x, z: z, num: String(r.num), name: r.name || '', pose: pose, r: R3D, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b' }); // widok 3D tylko z pionkami drużyny A
       }
+      // pionki, które na tablicy się stykają (np. blok przy siatce), mają się stykać także po zmniejszeniu: grupa jest skalowana wokół swojego środka
+      var vis = items.filter(function (q) { return !q.hidden && Math.abs(q.z) < 5.1 && Math.abs(q.x) < 9.6; }), par = vis.map(function (_, i) { return i; });
+      var find = function (i) { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
+      for (var i = 0; i < vis.length; i++) for (var j = i + 1; j < vis.length; j++)
+        if (Math.hypot(vis[i].x - vis[j].x, vis[i].z - vis[j].z) < (vis[i].r2 + vis[j].r2) * 1.12) par[find(i)] = find(j);
+      var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(q); });
+      Object.keys(groups).forEach(function (k) {
+        var g = groups[k]; if (g.length < 2) return;
+        var cx = 0, cz = 0; g.forEach(function (q) { cx += q.x / g.length; cz += q.z / g.length; });
+        var f = R3D / g[0].r2;
+        g.forEach(function (q) { q.x = cx + (q.x - cx) * f; q.z = cz + (q.z - cz) * f; });
+      });
+      items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
     return { type: 'mpv-render', id: id, W: 1600, H: 900, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };

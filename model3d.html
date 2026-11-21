@@ -2649,10 +2649,9 @@ async function renderFromBoard(d) {
     p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
     setFacing(p, 0); applyPose(p);
     p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
-    // promień pionka taki jak na tablicy – pionki, które na tablicy się stykają (np. w bloku), stykają się też w 3D
-    const k = (q.r || 0.45) / 0.24;
-    const ky = 1.5; p.pawn.scale.set(k, ky, k); p.disc.scale.set(k, k, 1);
-    const head = p.pawn.children[3]; if (head) head.scale.set(1.5 / k, 1.5 / ky, 1.5 / k); // głowa zachowuje kształt kuli mimo skalowania korpusu
+    // pionek skalowany równomiernie (proporcje jak w modelu); pionki stykające się na tablicy tablica zbliża do siebie tak, by stykały się też tutaj
+    const k = (q.r || 0.27) / 0.24;
+    p.pawn.scale.set(k, k, k); p.disc.scale.set(k, k, 1);
   }
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
