@@ -1651,7 +1651,6 @@ function saveSharedTeams(teamsObj) {
   $('z3Out').addEventListener('click', function () { setZoom3d(zoom3d / 1.2); });
   $('z3Val').addEventListener('click', function () { setZoom3d(1); });
   $('shotStage').addEventListener('wheel', function (e) { if (shotKind !== '3d') return; e.preventDefault(); setZoom3d(zoom3d * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); }, { passive: false });
-  var R3D = 0.24; // promień pionka w widoku 3D (m) = naturalny rozmiar pionka modelu – mniejszy niż na tablicy, żeby pionki nie były grube
   function payload3d(id) {
     var pos = positionsNow(), list = [];
     ['a', 'b'].forEach(function (t) {
@@ -1661,7 +1660,7 @@ function saveSharedTeams(teamsObj) {
         var ax = t === 'a' ? x : -x, pose = 'stand'; // ax = odległość od siatki po stronie własnej (ujemna dla A)
         if (mode === 'def') pose = ax > -3.4 ? 'block' : 'defense'; else if (mode === 'recv') pose = ax < -3.4 ? 'pass' : 'stand';
         var pk = labels[pawnKey()], txt = pk === 'role' ? RL(r.role || '–') : pk === 'none' ? ' ' : String(r.num); // napis na pionku jak na tablicy: numer / litera pozycji / nic
-        items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: R3D, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b' }); // widok 3D tylko z pionkami drużyny A
+        items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b' }); // widok 3D tylko z pionkami drużyny A
       }
       // pionki, które na tablicy się stykają (np. blok przy siatce), mają się stykać także po zmniejszeniu: grupa jest skalowana wokół swojego środka
       // „stykają się” = odstęp środków do 1,3 × suma promieni (pionki na tablicy nie mogą być bliżej niż ok. 1,05 ×, a przy ślizganiu po sobie zostaje szczelina)
@@ -1675,12 +1674,10 @@ function saveSharedTeams(teamsObj) {
       var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(i); });
       Object.keys(groups).forEach(function (k) {
         var g = groups[k]; if (g.length < 2) return;
-        var cx = 0, cz = 0; g.forEach(function (i) { cx += vis[i].x / g.length; cz += vis[i].z / g.length; });
-        var f = R3D / vis[g[0]].r2;
-        g.forEach(function (i) { vis[i].x = cx + (vis[i].x - cx) * f; vis[i].z = cz + (vis[i].z - cz) * f; }); // pionki są mniejsze niż na tablicy – grupa kurczy się wokół środka
-        for (var it = 0; it < 60; it++) edges.forEach(function (e) { // każda para sąsiadów ma się stykać dokładnie (odstęp środków = 2 × promień pionka w 3D)
+        // pionki w 3D mają taki sam rozmiar jak na tablicy, więc pozycje zostają; sąsiedzi w bloku są tylko dosuwani do dokładnego zetknięcia
+        for (var it = 0; it < 60; it++) edges.forEach(function (e) { // każda para sąsiadów ma się stykać dokładnie (odstęp środków = suma promieni)
           var a = vis[e[0]], b = vis[e[1]]; if (find(e[0]) !== +k) return;
-          var dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1e-6, c = (d - 2 * R3D) / 2 / d;
+          var dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1e-6, c = (d - (a.r2 + b.r2)) / 2 / d;
           a.x += dx * c; a.z += dz * c; b.x -= dx * c; b.z -= dz * c;
         });
       });
@@ -1689,7 +1686,7 @@ function saveSharedTeams(teamsObj) {
       Object.keys(gr).forEach(function (k) {
         var g = gr[k], a = g.filter(function (q) { return q.ant; }); if (!a.length) return;
         var q0 = a.reduce(function (m, q) { return Math.abs(q.z) > Math.abs(m.z) ? q : m; });
-        var dz = q0.ant * (ZH - R3D) - q0.z; g.forEach(function (q) { q.z += dz; });
+        var dz = q0.ant * (ZH - q0.r2) - q0.z; g.forEach(function (q) { q.z += dz; });
       });
       items.forEach(function (q) { list.push(q); });
     });

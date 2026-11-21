@@ -2674,9 +2674,9 @@ function placeBoardPlayers() {
     p.pose = 'stand'; p.poseCur = { ...POSES.stand.p };
     setFacing(p, 0); applyPose(p);
     p.J.pelvis.visible = false; p.pawn.visible = true; p.marker.visible = false; p.sprite.visible = false; p.ring.visible = false;
-    // pionek skalowany równomiernie (proporcje jak w modelu); pionki stykające się na tablicy tablica zbliża do siebie tak, by stykały się też tutaj
-    const k = (q.r || 0.27) / 0.24;
-    p.pawn.scale.set(k, k, k); p.disc.scale.set(k, k, 1);
+    // promień pionka = taki sam jak na tablicy (q.r w metrach), więc pionki, które się tam stykają, stykają się też tutaj; wysokość ok. 2 m (poniżej siatki 2,43 m)
+    const k = (q.r || 0.5) / 0.24;
+    p.pawn.scale.set(k, 1.4, k); p.disc.scale.set(k, k, 1);
     if (p.pawn.children[3]) p.pawn.children[3].visible = false; // bez główki – sam walec z numerem i kopułami
   }
 }
