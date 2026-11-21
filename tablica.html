@@ -84,12 +84,13 @@
   .mTop button { height: 30px; padding: 0 9px; font-size: 15px; line-height: 1; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 600; }
   .mTop button:hover:not(:disabled) { border-color: var(--accent); }
   .mTop button:disabled { opacity: .35; cursor: default; }
-  .mTop #ballBtn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; }
-  .mTop #ballBtn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .mTop #menuHide { margin-left: auto; font-size: 17px; }
   #side .card { padding: 0 12px; margin-bottom: 6px; }
   #side .card > summary { padding: 9px 0; font-size: 12.5px; gap: 8px; justify-content: flex-start; }
   #side .card > summary .ci { font-size: 15px; font-style: normal; }
+  #ballBtn { display: inline-flex; align-items: center; gap: 6px; }
+  #ballBtn .ci { display: inline-flex; width: 18px; height: 18px; }
+  #ballBtn .ci svg { width: 100%; height: 100%; }
   #side .card > summary::after { margin-left: auto; }
   #side .card[open] { padding-bottom: 10px; }
   #side .card[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
@@ -394,8 +395,7 @@ function saveSharedTeams(teamsObj) {
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
     <div class="hgrp wide"><span class="hl">Filtry</span>
-      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
-      <span class="seg" id="shadowSeg" title="Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka"><button type="button" id="shadowBtn">Cień bloku</button></span></div>
+      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
       <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button><button type="button" data-shot="3d" title="Wygeneruj widok 3D zza drużyny A (z siatką, jak w modelu 3D)">3D</button></span></div>
   </div>
@@ -407,9 +407,15 @@ function saveSharedTeams(teamsObj) {
     <div class="mTop">
       <button type="button" id="undoBtn" title="Cofnij (Ctrl+Z)" disabled>↶</button>
       <button type="button" id="redoBtn" title="Ponów (Ctrl+Y)" disabled>↷</button>
-      <button type="button" id="ballBtn" data-act="ball" title="Pokaż / ukryj piłkę na boisku"><span class="ci">🏐</span><span>Piłka</span></button>
       <button type="button" id="menuHide" title="Ukryj menu">«</button>
     </div>
+    <details class="card" id="ballCard">
+      <summary><span class="ci">🏐</span><span>Piłka</span></summary>
+      <div class="row"><button type="button" id="ballBtn" data-act="ball" title="Pokaż / ukryj piłkę na boisku"><span class="ci">🏐</span> Pokaż piłkę na boisku</button></div>
+      <div class="row"><button type="button" id="shadowBtn" title="Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka">Cień bloku</button></div>
+      <div class="hint">Cień bloku pokazuje, które miejsca boiska są zasłonięte blokiem pionków drużyny po drugiej stronie siatki stykających się z nią, licząc z punktu, w którym stoi piłka. Włączenie tego filtra pokazuje też piłkę na boisku.</div>
+    </details>
+
     <details class="card" id="teamsCard">
       <summary><span class="ci">👥</span><span>Drużyny</span></summary>
       <div id="tBox"></div>
@@ -700,6 +706,10 @@ function saveSharedTeams(teamsObj) {
     ['Na boisku może być jednocześnie tylko 6 zawodników drużyny.', 'Only 6 players of a team can be on the court at the same time.', 'In campo possono esserci contemporaneamente solo 6 giocatori della squadra.'],
     ['Cień bloku', 'Block shadow', 'Ombra del muro'],
     ['Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka', 'Block shadow: which parts of the court are covered by the block from the ball’s position', 'Ombra del muro: quali zone del campo sono coperte dal muro dal punto in cui si trova la palla'],
+    ['🏐 Pokaż piłkę na boisku', '🏐 Show the ball on the court', '🏐 Mostra la palla sul campo'],
+    ['Cień bloku pokazuje, które miejsca boiska są zasłonięte blokiem pionków drużyny po drugiej stronie siatki stykających się z nią, licząc z punktu, w którym stoi piłka. Włączenie tego filtra pokazuje też piłkę na boisku.',
+      'The block shadow shows which parts of the court are covered by the block of the pawns of the team on the other side of the net that touch it, measured from the point where the ball is. Turning this filter on also shows the ball on the court.',
+      'L’ombra del muro mostra quali zone del campo sono coperte dal muro delle pedine della squadra dall’altro lato della rete che la toccano, calcolata dal punto in cui si trova la palla. Attivando questo filtro viene mostrata anche la palla sul campo.'],
     ['Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.', 'Drag the ball onto one half of the court to see the block shadow.', 'Trascina la palla su una metà del campo per vedere l’ombra del muro.'],
     ['Atak na stronę {0} · blokujących: {1}', 'Attack on side {0} · blockers: {1}', 'Attacco sul lato {0} · a muro: {1}'],
     ['dostępne {0}%', 'available {0}%', 'disponibile {0}%'],
@@ -1002,7 +1012,7 @@ function saveSharedTeams(teamsObj) {
   }
   (function () { // piłka na przycisku „Piłka” w pasku po lewej
     var bb = document.querySelector('#ballBtn .ci');
-    if (bb) bb.innerHTML = ballIcon('B', 24);
+    if (bb) bb.innerHTML = ballIcon('B', 18);
   })();
   // piłka (pokaż / ukryj z paska po lewej; przeciągana w dowolne miejsce)
   function drawBall() {
