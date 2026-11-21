@@ -102,15 +102,24 @@
   body.menuOff #side { display: none; }
   @media (min-width: 821px) {
     .layout { position: relative; }
-    #side { position: absolute; left: 8px; top: 8px; width: 262px; max-height: calc(100% - 256px); z-index: 11; }
-    #rotDock { position: fixed; left: 8px; bottom: 26px; width: 262px; }
+    #side { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 262px; z-index: 11; } /* lewe menu rozciągnięte na całą wysokość planszy */
+    /* Rotacje: po prawej stronie, pod przyciskami przybliżania, w kolorze górnego paska */
+    #rotDock { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 168px); width: 250px; color: #fff; border-color: rgba(255, 255, 255, .25);
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); box-shadow: 0 14px 30px -12px rgba(7, 26, 82, .8); }
     body.menuOff #rotDock { display: none; }
+    #rotDock .rotTitle { color: #cfe3ff; }
+    #rotDock #rotBar button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); }
+    #rotDock #rotBar button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
+    #rotDock #rotBar button.on { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    #rotDock #rotBar .seg { border-color: rgba(255, 255, 255, .45); }
+    #rotDock #rotBar .seg button { border: 0; }
+    #rotDock #rotBar #rotCur { color: #fff; }
     #rotDock #rotBar { display: block; flex: none; padding: 0; background: transparent; border: 0; }
     #rotDock #rotBar .rb-main, #rotDock #rotBar .rb-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 7px; padding: 0; }
     #rotDock #rotBar .rb-sep, #rotDock #rotBar #rbMore { display: none; }
     #rotDock #rotBar .full { display: inline; } #rotDock #rotBar .short { display: none; }
     #rotDock #rotBar #resetBtn, #rotDock #rotBar #resetAllBtn { flex: 1 1 100%; }
-    #rotDock #rotBar #resetAllBtn { border-color: rgba(217, 72, 72, .55); }
+    #rotDock #rotBar #resetAllBtn { border-color: rgba(255, 150, 150, .8); }
     #rotDock #rotBar .rotGrid { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 100%; }
     #rotDock #rotBar .rotGrid button { flex: 1 1 0; min-width: 34px; padding: 6px 0; }
   }
