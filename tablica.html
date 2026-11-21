@@ -754,7 +754,8 @@ function saveSharedTeams(teamsObj) {
     ['Na boisku może być jednocześnie tylko 6 zawodników drużyny.', 'Only 6 players of a team can be on the court at the same time.', 'In campo possono esserci contemporaneamente solo 6 giocatori della squadra.'],
     ['Cień bloku', 'Block shadow', 'Ombra del muro'],
     ['Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka', 'Block shadow: which parts of the court are covered by the block from the ball’s position', 'Ombra del muro: quali zone del campo sono coperte dal muro dal punto in cui si trova la palla'],
-    ['🏐 Pokaż piłkę na boisku', '🏐 Show the ball on the court', '🏐 Mostra la palla sul campo'],
+    ['Pokaż piłkę na boisku', 'Show the ball on the court', 'Mostra la palla sul campo'],
+    ['Przesunięcie kamery', 'Camera pan', 'Spostamento camera'],
     ['Cień bloku pokazuje, które miejsca boiska są zasłonięte blokiem pionków drużyny po drugiej stronie siatki stykających się z nią, licząc z punktu, w którym stoi piłka. Włączenie tego filtra pokazuje też piłkę na boisku.',
       'The block shadow shows which parts of the court are covered by the block of the pawns of the team on the other side of the net that touch it, measured from the point where the ball is. Turning this filter on also shows the ball on the court.',
       'L’ombra del muro mostra quali zone del campo sono coperte dal muro delle pedine della squadra dall’altro lato della rete che la toccano, calcolata dal punto in cui si trova la palla. Attivando questo filtro viene mostrata anche la palla sul campo.'],
@@ -1066,31 +1067,32 @@ function saveSharedTeams(teamsObj) {
   function drawBall() {
     if (!pst.ball.on) return;
     var g = el('g', { class: 'ballg', transform: 'translate(' + pst.ball.x + ',' + pst.ball.y + ')', style: 'cursor:grab' });
-    el('ellipse', { cx: 2, cy: 14, rx: 13, ry: 4, fill: 'rgba(14,27,61,.28)' }, g);
+    el('ellipse', { cx: 1.4, cy: 9.8, rx: 9.1, ry: 2.8, fill: 'rgba(14,27,61,.28)' }, g);
     // piłka żółto-niebieska (trzy zakręcone niebieskie pasy schodzące się w jednym punkcie) z delikatnym cieniowaniem kuli
+    // rozmiar piłki = 70% oryginału (promień 15 -> 10.5), wszystkie wymiary poniżej przeskalowane proporcjonalnie
     var defs = el('defs', {}, g);
-    var cp = el('clipPath', { id: 'ballClip' }, defs); el('circle', { r: 15 }, cp);
+    var cp = el('clipPath', { id: 'ballClip' }, defs); el('circle', { r: 10.5 }, cp);
     var gr = el('radialGradient', { id: 'ballShade', cx: '35%', cy: '30%', r: '75%' }, defs);
     el('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.42' }, gr); el('stop', { offset: '.55', 'stop-color': '#ffffff', 'stop-opacity': '0' }, gr); el('stop', { offset: '1', 'stop-color': '#0a1030', 'stop-opacity': '.38' }, gr);
-    el('circle', { r: 15, fill: '#f6cf16' }, g);
+    el('circle', { r: 10.5, fill: '#f6cf16' }, g);
     var cg = el('g', { 'clip-path': 'url(#ballClip)' }, g);
     // trzy wąskie niebieskie pasy wychodzą ze środka i zakręcają się ku krawędzi; każdy zajmuje ok. 42% swojego sektora 120° (żółtego jest więcej, jak na zdjęciu)
     for (var bi = 0; bi < 3; bi++) {
       var lo = [], hi = [], n = 32, W = 0.42 * 2 * Math.PI / 3;
       for (var ii = 0; ii <= n; ii++) {
-        var rr = 19 * ii / n, th = Math.asin(Math.min(1, rr / 15)), a = bi * 2 * Math.PI / 3 + 1.0 * th;
+        var rr = 13.3 * ii / n, th = Math.asin(Math.min(1, rr / 10.5)), a = bi * 2 * Math.PI / 3 + 1.0 * th;
         lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
       }
       var pts = lo.concat(hi.reverse()), dd = 'M' + pts.map(function (p) { return p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('L') + 'Z';
       el('path', { d: dd, fill: '#1b3a96', stroke: 'rgba(8,16,60,.55)', 'stroke-width': .6, 'stroke-linejoin': 'round' }, cg);
     }
     // faktura: drobna perforacja (dołki) w układzie heksagonalnym, jak na piłce meczowej
-    var pat = el('pattern', { id: 'ballDimples', width: 1.8, height: 3.118, patternUnits: 'userSpaceOnUse' }, defs);
-    el('circle', { cx: .45, cy: .78, r: .24, fill: 'rgba(10,20,60,.2)' }, pat); el('circle', { cx: 1.35, cy: 2.338, r: .24, fill: 'rgba(10,20,60,.2)' }, pat);
-    el('circle', { cx: .45, cy: .78, r: .09, fill: 'rgba(255,255,255,.22)' }, pat); el('circle', { cx: 1.35, cy: 2.338, r: .09, fill: 'rgba(255,255,255,.22)' }, pat);
-    el('rect', { x: -16, y: -16, width: 32, height: 32, fill: 'url(#ballDimples)', 'clip-path': 'url(#ballClip)' }, g);
-    el('circle', { r: 15, fill: 'url(#ballShade)' }, g);
-    el('circle', { r: 14.7, fill: 'none', stroke: '#9a8512', 'stroke-width': .8 }, g);
+    var pat = el('pattern', { id: 'ballDimples', width: 1.26, height: 2.1826, patternUnits: 'userSpaceOnUse' }, defs);
+    el('circle', { cx: .315, cy: .546, r: .168, fill: 'rgba(10,20,60,.2)' }, pat); el('circle', { cx: .945, cy: 1.6366, r: .168, fill: 'rgba(10,20,60,.2)' }, pat);
+    el('circle', { cx: .315, cy: .546, r: .063, fill: 'rgba(255,255,255,.22)' }, pat); el('circle', { cx: .945, cy: 1.6366, r: .063, fill: 'rgba(255,255,255,.22)' }, pat);
+    el('rect', { x: -11.2, y: -11.2, width: 22.4, height: 22.4, fill: 'url(#ballDimples)', 'clip-path': 'url(#ballClip)' }, g);
+    el('circle', { r: 10.5, fill: 'url(#ballShade)' }, g);
+    el('circle', { r: 10.29, fill: 'none', stroke: '#9a8512', 'stroke-width': .56 }, g);
     var drag = null;
     function pt(e) { var c = svg.getScreenCTM(); if (!c) return [0, 0]; var i = c.inverse(); return [i.a * e.clientX + i.c * e.clientY + i.e, i.b * e.clientX + i.d * e.clientY + i.f]; }
     g.addEventListener('pointerdown', function (e) {
