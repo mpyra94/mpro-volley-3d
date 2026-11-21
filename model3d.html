@@ -2626,8 +2626,8 @@ $('shot3').addEventListener('click', () => openEditor(captureThreeViews(shotTeam
 // ---------- Widok 3D na żądanie z Tablicy Taktycznej ----------
 // Tablica ładuje tę stronę w ukrytej ramce, przesyła pozycje pionków i odbiera obraz „zza drużyny A” (kamera jak w „Z tyłu drużyny”).
 // Współrzędne: x wzdłuż boiska (A po stronie x < 0), z w poprzek – dokładnie jak w modelu.
-async function renderFromBoard(d) {
-  const W = d.W || 1600, H = d.H || 900;
+let boardPrepared = false;
+async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kolejne obrazy przy zmianie kąta tylko przestawiają kamerę)
   ['a', 'b'].forEach(t => { if (d.teams && d.teams[t]) Object.assign(teams[t], d.teams[t]); });
   for (const p of players) { const q = d.players.find(x => x.id === p.id); if (q) { p.num = q.num; p.name = q.name || ''; } }
   applyTeamColors();
@@ -2660,10 +2660,16 @@ async function renderFromBoard(d) {
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
   if (bl) { ball.position.set(bl.x, BALL_R, bl.z); syncBallHelpers(); }
   shadowOn = false; updateBlockShadow(); zoneLabels.visible = courtAxis.visible = !!d.zones;
+}
+async function renderFromBoard(d) {
+  const W = d.W || 1200, H = d.H || 900;
+  if (!d.angleOnly || !boardPrepared) { await prepareBoard(d); boardPrepared = true; }
   const prevSize = renderer.getSize(new THREE.Vector2()), prevRatio = renderer.getPixelRatio();
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  // kamera zza drużyny A na łuku wokół środka siatki; kąt (wysokość nad podłogą) wybiera suwak w tablicy
+  const phi = THREE.MathUtils.degToRad(d.angle == null ? 17 : d.angle), R = 15.8;
   const cam = new THREE.PerspectiveCamera(50, W / H, 0.1, 250);
-  cam.position.set(-15.5, 5.3, 0); cam.lookAt(0, 0.8, 0); // zza drużyny A, z niskiej perspektywy, siatka na wprost
+  cam.position.set(-R * Math.cos(phi), 0.8 + R * Math.sin(phi), 0); cam.lookAt(0, 0.8, 0);
   const c = renderClean(cam);
   renderer.setPixelRatio(prevRatio); renderer.setSize(prevSize.x, prevSize.y, false); resize();
   return c.toDataURL('image/png');

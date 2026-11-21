@@ -290,6 +290,12 @@
   .shotHead { display: flex; align-items: center; gap: 10px; width: 100%; }
   .shotHead b { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .04em; flex: 1; }
   .shotInfo { font-size: 12px; color: var(--muted); }
+  .shotRow { display: flex; align-items: stretch; justify-content: center; gap: 14px; }
+  #angleBox { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 8px; width: 34px; padding: 4px 0; line-height: 1.2; }
+  #angleBox[hidden] { display: none; }
+  #angleBox .angleLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  #angleBox b { font-size: 12px; }
+  #angleSlider { writing-mode: vertical-lr; direction: rtl; flex: 1; width: 22px; min-height: 80px; margin: 0; accent-color: var(--accent); cursor: pointer; } /* w górę = wyższy kąt */
   .shotStage { position: relative; overflow: hidden; border-radius: 6px; touch-action: none; line-height: 0; }
   #shotCanvas { display: block; }
   #cropBox { position: absolute; border: 2px solid #ffd60a; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .58); cursor: move; touch-action: none; }
@@ -444,12 +450,19 @@ function saveSharedTeams(teamsObj) {
 <div id="shotModal" hidden>
   <div class="shotBox">
     <div class="shotHead"><b>Zrzut ekranu <span id="shotKind"></span></b><span id="shotInfo" class="shotInfo"></span><button type="button" id="shotClose" title="Zamknij">✕</button></div>
+    <div class="shotRow">
     <div class="shotStage" id="shotStage">
       <canvas id="shotCanvas"></canvas>
       <div id="cropBox">
         <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
         <span id="cropWm">mPro Volley 3D</span>
       </div>
+    </div>
+    <div id="angleBox" hidden>
+      <span class="angleLbl">Kąt</span>
+      <input type="range" id="angleSlider" min="4" max="60" step="1" value="17" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
+      <b id="angleVal">17°</b>
+    </div>
     </div>
     <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
     <div class="shotBtns"><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
@@ -620,6 +633,9 @@ function saveSharedTeams(teamsObj) {
     ['Zapisz', 'Save', 'Salva'],
     ['Wpisz tekst i Enter', 'Type the text and press Enter', 'Scrivi il testo e premi Invio'],
     ['Tekst na boisku', 'Text on the court', 'Testo sul campo'],
+    ['Kąt', 'Angle', 'Angolo'],
+    ['Kąt widoku', 'View angle', 'Angolo di vista'],
+    ['Kąt widoku: wyżej = widok bardziej z góry', 'View angle: higher = more from above', 'Angolo di vista: più in alto = più dall’alto'],
     ['Generowanie widoku 3D…', 'Generating the 3D view…', 'Generazione della vista 3D…'],
     ['Wygeneruj widok 3D zza drużyny A (z siatką, jak w modelu 3D)', 'Generate a 3D view from behind team A (with the net, as in the 3D model)', 'Genera una vista 3D da dietro la squadra A (con la rete, come nel modello 3D)'],
     ['Nie udało się wygenerować widoku 3D.', 'Could not generate the 3D view.', 'Impossibile generare la vista 3D.'],
@@ -1503,6 +1519,17 @@ function saveSharedTeams(teamsObj) {
   function busy3d(on) { $('busy3d').hidden = !on; }
   function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
   function fail3d() { clearTimeout(timer3d); pend3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
+  var angle3d = 17, queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) ustawiany suwakiem przy podglądzie
+  function render3dAngle() { // nowy obraz po zmianie kąta (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
+    if (!frame3d || !ready3d) return;
+    if (pend3d) { queued3d = true; return; }
+    pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, W: 1200, H: 900 }, '*');
+  }
+  $('angleSlider').addEventListener('input', function () {
+    angle3d = +this.value; $('angleVal').textContent = angle3d + '°';
+    clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60);
+  });
   var R3D = 0.27; // promień pionka w widoku 3D (m) – mniejszy niż na tablicy, żeby pionki nie były grube
   function payload3d(id) {
     var pos = positionsNow(), list = [];
@@ -1530,7 +1557,7 @@ function saveSharedTeams(teamsObj) {
       items.forEach(function (q) { list.push(q); });
     });
     var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
-    return { type: 'mpv-render', id: id, W: 1600, H: 900, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, angle: angle3d, zones: !!zonesOn, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
   }
   window.addEventListener('message', function (ev) {
     var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
@@ -1538,11 +1565,13 @@ function saveSharedTeams(teamsObj) {
     else if (d.type === 'mpv-rendered' && d.id === pend3d) {
       clearTimeout(timer3d); pend3d = null;
       if (d.error || !d.dataUrl) { fail3d(); return; }
-      drop3d();
       var img = new Image();
       img.onload = function () {
         var cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0);
-        busy3d(false); openShot(cv, '3d');
+        busy3d(false);
+        if (shotCv && shotKind === '3d' && !$('shotModal').hidden) { shotCv = cv; $('shotCanvas').getContext('2d').drawImage(cv, 0, 0); } // zmiana kąta: ten sam podgląd i kadr
+        else openShot(cv, '3d');
+        if (queued3d) { queued3d = false; render3dAngle(); }
       };
       img.onerror = fail3d; img.src = d.dataUrl;
     }
@@ -1578,10 +1607,11 @@ function saveSharedTeams(teamsObj) {
     shotCv = cv; shotKind = kind;
     var cvs = $('shotCanvas'); cvs.width = cv.width; cvs.height = cv.height; cvs.getContext('2d').drawImage(cv, 0, 0);
     $('shotModal').hidden = false;
-    var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
+    $('angleBox').hidden = kind !== '3d'; // suwak kąta widoku tylko przy widoku 3D
+    var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900) - (kind === '3d' ? 60 : 0)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
     shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
     cvs.style.width = shotDisp.w + 'px'; cvs.style.height = shotDisp.h + 'px';
-    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px';
+    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px'; $('angleBox').style.height = shotDisp.h + 'px';
     $('shotKind').textContent = kind.toUpperCase();
     $('shotView').hidden = kind === '3d'; // „Jak na ekranie” ma sens tylko dla planszy 2D
     if (kind === '3d') wholeCrop(); else screenCrop();
@@ -1594,7 +1624,7 @@ function saveSharedTeams(teamsObj) {
     if (x1 - x0 < 10 || y1 - y0 < 10) { wholeCrop(); return; }
     crop = { x: (x0 - SHOT.x) * sx, y: (y0 - SHOT.y) * sy, w: (x1 - x0) * sx, h: (y1 - y0) * sy }; placeCrop();
   }
-  function closeShot() { $('shotModal').hidden = true; shotCv = null; }
+  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
   function saveShot() {
     if (!shotCv) return;
     var k = shotDisp.k, sx = Math.round(crop.x * k), sy = Math.round(crop.y * k);
