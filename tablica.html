@@ -738,13 +738,17 @@ function saveSharedTeams(teamsObj) {
 
   // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
   // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
-  var PAWN_BASE = 1.32; // domyślny rozmiar pionków = „100%” w panelu (o 10% większy niż poprzedni 120%)
+  var PAWN_BASE = 1.19; // domyślny rozmiar pionków = „100%” w panelu (o 10% mniejszy niż poprzednie 1,32)
   var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -100, x1: 480 };
   function clampPos(team, x, y, s) { // pionek (z uwzględnieniem rozmiaru) nie dotyka siatki
     var b = BOUNDS[team], m = 18 * (s || PAWN_BASE) + 6;
     var y0 = team === 'a' ? Math.max(b.y0, CY + m) : b.y0, y1 = team === 'b' ? Math.min(b.y1, CY - m) : b.y1;
-    return [Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x)), Math.max(y0, Math.min(y1, y))];
+    y = Math.max(y0, Math.min(y1, y)); x = Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x));
+    // w strefie 3 m przy siatce (blok, atak) pionek nie może wyjść w bok poza boisko: cały mieści się między liniami bocznymi (skrajne ustawienie = przy antence)
+    if (team === 'a' ? y <= CY + FRONT_Y : y >= CY - FRONT_Y) { var rr = 18 * (s || PAWN_BASE); x = Math.max(70 + rr, Math.min(430 - rr, x)); }
+    return [x, y];
   }
+  var FRONT_Y = 120; // szerokość strefy 3 m przy siatce w jednostkach tablicy (3 m × 40)
 
   // ---- etykieta pod/nad pionkiem i zakaz nachodzenia (pionek + jego etykieta nie mogą dotykać innych) ----
   function pillInfo(team, num) {
@@ -1604,7 +1608,7 @@ function saveSharedTeams(teamsObj) {
   $('z3Out').addEventListener('click', function () { setZoom3d(zoom3d / 1.2); });
   $('z3Val').addEventListener('click', function () { setZoom3d(1); });
   $('shotStage').addEventListener('wheel', function (e) { if (shotKind !== '3d') return; e.preventDefault(); setZoom3d(zoom3d * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); }, { passive: false });
-  var R3D = 0.27; // promień pionka w widoku 3D (m) – mniejszy niż na tablicy, żeby pionki nie były grube
+  var R3D = 0.24; // promień pionka w widoku 3D (m) = naturalny rozmiar pionka modelu – mniejszy niż na tablicy, żeby pionki nie były grube
   function payload3d(id) {
     var pos = positionsNow(), list = [];
     ['a', 'b'].forEach(function (t) {
@@ -1622,6 +1626,9 @@ function saveSharedTeams(teamsObj) {
       var find = function (i) { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
       for (var i = 0; i < vis.length; i++) for (var j = i + 1; j < vis.length; j++)
         if (Math.hypot(vis[i].x - vis[j].x, vis[i].z - vis[j].z) < (vis[i].r2 + vis[j].r2) * 1.3) { par[find(i)] = find(j); edges.push([i, j]); }
+      // skrajne ustawienie przy antence: pionek w strefie 3 m przy siatce dociśnięty do linii bocznej (na tablicy nie może wyjść poza boisko)
+      var ZH = 4.5; // połowa szerokości boiska = położenie antenki (m)
+      vis.forEach(function (q) { q.ant = (q.x >= -3.3 && q.x <= 0 && Math.abs(q.z) >= ZH - q.r2 - 0.1) ? (q.z < 0 ? -1 : 1) : 0; });
       var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(i); });
       Object.keys(groups).forEach(function (k) {
         var g = groups[k]; if (g.length < 2) return;
@@ -1633,6 +1640,13 @@ function saveSharedTeams(teamsObj) {
           var dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1e-6, c = (d - 2 * R3D) / 2 / d;
           a.x += dx * c; a.z += dz * c; b.x -= dx * c; b.z -= dz * c;
         });
+      });
+      // blok przy antence = „zamknięta prosta”: zewnętrzny pionek dotyka antenki (płaszczyzny linii bocznej), reszta bloku dosunięta do niego w stronę środka
+      var gr = {}; vis.forEach(function (q, i) { (gr[find(i)] = gr[find(i)] || []).push(q); });
+      Object.keys(gr).forEach(function (k) {
+        var g = gr[k], a = g.filter(function (q) { return q.ant; }); if (!a.length) return;
+        var q0 = a.reduce(function (m, q) { return Math.abs(q.z) > Math.abs(m.z) ? q : m; });
+        var dz = q0.ant * (ZH - R3D) - q0.z; g.forEach(function (q) { q.z += dz; });
       });
       items.forEach(function (q) { list.push(q); });
     });
