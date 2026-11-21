@@ -199,11 +199,11 @@
     #hdrMore { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; }
     .hdr-extra { display: none; }
     /* rozwinięte menu: grupy filtrów jedna pod drugą, podpis grupy nad przyciskami */
-    header.open .hdr-extra { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 100%; gap: 10px 14px; padding: 8px 0 4px 54px; border-top: 1px solid rgba(255, 255, 255, .25); }
+    header.open .hdr-extra { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: row dense; flex: 1 1 100%; gap: 10px 14px; padding: 8px 0 4px 54px; border-top: 1px solid rgba(255, 255, 255, .25); }
     header.open .hgrp { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
     header.open .hgrp .seg { max-width: 100%; }
-    header.open .hgrp:nth-child(3) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-    header.open .hgrp:nth-child(3) .hl { flex: 1 1 100%; }
+    header.open .hgrp.wide { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+    header.open .hgrp.wide .hl { flex: 1 1 100%; }
     header.open #hdrMore { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
   }
   #drawDock { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
@@ -317,11 +317,13 @@ function saveSharedTeams(teamsObj) {
   <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="hide-m"> Menu</span></button></a>
   <h1>📋 Tablica Taktyczna</h1>
   <div class="hdr-extra">
+    <div class="hgrp"><span class="hl">Widok</span>
+      <span class="seg" id="viewSeg" title="Całe boisko albo powiększona połowa jednej drużyny (wybierasz ją przyciskami A / B w pasku rotacji)"><button type="button" data-view="full" title="Całe boisko, obie drużyny">Całe boisko</button><button type="button" data-view="half" title="Powiększona połowa boiska i pionki tylko jednej drużyny (A / B wybierasz w pasku rotacji)">Połowa boiska</button></span></div>
     <div class="hgrp"><span class="hl">Na pionku</span>
       <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span></div>
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
-    <div class="hgrp"><span class="hl">Filtry</span>
+    <div class="hgrp wide"><span class="hl">Filtry</span>
       <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
       <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
@@ -566,6 +568,10 @@ function saveSharedTeams(teamsObj) {
     // logo drużyny w strefie wolnej (tak jak na parkiecie w modelu 3D)
     if (teams.b.logo && teams.b.floorLogo !== false) el('image', { href: teams.b.logo, x: 34, y: -14, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
     if (teams.a.logo && teams.a.floorLogo !== false) el('image', { href: teams.a.logo, x: 34, y: 862, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
+    if (viewMode === 'half') { // widok połowy: druga połowa boiska (z ławką, nazwą i logo) jest zasłonięta kolorem tła, siatka zostaje widoczna
+      var hid = formState.fteam === 'a' ? { y: -100, h: 545 } : { y: 455, h: 545 };
+      el('rect', { x: -140, y: hid.y, width: 680, height: hid.h, class: 'bgOuter', 'pointer-events': 'none' });
+    }
   }
 
   // ---------- Pionki ----------
@@ -593,7 +599,8 @@ function saveSharedTeams(teamsObj) {
     var ig = el('g', { transform: 'scale(' + s + ')' }, g);
     el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, ig);
     el('circle', { r: 18, class: 'ring' }, ig);
-    if (labels.pawn !== 'none') el('text', { x: 0, y: 1 }, ig).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer / pierwsza litera pozycji / nic
+    var pk = labels[pawnKey()]; // numer / pierwsza litera pozycji / nic (osobno dla całego boiska i dla połowy)
+    if (pk !== 'none') el('text', { x: 0, y: 1 }, ig).textContent = pk === 'role' ? (r.role || '–') : r.num;
     // etykieta (nazwisko i/lub pozycja) – jej miejsce wybiera layoutLabels(), żeby nie zasłaniała pionków
     var pill = pillInfo(team, num);
     if (pill) {
@@ -691,8 +698,9 @@ function saveSharedTeams(teamsObj) {
     annotG = el('g', { 'pointer-events': 'none' });
     var pos = resolveMap(currentPositions());
     for (var n = 1; n <= 7; n++) {
-      if (!isGone('a', n)) makePawn('a', n, pos.a[n]);
-      if (!isGone('b', n)) makePawn('b', n, pos.b[n]);
+      ['a', 'b'].forEach(function (t) { // w widoku połowy tylko pionki wybranej drużyny (pozycje drugiej są zachowane)
+        if (!isGone(t, n) && (viewMode !== 'half' || t === formState.fteam)) makePawn(t, n, pos[t][n]);
+      });
     }
     drawBall();
     handlesG = el('g', { 'pointer-events': 'none' });
@@ -1049,8 +1057,12 @@ function saveSharedTeams(teamsObj) {
     if (sr) ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (sr[t] && sr[t][n]) Object.assign(roster[t][n], sr[t][n]); });
   } catch (e) {}
   function saveRoster() { try { localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); } catch (e) {} }
-  var labels = { pawn: 'num', name: false, role: false }; // pawn: co jest na pionku – numer albo pozycja (pierwsza litera)
+  // pawn: co jest na pionku w widoku całego boiska, pawnHalf: w widoku połowy (domyślnie pozycja) – numer albo pozycja (pierwsza litera)
+  var labels = { pawn: 'num', pawnHalf: 'role', name: false, role: false };
   try { var sl = JSON.parse(localStorage.getItem(LABELS_KEY) || 'null'); if (sl) Object.assign(labels, sl); } catch (e) {}
+  var VIEW_KEY = 'mpv:tablica:view:v1', viewMode = 'full'; // 'full' – całe boisko (domyślnie), 'half' – połowa boiska wybranej drużyny
+  try { if (localStorage.getItem(VIEW_KEY) === 'half') viewMode = 'half'; } catch (e) {}
+  function pawnKey() { return viewMode === 'half' ? 'pawnHalf' : 'pawn'; }
   function saveLabels() { try { localStorage.setItem(LABELS_KEY, JSON.stringify(labels)); } catch (e) {} }
   function saveTeams() { saveSharedTeams(teams); }
   function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
@@ -1059,7 +1071,8 @@ function saveSharedTeams(teamsObj) {
   var lblBtns = document.querySelectorAll('#lblPop [data-lbl]');
   function markLabels() {
     lblBtns.forEach(function (b) { b.classList.toggle('on', !!labels[b.dataset.lbl]); });
-    document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) { b.classList.toggle('on', b.dataset.pawn === labels.pawn); });
+    document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) { b.classList.toggle('on', b.dataset.pawn === labels[pawnKey()]); });
+    document.querySelectorAll('#viewSeg [data-view]').forEach(function (b) { b.classList.toggle('on', b.dataset.view === viewMode); });
   }
   lblBtns.forEach(function (b) {
     b.addEventListener('click', function () { labels[b.dataset.lbl] = !labels[b.dataset.lbl]; saveLabels(); markLabels(); render(); });
@@ -1068,7 +1081,7 @@ function saveSharedTeams(teamsObj) {
   $('zonesBtn').addEventListener('click', function () { zonesOn = !zonesOn; try { localStorage.setItem(ZONES_KEY, zonesOn ? '1' : '0'); } catch (e) {} syncZonesBtn(); render(); });
   syncZonesBtn();
   document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) {
-    b.addEventListener('click', function () { labels.pawn = b.dataset.pawn; saveLabels(); markLabels(); render(); });
+    b.addEventListener('click', function () { labels[pawnKey()] = b.dataset.pawn; saveLabels(); markLabels(); render(); });
   });
   markLabels();
 
@@ -1169,14 +1182,18 @@ function saveSharedTeams(teamsObj) {
   $('panelClose').addEventListener('click', function () { openSec(null); });
   // ---------- Przybliżanie / oddalanie (przyciski, kółko myszy, szczypanie; przesuwanie – przeciąganie tła) ----------
   var FULL = { x: -140, y: -60, w: 680, h: 1020 }, view = { cx: FULL.x + FULL.w / 2, cy: FULL.y + FULL.h / 2, z: 1 }, ZMAX = 4;
+  // widok połowy: wycinek planszy z połową wybranej drużyny (od siatki do nazwy drużyny i logo) – przy 100% wypełnia pole planszy
+  var HALF = { a: { x: -115, y: 436, w: 650, h: 500 }, b: { x: -115, y: -36, w: 650, h: 500 } };
+  function baseView() { return viewMode === 'half' ? HALF[formState.fteam] : FULL; } // obszar widoczny przy przybliżeniu 100%
+  function resetView() { var B = baseView(); view.cx = B.x + B.w / 2; view.cy = B.y + B.h / 2; view.z = 1; }
   function clampView() {
-    var w = FULL.w / view.z, h = FULL.h / view.z;
-    view.cx = Math.max(FULL.x + w / 2, Math.min(FULL.x + FULL.w - w / 2, view.cx));
-    view.cy = Math.max(FULL.y + h / 2, Math.min(FULL.y + FULL.h - h / 2, view.cy));
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z;
+    view.cx = Math.max(B.x + w / 2, Math.min(B.x + B.w - w / 2, view.cx));
+    view.cy = Math.max(B.y + h / 2, Math.min(B.y + B.h - h / 2, view.cy));
   }
   function applyView() {
     clampView();
-    var w = FULL.w / view.z, h = FULL.h / view.z;
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z;
     svg.setAttribute('viewBox', (view.cx - w / 2).toFixed(1) + ' ' + (view.cy - h / 2).toFixed(1) + ' ' + w.toFixed(1) + ' ' + h.toFixed(1));
     var pct = document.getElementById('zoomReset'); if (pct) pct.textContent = Math.round(view.z * 100) + '%';
   }
@@ -1191,7 +1208,7 @@ function saveSharedTeams(teamsObj) {
   function zoomCenter(factor) { var r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor); }
   document.getElementById('zoomIn').addEventListener('click', function () { zoomCenter(1.25); });
   document.getElementById('zoomOut').addEventListener('click', function () { zoomCenter(1 / 1.25); });
-  document.getElementById('zoomReset').addEventListener('click', function () { view.cx = FULL.x + FULL.w / 2; view.cy = FULL.y + FULL.h / 2; view.z = 1; applyView(); });
+  document.getElementById('zoomReset').addEventListener('click', function () { resetView(); applyView(); });
   svg.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
   var ptrs = {};
   svg.addEventListener('pointerdown', function (e) {
@@ -1304,7 +1321,7 @@ function saveSharedTeams(teamsObj) {
   }
   function wholeCrop() { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); }
   function screenCrop() { // ramka = fragment widoczny teraz na ekranie (przy przybliżeniu 100% – cały parkiet)
-    var w = FULL.w / view.z, h = FULL.h / view.z, sx = shotDisp.w / FULL.w, sy = shotDisp.h / FULL.h;
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z, sx = shotDisp.w / FULL.w, sy = shotDisp.h / FULL.h;
     crop = { x: (view.cx - w / 2 - FULL.x) * sx, y: (view.cy - h / 2 - FULL.y) * sy, w: w * sx, h: h * sy }; placeCrop();
   }
   function closeShot() { $('shotModal').hidden = true; shotCv = null; }
@@ -1458,8 +1475,20 @@ function saveSharedTeams(teamsObj) {
     b.addEventListener('click', function () { var t = formState.fteam; applyFormation(t, formState.rot[t], b.dataset.fmode); });
   });
   document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
-    b.addEventListener('click', function () { formState.fteam = b.dataset.fteam; saveForm(); syncFormUI(); });
+    b.addEventListener('click', function () {
+      var changed = formState.fteam !== b.dataset.fteam;
+      formState.fteam = b.dataset.fteam; saveForm(); syncFormUI();
+      if (changed && viewMode === 'half') { resetView(); render(); } // w widoku połowy przełączenie drużyny pokazuje jej połowę
+    });
   });
+  // filtr „Widok”: całe boisko (domyślnie) albo połowa boiska wybranej drużyny
+  function setViewMode(m) {
+    if (m === viewMode) return;
+    viewMode = m; try { localStorage.setItem(VIEW_KEY, m); } catch (e) {}
+    resetView(); markLabels(); render();
+  }
+  document.querySelectorAll('#viewSeg [data-view]').forEach(function (b) { b.addEventListener('click', function () { setViewMode(b.dataset.view); }); });
+  resetView(); markLabels();
 
   $('hdrMore').addEventListener('click', function () { var o = document.querySelector('header').classList.toggle('open'); $('hdrMore').setAttribute('aria-expanded', o); });
   // rysowanie na telefonie: karta narzędzi przenosi się do paska u dołu (zamiast paska rotacji), włącza ją przycisk ✏️ w nagłówku
