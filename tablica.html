@@ -868,6 +868,7 @@ function saveSharedTeams(teamsObj) {
     var r = roster[team][num], col = teams[team].jersey, s = pawnScale(team, num);
     var g = el('g', { class: 'pawn', 'data-team': team, 'data-num': num, transform: 'translate(' + pos[0] + ',' + pos[1] + ')' });
     var ig = el('g', { transform: 'scale(' + s + ')' }, g);
+    el('circle', { r: 18 + 8, fill: 'rgba(0,0,0,0)', stroke: 'none', 'pointer-events': 'all', class: 'hitRing' }, ig); // niewidoczna, większa strefa chwytania – łatwiej złapać pionek
     el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, ig);
     el('circle', { r: 18, class: 'ring' }, ig);
     var pk = labels[pawnKey()]; // numer / pierwsza litera pozycji / nic (osobno dla całego boiska i dla połowy)
@@ -1061,6 +1062,10 @@ function saveSharedTeams(teamsObj) {
       g.addEventListener('pointerdown', function (e) {
         e.preventDefault(); e.stopPropagation();
         var loc = toLocal(e);
+        // strefy chwytania sąsiednich pionków nachodzą na siebie: chwytamy ten pionek, którego środek jest najbliżej kursora
+        var near = g, bd = 1e9;
+        pawns.forEach(function (o) { var d = Math.hypot(o.__pos[0] - loc[0], o.__pos[1] - loc[1]) / (o.__s || 1); if (d < bd) { bd = d; near = o; } });
+        if (near !== g && bd <= 18 + 8) { near.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, button: e.button, buttons: e.buttons })); return; }
         drag = { g: g, dx: g.__pos[0] - loc[0], dy: g.__pos[1] - loc[1], sx: e.clientX, sy: e.clientY, moved: false, off: g.__pos[0] < COURT_MIN_X }; // off: pionek zaczął poza boiskiem (na ławce)
         g.classList.add('dragging');
         g.setPointerCapture && g.setPointerCapture(e.pointerId);
