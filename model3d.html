@@ -2646,8 +2646,21 @@ function boardBallTexture() { // żółta piłka z trzema szerokimi, zakręconym
     }
   }
   g.putImageData(img, 0, 0);
+  // faktura: perforacja – drobne dołki w siatce heksagonalnej (stały odstęp na kuli: liczba dołków w rzędzie ~ sin θ), w kolorze i w mapie wypukłości
+  const bc = document.createElement('canvas'); bc.width = W; bc.height = H; const bg = bc.getContext('2d'); bg.fillStyle = '#fff'; bg.fillRect(0, 0, W, H);
+  const rows = 120, dy = H / rows;
+  for (let r = 0; r < rows; r++) {
+    const th = (r + 0.5) / rows * Math.PI, n = Math.max(1, Math.floor(W * Math.sin(th) / dy)), off = (r % 2) * 0.5;
+    for (let q = 0; q < n; q++) {
+      const px = ((q + off) / n) * W, py = (r + 0.5) * dy, rad = dy * 0.3, rx = rad / Math.max(0.35, Math.sin(th)) * 0.9;
+      g.fillStyle = 'rgba(10,15,50,.3)'; g.beginPath(); g.ellipse(px, py, rx, rad, 0, 0, Math.PI * 2); g.fill();
+      bg.fillStyle = '#000'; bg.beginPath(); bg.ellipse(px, py, rx, rad, 0, 0, Math.PI * 2); bg.fill();
+    }
+  }
+  boardBallBump = new THREE.CanvasTexture(bc);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
+let boardBallBump = null;
 // Ustawia zawodników dokładnie tak, jak przysłała tablica. Wywoływane przed KAŻDYM obrazem – nawet gdyby model sam coś przesunął
 // (np. libero na krzesełko), pozycje z tablicy zawsze wygrywają.
 function placeBoardPlayers() {
@@ -2689,7 +2702,7 @@ async function prepareBoard(d) { // ustawia scenę wg tablicy (jednorazowo; kole
   const bl = d.ball;
   ball.visible = ballShadow.visible = ballLine.visible = !!bl;
   boardBall = bl || null;
-  if (bl && !boardBallTex) { boardBallTex = boardBallTexture(); ball.material = new THREE.MeshStandardMaterial({ map: boardBallTex, roughness: .4, emissive: 0xffffff, emissiveMap: boardBallTex, emissiveIntensity: .35 }); ball.rotation.set(0.3, 0.2, 1.15); } // jaśniejsza piłka, węzeł pasów zwrócony ku kamerze zza drużyny A
+  if (bl && !boardBallTex) { boardBallTex = boardBallTexture(); ball.material = new THREE.MeshStandardMaterial({ map: boardBallTex, roughness: .4, emissive: 0xffffff, emissiveMap: boardBallTex, emissiveIntensity: .35, bumpMap: boardBallBump, bumpScale: 1.2 }); ball.rotation.set(0.3, 0.2, 1.15); } // jaśniejsza piłka, węzeł pasów zwrócony ku kamerze zza drużyny A
   if (bl) { ball.scale.setScalar(2.2); ball.position.set(bl.x, BOARD_BALL_H, bl.z); syncBallHelpers(); } // powiększona (×2,2), żeby przy uproszczonych pionkach była czytelna // piłka wisi 3 m nad parkietem (ponad siatką); cień i linia pokazują, nad którym miejscem
   shadowOn = false; updateBlockShadow(); zoneLabels.visible = courtAxis.visible = !!d.zones;
 }
