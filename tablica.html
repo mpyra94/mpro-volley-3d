@@ -2346,6 +2346,7 @@ function saveSharedTeams(teamsObj) {
     renderTeamsPanel(); syncFormUI(); render(); applyI18n();
   }
   document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  addEventListener('storage', function (e) { if (e.key === LANG_KEY && (e.newValue === 'pl' || e.newValue === 'en' || e.newValue === 'it') && e.newValue !== lang) setLang(e.newValue); }); // zmiana języka w innej karcie (np. na stronie głównej)
   var i18nQueued = false; // tekst dodawany później (np. panel Drużyny, tytuł panelu) jest tłumaczony automatycznie
   new MutationObserver(function () {
     if (lang === 'pl' || i18nQueued) return;

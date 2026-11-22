@@ -34,6 +34,13 @@
   header button:hover:not(:disabled) { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
   header button:disabled { opacity: .4; cursor: default; }
   header button.primary { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+  /* przełącznik języka (flagi) – ten sam co na stronie głównej i w Tablicy; wybór wspólny dla wszystkich narzędzi (mpv:lang) */
+  #langSw { display: inline-flex; gap: 3px; align-items: center; }
+  #langSw button { padding: 3px; line-height: 0; border-radius: 7px; opacity: .6; border: 2px solid transparent; background: transparent; }
+  #langSw button:hover { opacity: 1; background: rgba(255, 255, 255, .18); }
+  #langSw button.on { opacity: 1; border-color: #ffd60a; background: rgba(255, 255, 255, .12); }
+  #langSw svg { width: 24px; height: 16px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  @media (max-width: 700px) { #langSw svg { width: 22px; height: 15px; } #langSw button { padding: 2px; } }
 
   /* ---------- Pasek narzędzi ---------- */
   #tb { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 14px;
@@ -287,6 +294,11 @@ function loadSharedTeams() {
   <button type="button" id="saveBtn" title="Zapisz gameplan do pliku .json (np. żeby przenieść na inny komputer)">💾<span class="tl"> Zapisz plik</span></button>
   <button type="button" id="loadBtn" title="Wczytaj gameplan z pliku .json">📂<span class="tl"> Wczytaj plik</span></button>
   <button type="button" id="printBtn" class="primary" title="Drukuj lub zapisz jako PDF (A4)">⤓<span class="tl"> PDF / Drukuj</span><span class="ts"> PDF</span></button>
+  <div id="langSw" role="group" aria-label="Language">
+    <button type="button" data-lang="pl" title="Polski" aria-label="Polski"><svg viewBox="0 0 16 10" aria-hidden="true"><rect width="16" height="5" fill="#fff"/><rect y="5" width="16" height="5" fill="#dc143c"/></svg></button>
+    <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
+    <button type="button" data-lang="it" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg></button>
+  </div>
   <input type="file" id="loadFile" accept=".json,application/json" hidden>
   <input type="file" id="logoFile" accept="image/*" hidden>
 </header>
@@ -326,6 +338,206 @@ function loadSharedTeams() {
 <script>
 (function () {
   'use strict';
+  // ---------- Wersje językowe: polski (domyślnie), English, Italiano – wybór wspólny dla wszystkich narzędzi (mpv:lang) ----------
+  // Klucz = tekst polski. Tłumaczymy interfejs (paski, przyciski, podpowiedzi, stałe etykiety stron); treści wpisanej w gameplan nie ruszamy.
+  // Nowy gameplan startuje z domyślnymi tekstami w wybranym języku.
+  var LANG_KEY = 'mpv:lang', lang = 'pl';
+  try { var lg0 = localStorage.getItem(LANG_KEY); if (lg0 === 'en' || lg0 === 'it') lang = lg0; } catch (e) {}
+  var I18N = { en: {}, it: {} };
+  [ // [polski, English, Italiano]
+    ['Menu główne', 'Main menu', 'Menu principale'],
+    ['Cofnij (Ctrl+Z)', 'Undo (Ctrl+Z)', 'Annulla (Ctrl+Z)'],
+    ['Ponów (Ctrl+Y)', 'Redo (Ctrl+Y)', 'Ripeti (Ctrl+Y)'],
+    ['Nowy, pusty gameplan', 'New, empty game plan', 'Nuovo game plan vuoto'],
+    ['Nowy', 'New', 'Nuovo'],
+    ['Zapisz gameplan do pliku .json (np. żeby przenieść na inny komputer)', 'Save the game plan to a .json file (e.g. to move it to another computer)', 'Salva il game plan in un file .json (ad es. per spostarlo su un altro computer)'],
+    ['Zapisz plik', 'Save file', 'Salva file'],
+    ['Wczytaj gameplan z pliku .json', 'Load a game plan from a .json file', 'Carica un game plan da un file .json'],
+    ['Wczytaj plik', 'Load file', 'Carica file'],
+    ['Drukuj lub zapisz jako PDF (A4)', 'Print or save as PDF (A4)', 'Stampa o salva come PDF (A4)'],
+    ['PDF / Drukuj', 'PDF / Print', 'PDF / Stampa'],
+    ['Boisko', 'Court', 'Campo'],
+    ['kliknij diagram, aby go wybrać', 'click a diagram to select it', 'clicca un diagramma per selezionarlo'],
+    ['Zwiń / rozwiń narzędzia rysowania', 'Collapse / expand the drawing tools', 'Comprimi / espandi gli strumenti di disegno'],
+    ['▴ Zwiń', '▴ Collapse', '▴ Comprimi'],
+    ['▾ Rysowanie', '▾ Drawing', '▾ Disegno'],
+    ['Zaznacz i przesuwaj elementy (dwuklik na koszulce lub napisie – edycja)', 'Select and move elements (double-click a shirt or label to edit it)', 'Seleziona e sposta gli elementi (doppio clic su una maglia o una scritta per modificarla)'],
+    ['↖ Zaznacz', '↖ Select', '↖ Seleziona'],
+    ['Strzałka – przeciągnij od początku do końca', 'Arrow – drag from start to end', 'Freccia – trascina dall’inizio alla fine'],
+    ['➜ Strzałka', '➜ Arrow', '➜ Freccia'],
+    ['Stożek ataku / zagrywki – kliknij 3 punkty: wierzchołek i dwa końce podstawy', 'Attack / serve cone – click 3 points: the tip and both ends of the base', 'Cono di attacco / battuta – clicca 3 punti: il vertice e le due estremità della base'],
+    ['◣ Stożek', '◣ Cone', '◣ Cono'],
+    ['Koszulka z numerem i nazwiskiem – kliknij miejsce', 'Shirt with number and name – click a spot', 'Maglia con numero e cognome – clicca un punto'],
+    ['👕 Koszulka', '👕 Shirt', '👕 Maglia'],
+    ['Napis – kliknij miejsce', 'Label – click a spot', 'Scritta – clicca un punto'],
+    ['T Napis', 'T Label', 'T Scritta'],
+    ['Kopiuj zaznaczony kształt (bez zaznaczenia – wszystkie kształty aktywnego diagramu), Ctrl+C', 'Copy the selected shape (with nothing selected – all shapes of the active diagram), Ctrl+C', 'Copia la forma selezionata (senza selezione – tutte le forme del diagramma attivo), Ctrl+C'],
+    ['⧉ Kopiuj', '⧉ Copy', '⧉ Copia'],
+    ['Wklej skopiowane kształty do aktywnego diagramu (Ctrl+V)', 'Paste the copied shapes into the active diagram (Ctrl+V)', 'Incolla le forme copiate nel diagramma attivo (Ctrl+V)'],
+    ['⎘ Wklej', '⎘ Paste', '⎘ Incolla'],
+    ['Usuń zaznaczony element (Delete)', 'Delete the selected element (Delete)', 'Elimina l’elemento selezionato (Canc)'],
+    ['🗑 Usuń', '🗑 Delete', '🗑 Elimina'],
+    ['Wyczyść cały aktywny diagram', 'Clear the whole active diagram', 'Svuota l’intero diagramma attivo'],
+    ['Wyczyść diagram', 'Clear diagram', 'Svuota diagramma'],
+    ['Tekst', 'Text', 'Testo'],
+    ['Pogrubienie (zaznacz tekst w polu notatek)', 'Bold (select text in a notes field)', 'Grassetto (seleziona il testo in un campo note)'],
+    ['Kursywa', 'Italic', 'Corsivo'],
+    ['Podkreślenie', 'Underline', 'Sottolineato'],
+    ['Wstaw pole tekstowe w dowolnym miejscu strony: kliknij ten przycisk, a potem miejsce na stronie', 'Insert a text box anywhere on the page: click this button, then a spot on the page', 'Inserisci una casella di testo in un punto qualsiasi della pagina: clicca questo pulsante e poi un punto della pagina'],
+    ['▭ Pole tekstowe', '▭ Text box', '▭ Casella di testo'],
+    ['Trzy kolory zespołu: paski i nagłówek, środek belki, dół belki', 'Three team colours: bars and header, middle of the side band, bottom of the side band', 'Tre colori della squadra: barre e intestazione, centro della fascia laterale, fondo della fascia laterale'],
+    ['🎨 Kolory zespołu', '🎨 Team colours', '🎨 Colori squadra'],
+    ['Widok', 'View', 'Vista'],
+    ['Pomniejsz', 'Zoom out', 'Riduci'],
+    ['Powiększ', 'Zoom in', 'Ingrandisci'],
+    ['Dopasuj stronę do szerokości okna', 'Fit the page to the window width', 'Adatta la pagina alla larghezza della finestra'],
+    ['Dopasuj', 'Fit', 'Adatta'],
+    ['Kolor rysowania', 'Drawing colour', 'Colore del disegno'],
+    ['Kolor tekstu (zaznacz tekst w notatce)', 'Text colour (select text in a note)', 'Colore del testo (seleziona il testo in una nota)'],
+    // strony gameplanu: stałe etykiety, podpowiedzi pustych pól, przyciski edycji
+    ['Tytuł sekcji', 'Section title', 'Titolo sezione'],
+    ['Logo w stopce (kliknij, aby wgrać)', 'Footer logo (click to upload)', 'Logo a piè di pagina (clicca per caricarlo)'],
+    ['logo<br>stopki', 'footer<br>logo', 'logo<br>piè di pagina'],
+    ['Wygenerowano z mPro Volley Gameplan', 'Generated with mPro Volley Gameplan', 'Generato con mPro Volley Gameplan'],
+    ['Kliknij, aby wgrać logo', 'Click to upload a logo', 'Clicca per caricare un logo'],
+    ['logo<br>drużyny', 'team<br>logo', 'logo<br>squadra'],
+    ['Nasz zespół', 'Our team', 'La nostra squadra'],
+    ['Rozgrywki', 'Competition', 'Competizione'],
+    ['Data i godzina', 'Date and time', 'Data e ora'],
+    ['Miejsce', 'Venue', 'Luogo'],
+    ['Przeciwnik', 'Opponent', 'Avversario'],
+    ['Rotacja przeciwnika (P1–P6)', 'Opponent rotation (P1–P6)', 'Rotazione avversaria (P1–P6)'],
+    ['NAZWISKO', 'SURNAME', 'COGNOME'],
+    ['Zmiennicy:', 'Substitutes:', 'Riserve:'],
+    ['Rola zagrywki…', 'Serve role…', 'Ruolo della battuta…'],
+    ['Dodaj kartę dystrybucji', 'Add a distribution card', 'Aggiungi una scheda di distribuzione'],
+    ['+ karta', '+ card', '+ scheda'],
+    ['Usuń cały wiersz', 'Delete the whole row', 'Elimina l’intera riga'],
+    ['✕ wiersz', '✕ row', '✕ riga'],
+    ['Tytuł wiersza', 'Row title', 'Titolo riga'],
+    ['adnotacja', 'annotation', 'annotazione'],
+    ['Usuń kartę', 'Delete card', 'Elimina scheda'],
+    ['tytuł', 'title', 'titolo'],
+    ['Dwuklik – zaznacz / odznacz czerwoną ramkę', 'Double-click – add / remove the red frame', 'Doppio clic – aggiungi / togli la cornice rossa'],
+    ['notatka', 'note', 'nota'],
+    ['+ dodaj wiersz dystrybucji', '+ add distribution row', '+ aggiungi riga di distribuzione'],
+    ['nr', 'no.', 'n.'],
+    ['poz', 'pos', 'pos'],
+    ['Usuń zmiennika', 'Remove substitute', 'Rimuovi riserva'],
+    ['+ zmiennik', '+ substitute', '+ riserva'],
+    ['Legenda…', 'Legend…', 'Legenda…'],
+    ['typ zagrywki', 'serve type', 'tipo di battuta'],
+    ['schemat ataku', 'attack pattern', 'schema d’attacco'],
+    ['Rodzaj ataku: K1 / K7', 'Attack type: K1 / K7', 'Tipo di attacco: K1 / K7'],
+    ['Miejsce ataku: 0 / 1 / 2', 'Attack spot: 0 / 1 / 2', 'Zona d’attacco: 0 / 1 / 2'],
+    ['uwagi', 'remarks', 'osservazioni'],
+    ['Przesuń wcześniej', 'Move earlier', 'Sposta prima'],
+    ['Przesuń później', 'Move later', 'Sposta dopo'],
+    ['+ dodaj kartę zawodnika', '+ add player card', '+ aggiungi scheda giocatore'],
+    ['Sekcja', 'Section', 'Sezione'],
+    ['+ legenda', '+ legend', '+ legenda'],
+    ['+ dodaj kolejną stronę ataku', '+ add another attack page', '+ aggiungi un’altra pagina d’attacco'],
+    ['✕ usuń tę stronę', '✕ delete this page', '✕ elimina questa pagina'],
+    ['Przeciągnij, aby przesunąć', 'Drag to move', 'Trascina per spostare'],
+    ['Mniejszy tekst', 'Smaller text', 'Testo più piccolo'],
+    ['Większy tekst', 'Larger text', 'Testo più grande'],
+    ['Ramka wokół pola', 'Border around the box', 'Bordo intorno alla casella'],
+    ['Usuń pole', 'Delete box', 'Elimina casella'],
+    ['Wpisz tekst…', 'Type text…', 'Scrivi il testo…'],
+    ['Zmień rozmiar', 'Resize', 'Ridimensiona'],
+    ['Strona {0} z {1}', 'Page {0} of {1}', 'Pagina {0} di {1}'],
+    // komunikaty i okienka
+    ['Kliknij miejsce na stronie, w którym ma się pojawić pole tekstowe (Esc – anuluj).', 'Click the spot on the page where the text box should appear (Esc – cancel).', 'Clicca il punto della pagina in cui deve comparire la casella di testo (Esc – annulla).'],
+    ['W sekcji mieszczą się 3 karty w wierszu – użyj „+ dodaj kolejną stronę ataku”.', 'A section holds 3 cards per row – use “+ add another attack page”.', 'Una sezione contiene 3 schede per riga – usa “+ aggiungi un’altra pagina d’attacco”.'],
+    ['W tej sekcji nie ma miejsca na legendę – usuń kartę lub użyj innej strony.', 'There is no room for a legend in this section – delete a card or use another page.', 'In questa sezione non c’è spazio per la legenda – elimina una scheda o usa un’altra pagina.'],
+    ['Usunąć tę stronę ataku razem z jej zawartością?', 'Delete this attack page together with its content?', 'Eliminare questa pagina d’attacco insieme al suo contenuto?'],
+    ['Maksymalnie {0} kart w wierszu.', 'At most {0} cards per row.', 'Al massimo {0} schede per riga.'],
+    ['Kolory zespołu ustawiono na podstawie logo. Zmienisz je w „🎨 Kolory zespołu”.', 'Team colours were set from the logo. You can change them in “🎨 Team colours”.', 'I colori della squadra sono stati impostati dal logo. Puoi cambiarli in “🎨 Colori squadra”.'],
+    ['Nie udało się wczytać obrazu.', 'Could not load the image.', 'Impossibile caricare l’immagine.'],
+    ['Ustawienie przeciwnika', 'Opponent line-up', 'Schieramento avversario'],
+    ['Zagrywka', 'Serve', 'Battuta'],
+    ['Atak', 'Attack', 'Attacco'],
+    ['karta {0}', 'card {0}', 'scheda {0}'],
+    ['W ustawieniu przeciwnika pozycje zawodników są stałe – edytuj numer i nazwisko (dwuklik na koszulce).', 'Player positions in the opponent line-up are fixed – edit the number and name (double-click a shirt).', 'Nello schieramento avversario le posizioni dei giocatori sono fisse – modifica numero e cognome (doppio clic sulla maglia).'],
+    ['Numer', 'Number', 'Numero'],
+    ['Nazwisko (pod koszulką)', 'Name (under the shirt)', 'Cognome (sotto la maglia)'],
+    ['Kolor koszulki', 'Shirt colour', 'Colore della maglia'],
+    ['Gotowe', 'Done', 'Fatto'],
+    ['Napis', 'Label', 'Scritta'],
+    ['Kolory zespołu', 'Team colours', 'Colori squadra'],
+    ['1 · paski sekcji i ramka nagłówka', '1 · section bars and header frame', '1 · barre delle sezioni e cornice dell’intestazione'],
+    ['2 · belka z lewej – środek', '2 · left band – middle', '2 · fascia sinistra – centro'],
+    ['3 · belka z lewej – dół', '3 · left band – bottom', '3 · fascia sinistra – fondo'],
+    ['Użyj tego zestawu', 'Use this set', 'Usa questo set'],
+    ['Usuń zestaw', 'Delete set', 'Elimina set'],
+    ['Zapisz bieżące trzy kolory jako swój zestaw – nowy gameplan startuje z ostatnio zapisanego', 'Save the current three colours as your set – a new game plan starts with the last saved one', 'Salva i tre colori attuali come tuo set – un nuovo game plan parte dall’ultimo salvato'],
+    ['💾 Zapisz mój zestaw', '💾 Save my set', '💾 Salva il mio set'],
+    ['Moje zestawy (kliknij, aby użyć)', 'My sets (click to use)', 'I miei set (clicca per usarli)'],
+    ['Zapisano zestaw kolorów. Nowe gameplany będą startować z tego zestawu.', 'Colour set saved. New game plans will start with this set.', 'Set di colori salvato. I nuovi game plan partiranno da questo set.'],
+    ['Skopiowano zaznaczony kształt. Kliknij inne boisko i wklej (Ctrl+V).', 'Selected shape copied. Click another court and paste (Ctrl+V).', 'Forma selezionata copiata. Clicca un altro campo e incolla (Ctrl+V).'],
+    ['Skopiowano wszystkie kształty ({0}) z diagramu. Kliknij inne boisko i wklej.', 'All shapes ({0}) copied from the diagram. Click another court and paste.', 'Copiate tutte le forme ({0}) dal diagramma. Clicca un altro campo e incolla.'],
+    ['Zaznacz kształt albo kliknij diagram, z którego chcesz kopiować.', 'Select a shape or click the diagram you want to copy from.', 'Seleziona una forma o clicca il diagramma da cui vuoi copiare.'],
+    ['Schowek jest pusty – najpierw skopiuj kształty.', 'The clipboard is empty – copy some shapes first.', 'Gli appunti sono vuoti – prima copia delle forme.'],
+    ['Kliknij boisko, do którego chcesz wkleić.', 'Click the court you want to paste into.', 'Clicca il campo in cui vuoi incollare.'],
+    ['Wklejono {0} kształt(y).', 'Pasted {0} shape(s).', 'Forme incollate: {0}.'],
+    ['Koszulek w schemacie ustawienia przeciwnika nie usuwamy.', 'Shirts in the opponent line-up cannot be deleted.', 'Le maglie dello schieramento avversario non si eliminano.'],
+    ['Najpierw kliknij diagram, który chcesz wyczyścić.', 'First click the diagram you want to clear.', 'Prima clicca il diagramma che vuoi svuotare.'],
+    ['Utworzyć nowy, pusty gameplan? Bieżący zostanie zastąpiony (cofnięcie: Ctrl+Z).', 'Create a new, empty game plan? The current one will be replaced (undo: Ctrl+Z).', 'Creare un nuovo game plan vuoto? Quello attuale verrà sostituito (annulla: Ctrl+Z).'],
+    ['Zapisano plik {0}', 'Saved file {0}', 'File salvato: {0}'],
+    ['Wczytano gameplan.', 'Game plan loaded.', 'Game plan caricato.'],
+    ['To nie jest poprawny plik gameplanu.', 'This is not a valid game plan file.', 'Questo non è un file di game plan valido.'],
+    ['W oknie drukowania wybierz „Zapisz jako PDF”, papier A4, marginesy: brak.', 'In the print dialog choose “Save as PDF”, A4 paper, margins: none.', 'Nella finestra di stampa scegli “Salva come PDF”, carta A4, margini: nessuno.'],
+    // domyślna treść nowego gameplanu
+    ['ZAWODNIK {0}', 'PLAYER {0}', 'GIOCATORE {0}'],
+    ['USTAWIENIE PRZECIWNIKA', 'OPPONENT LINE-UP', 'SCHIERAMENTO AVVERSARIO'],
+    ['DYSTRYBUCJA', 'DISTRIBUTION', 'DISTRIBUZIONE'],
+    ['ATAK', 'ATTACK', 'ATTACCO'],
+    ['ZAGRYWKA', 'SERVE', 'BATTUTA'],
+    ['PRZYJMUJĄCY', 'OUTSIDE HITTERS', 'SCHIACCIATORI'],
+    ['ATAKUJĄCY', 'OPPOSITES', 'OPPOSTI'],
+    ['ŚRODKOWI', 'MIDDLE BLOCKERS', 'CENTRALI'],
+    ['lewe skrzydło', 'left wing', 'ala sinistra'],
+    ['prawe skrzydło – II strefa', 'right wing – zone 2', 'ala destra – zona 2'],
+    ['prawe skrzydło – I strefa', 'right wing – zone 1', 'ala destra – zona 1'],
+    ['środek', 'middle', 'centro'],
+    ['DD.MM.RRRR, godz. GG:MM', 'DD.MM.YYYY, HH:MM', 'GG.MM.AAAA, ore HH:MM'],
+    ['Miejsce meczu', 'Match venue', 'Luogo della partita'],
+    ['Rola zagrywki:', 'Serve role:', 'Ruolo della battuta:'],
+    ['WSZYSTKIE USTAWIENIA ŁĄCZNIE:', 'ALL ROTATIONS COMBINED:', 'TUTTE LE ROTAZIONI INSIEME:'],
+    ['LEGENDA:', 'LEGEND:', 'LEGENDA:'],
+    ['otwarta prosta (skaczemy skos)', 'line open (we block the cross)', 'lungolinea aperto (saltiamo la diagonale)'],
+    ['jedna piłka między antenką a rękoma (łapka)', 'one ball between the antenna and the hands', 'una palla tra l’antenna e le mani'],
+    ['zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma', 'line closed, no ball gets between the antenna and the hands', 'lungolinea chiuso, nessuna palla passa tra l’antenna e le mani'],
+    ['wysoka', 'high ball', 'palla alta'],
+    ['blok potrójny', 'triple block', 'muro a tre'],
+    ['krótka przy sobie', 'quick in front of the setter', 'primo tempo davanti al palleggiatore'],
+    ['suw', 'slide', 'fast']
+  ].forEach(function (r) { I18N.en[r[0]] = r[1]; I18N.it[r[0]] = r[2]; });
+  function T(k) { var d = I18N[lang], r = (lang !== 'pl' && d && d[k]) || k; for (var i = 1; i < arguments.length; i++) r = r.split('{' + (i - 1) + '}').join(arguments[i]); return r; }
+  // statyczne paski (nagłówek, narzędzia, widok); oryginał polski zapamiętany, więc można wrócić do PL. Strony dokumentu tłumaczy renderAll() przez T().
+  var i18nTxt = new WeakMap(), i18nAttr = new WeakMap();
+  function applyI18n() {
+    ['header', '#tb', '#viewBar'].forEach(function (sel) {
+      var root = document.querySelector(sel); if (!root) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { return n.parentNode.closest('#activeLbl, #tbToggle') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } }), n, nodes = [];
+      while ((n = w.nextNode())) nodes.push(n);
+      nodes.forEach(function (n) {
+        if (!i18nTxt.has(n)) i18nTxt.set(n, n.nodeValue);
+        var orig = i18nTxt.get(n), key = orig.replace(/\s+/g, ' ').trim(); if (!key) return;
+        var tr = T(key), want = tr === key ? orig : orig.replace(/^(\s*)[\s\S]*?(\s*)$/, function (m, a, b) { return a + tr + b; });
+        if (n.nodeValue !== want) n.nodeValue = want;
+      });
+      [root].concat(Array.prototype.slice.call(root.querySelectorAll('[title],[aria-label],[placeholder]'))).forEach(function (el) {
+        ['title', 'aria-label', 'placeholder'].forEach(function (a) {
+          if (!el.hasAttribute(a)) return;
+          var m = i18nAttr.get(el); if (!m) i18nAttr.set(el, m = {});
+          if (!(a in m)) m[a] = el.getAttribute(a);
+          var key = m[a].replace(/\s+/g, ' ').trim(), tr = T(key);
+          if (el.getAttribute(a) !== (tr === key ? m[a] : tr)) el.setAttribute(a, tr === key ? m[a] : tr);
+        });
+      });
+    });
+  }
   var NS = 'http://www.w3.org/2000/svg', KEY = 'mpv:gameplan:doc:v2';
   var PAL = ['#d62828', '#f08a24', '#f2c230', '#7bbf6a', '#4a74c9', '#9ec5ea', '#222222', '#ffffff'];
   // szata graficzna: trzy kolory zespołu (c1 – paski sekcji i ramka nagłówka, c2 i c3 – środek i dół belki z lewej)
@@ -364,31 +576,35 @@ function loadSharedTeams() {
   var US_SHIRT = '#9ec5ea'; // te same koszulki w ataku i w zagrywce
   // sekcje strony ataku: 0 – przyjmujący, 1 – atakujący, 2 – środkowi (w sekcji max 3 karty w wierszu)
   var SEC_TITLES = ['PRZYJMUJĄCY', 'ATAKUJĄCY', 'ŚRODKOWI'], SEC_KIND = ['left', 'right2', 'middle'], SEC_MAX = 3, DIST_MAX = 8;
-  function atkCard(n, kind, sec) { var d = ATK[kind || 'left']; return { k: 'card', sec: sec || 0, ball: '', num: String(n), name: '', sub: d.sub, shapes: d.shapes().concat(blockers(US_SHIRT)), notes: '' }; }
+  function secTitles() { return SEC_TITLES.map(function (s) { return T(s); }); }
+  function atkCard(n, kind, sec) { var d = ATK[kind || 'left']; return { k: 'card', sec: sec || 0, ball: '', num: String(n), name: '', sub: T(d.sub), shapes: d.shapes().concat(blockers(US_SHIRT)), notes: '' }; }
   function newAtkPage() { // dodatkowa strona ataku: po trzy karty w każdej sekcji
     var it = [];
     [['left', 0], ['left', 0], ['left', 0], ['right2', 1], ['right1', 1], ['right2', 1], ['middle', 2], ['middle', 2], ['middle', 2]].forEach(function (x) { it.push(atkCard('', x[0], x[1])); });
-    return { title: 'ATAK', items: it, boxes: [] };
+    return { title: T('ATAK'), items: it, boxes: [] };
   }
   // zagrywka: stożek zza strefy I rywala (po lewej stronie diagramu) w stronę naszego przyjęcia
   function srvCard(n) { return { k: 'card', num: String(n), name: '', sub: '', shapes: [cone([74, 8], [38, 176], [134, 176])].concat(blockers(US_SHIRT)), notes: '' }; }
-  var LEGEND = '<b>LEGENDA:</b><br><br><b>2 ball</b> – otwarta prosta (skaczemy skos)<br><b>1 ball</b> – jedna piłka między antenką a rękoma (łapka)<br><b>0 ball</b> – zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma<br><br><b>Q</b> – quick<br><b>HB</b> – wysoka<br><b>B3</b> – blok potrójny<br><b>K1</b> – krótka przy sobie<br><b>K7</b> – suw';
+  function legendHTML() {
+    return '<b>' + T('LEGENDA:') + '</b><br><br><b>2 ball</b> – ' + T('otwarta prosta (skaczemy skos)') + '<br><b>1 ball</b> – ' + T('jedna piłka między antenką a rękoma (łapka)') +
+      '<br><b>0 ball</b> – ' + T('zamknięta prosta, żadna piłka nie przechodzi między antenką a rękoma') + '<br><br><b>Q</b> – quick<br><b>HB</b> – ' + T('wysoka') +
+      '<br><b>B3</b> – ' + T('blok potrójny') + '<br><b>K1</b> – ' + T('krótka przy sobie') + '<br><b>K7</b> – ' + T('suw');
+  }
   function defaultDoc() {
-    var sh = loadSharedTeams() || {}, a = sh.a || {}, b = sh.b || {}, i;
-    var f = [shirt(45, 48, '1', 'ZAWODNIK 1', '#ffffff'), shirt(125, 48, '2', 'ZAWODNIK 2', '#ffffff'), shirt(205, 48, '3', 'ZAWODNIK 3', '#ffffff'),
-      shirt(45, 130, '4', 'ZAWODNIK 4', '#ffffff'), shirt(125, 130, '5', 'ZAWODNIK 5', '#ffffff'), shirt(205, 130, '6', 'ZAWODNIK 6', '#ffffff')];
+    var sh = loadSharedTeams() || {}, a = sh.a || {}, b = sh.b || {}, i, f = [];
+    for (i = 0; i < 6; i++) f.push(shirt([45, 125, 205][i % 3], i < 3 ? 48 : 130, String(i + 1), T('ZAWODNIK {0}', i + 1), '#ffffff'));
     var p2 = [], p3 = [];
     // 1. rząd: atak z lewego skrzydła; 2. rząd: prawe skrzydło – II i I strefa osobno (+ legenda); 3. rząd: atak ze środka
     ['left', 'left', 'left', 'right2', 'right1', 'middle', 'middle', 'middle'].forEach(function (k, n) { p2.push(atkCard(n + 1, k, k === 'left' ? 0 : k === 'middle' ? 2 : 1)); });
-    p2.splice(5, 0, { k: 'legend', sec: 1, html: LEGEND });
+    p2.splice(5, 0, { k: 'legend', sec: 1, html: legendHTML() });
     for (i = 1; i <= 9; i++) p3.push(srvCard(i));
     return {
-      v: 5, colors: themeObj(startTheme()), secT: SEC_TITLES.slice(), xa: [],
-      meta: { ourLogo: a.logo || '', ourName: a.name || 'Nasz zespół', oppLogo: b.logo || '', oppName: b.name || 'Przeciwnik', comp: 'Rozgrywki', date: 'DD.MM.RRRR, godz. GG:MM', place: 'Miejsce meczu', footLogo: '' },
-      titles: { t1: 'USTAWIENIE PRZECIWNIKA', t2: 'DYSTRYBUCJA', t3: 'ATAK', t4: 'ZAGRYWKA' },
-      p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: [{ num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }], role: '<b>Rola zagrywki:</b><br><br>', dist: [
+      v: 5, colors: themeObj(startTheme()), secT: secTitles(), xa: [],
+      meta: { ourLogo: a.logo || '', ourName: a.name || T('Nasz zespół'), oppLogo: b.logo || '', oppName: b.name || T('Przeciwnik'), comp: T('Rozgrywki'), date: T('DD.MM.RRRR, godz. GG:MM'), place: T('Miejsce meczu'), footLogo: '' },
+      titles: { t1: T('USTAWIENIE PRZECIWNIKA'), t2: T('DYSTRYBUCJA'), t3: T('ATAK'), t4: T('ZAGRYWKA') },
+      p1: { rot: 'P1', formation: f, libNum: '', libName: '', subs: [{ num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }, { num: '', name: '', pos: '' }], role: '<b>' + T('Rola zagrywki:') + '</b><br><br>', dist: [
         { title: 'P1 P6 P5', note: '', cards: [distCard(), distCard()] },
-        { title: 'WSZYSTKIE USTAWIENIA ŁĄCZNIE:', note: '', cards: [distCard(), distCard(), distCard(), distCard()] } ] },
+        { title: T('WSZYSTKIE USTAWIENIA ŁĄCZNIE:'), note: '', cards: [distCard(), distCard(), distCard(), distCard()] } ] },
       p2: { items: p2 }, p3: { items: p3 }
     };
   }
@@ -459,10 +675,10 @@ function loadSharedTeams() {
     doc.p1.subs.forEach(function (r, i) {
       var b = 'p1.subs.' + i;
       h += '<div class="subrow" data-si="' + i + '"' + (r.num || r.name || r.pos ? '' : ' data-empty="1"') + '><span class="hash">#</span>' +
-        mtx(b + '.num', 'sn', 'nr', 'num') + mtx(b + '.name', 'snm', 'NAZWISKO', 'name') + mtx(b + '.pos', 'spo', 'poz', 'pos') +
-        '<button type="button" class="subx noprint" data-act="sub-del" data-si="' + i + '" title="Usuń zmiennika">✕</button></div>';
+        mtx(b + '.num', 'sn', T('nr'), 'num') + mtx(b + '.name', 'snm', T('NAZWISKO'), 'name') + mtx(b + '.pos', 'spo', T('poz'), 'pos') +
+        '<button type="button" class="subx noprint" data-act="sub-del" data-si="' + i + '" title="' + T('Usuń zmiennika') + '">✕</button></div>';
     });
-    if (doc.p1.subs.length < 6) h += '<button type="button" class="addbtn noprint" data-act="sub-add" style="margin-top:3px">+ zmiennik</button>';
+    if (doc.p1.subs.length < 6) h += '<button type="button" class="addbtn noprint" data-act="sub-add" style="margin-top:3px">' + T('+ zmiennik') + '</button>';
     return h;
   }
   function normSubs() { // starszy zapis (tekst z formatowaniem) -> lista wierszy
@@ -478,14 +694,14 @@ function loadSharedTeams() {
     doc.p1.subs = out.slice(0, 6);
   }
   function bandHTML(top) { return '<div class="band" style="top:' + (top || 62) + 'px"><i></i><i></i><i></i></div>'; } // belka boczna zaczyna się na wysokości pierwszego paska sekcji
-  function barHTML(tp, first) { return '<div class="bar' + (first ? ' first' : '') + '">' + tx(tp, '', 'Tytuł sekcji') + '</div>'; }
+  function barHTML(tp, first) { return '<div class="bar' + (first ? ' first' : '') + '">' + tx(tp, '', T('Tytuł sekcji')) + '</div>'; }
   function footHTML() {
     var f = doc.meta.footLogo;
-    return '<div class="foot' + (f ? '' : ' empty') + '" data-logo="meta.footLogo" title="Logo w stopce (kliknij, aby wgrać)">' + (f ? '<img alt="" src="' + esc(f) + '">' : 'logo<br>stopki') + '</div><div class="wm">Wygenerowano z mPro Volley Gameplan</div>';
+    return '<div class="foot' + (f ? '' : ' empty') + '" data-logo="meta.footLogo" title="' + T('Logo w stopce (kliknij, aby wgrać)') + '">' + (f ? '<img alt="" src="' + esc(f) + '">' : T('logo<br>stopki')) + '</div><div class="wm">' + T('Wygenerowano z mPro Volley Gameplan') + '</div>';
   }
   function logoHTML(path) {
     var v = getPath(doc, path);
-    return '<div class="logo' + (v ? '' : ' empty') + '" data-logo="' + path + '" title="Kliknij, aby wgrać logo">' + (v ? '<img alt="" src="' + esc(v) + '">' : 'logo<br>drużyny') + '</div>';
+    return '<div class="logo' + (v ? '' : ' empty') + '" data-logo="' + path + '" title="' + T('Kliknij, aby wgrać logo') + '">' + (v ? '<img alt="" src="' + esc(v) + '">' : T('logo<br>drużyny')) + '</div>';
   }
   function courtBG(kind) {
     if (kind === 'top') {
@@ -504,31 +720,31 @@ function loadSharedTeams() {
   function p1HTML() {
     var m = doc.meta, p = doc.p1, h = '';
     h += '<section class="page" data-page="1">' + bandHTML(154); // strona 1: belka od paska „Ustawienie przeciwnika” w dół
-    h += '<div class="hdr"><div class="team">' + logoHTML('meta.ourLogo') + tx('meta.ourName', 'nm', 'Nasz zespół') + '</div>' +
-      '<div><div class="cbox">' + tx('meta.comp', 't1', 'Rozgrywki') + tx('meta.date', 't2', 'Data i godzina') + tx('meta.place', 't3', 'Miejsce') + '</div><div class="vs">vs.</div></div>' +
-      '<div class="team">' + logoHTML('meta.oppLogo') + tx('meta.oppName', 'nm', 'Przeciwnik') + '</div></div>';
+    h += '<div class="hdr"><div class="team">' + logoHTML('meta.ourLogo') + tx('meta.ourName', 'nm', T('Nasz zespół')) + '</div>' +
+      '<div><div class="cbox">' + tx('meta.comp', 't1', T('Rozgrywki')) + tx('meta.date', 't2', T('Data i godzina')) + tx('meta.place', 't3', T('Miejsce')) + '</div><div class="vs">vs.</div></div>' +
+      '<div class="team">' + logoHTML('meta.oppLogo') + tx('meta.oppName', 'nm', T('Przeciwnik')) + '</div></div>';
     h += '<div class="p1head"></div>' + barHTML('titles.t1', false);
-    h += '<div class="row1"><div class="fbox">' + courtSVG('top', 'p1.formation') + '<span class="rotLbl"><select class="rotSel" title="Rotacja przeciwnika (P1–P6)">' + ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map(function (r) { return '<option value="' + r + '"' + (p.rot === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></span></div>' +
-      '<div class="libBox"><div class="lb1"><span class="h">Libero:</span>' + shIcon('p1.libNum', '#ffffff', 'num') + mtx('p1.libName', '', 'NAZWISKO', 'name').replace('class="tx "', 'class="tx" style="font-weight:800;font-size:10px"') + '</div>' +
-      '<div class="lb2"><div class="h">Zmiennicy:</div>' + subsHTML() + '</div></div>' +
-      '<div class="roleBox">' + rt('p1.role', '', 'Rola zagrywki…').replace('class="rt "', 'class="rt" style="font-size:10.5px"') + '</div></div>';
+    h += '<div class="row1"><div class="fbox">' + courtSVG('top', 'p1.formation') + '<span class="rotLbl"><select class="rotSel" title="' + T('Rotacja przeciwnika (P1–P6)') + '">' + ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map(function (r) { return '<option value="' + r + '"' + (p.rot === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></span></div>' +
+      '<div class="libBox"><div class="lb1"><span class="h">Libero:</span>' + shIcon('p1.libNum', '#ffffff', 'num') + mtx('p1.libName', '', T('NAZWISKO'), 'name').replace('class="tx "', 'class="tx" style="font-weight:800;font-size:10px"') + '</div>' +
+      '<div class="lb2"><div class="h">' + T('Zmiennicy:') + '</div>' + subsHTML() + '</div></div>' +
+      '<div class="roleBox">' + rt('p1.role', '', T('Rola zagrywki…')).replace('class="rt "', 'class="rt" style="font-size:10.5px"') + '</div></div>';
     h += barHTML('titles.t2', false);
     p.dist.forEach(function (row, ri) {
-      h += '<div class="distRow" data-ri="' + ri + '"><div class="dRowOps"><button type="button" data-act="dist-add" data-ri="' + ri + '" title="Dodaj kartę dystrybucji">+ karta</button><button type="button" data-act="dist-row-del" data-ri="' + ri + '" title="Usuń cały wiersz">✕ wiersz</button></div>';
-      h += '<div class="dHead">' + tx('p1.dist.' + ri + '.title', 'dt', 'Tytuł wiersza') + tx('p1.dist.' + ri + '.note', 'dn', 'adnotacja') + '</div><div class="dCards' + (row.cards.length > 4 ? ' many' : '') + '">';
+      h += '<div class="distRow" data-ri="' + ri + '"><div class="dRowOps"><button type="button" data-act="dist-add" data-ri="' + ri + '" title="' + T('Dodaj kartę dystrybucji') + '">' + T('+ karta') + '</button><button type="button" data-act="dist-row-del" data-ri="' + ri + '" title="' + T('Usuń cały wiersz') + '">' + T('✕ wiersz') + '</button></div>';
+      h += '<div class="dHead">' + tx('p1.dist.' + ri + '.title', 'dt', T('Tytuł wiersza')) + tx('p1.dist.' + ri + '.note', 'dn', T('adnotacja')) + '</div><div class="dCards' + (row.cards.length > 4 ? ' many' : '') + '">';
       row.cards.forEach(function (c, ci) {
         var base = 'p1.dist.' + ri + '.cards.' + ci;
-        h += '<div class="dCard"><div class="ops"><button type="button" data-act="dist-del" data-ri="' + ri + '" data-ci="' + ci + '" title="Usuń kartę">✕</button></div>' + tx(base + '.title', 'ct', 'tytuł').replace('<span class="tx ct"', '<span class="tx ct" style="display:block"');
+        h += '<div class="dCard"><div class="ops"><button type="button" data-act="dist-del" data-ri="' + ri + '" data-ci="' + ci + '" title="' + T('Usuń kartę') + '">✕</button></div>' + tx(base + '.title', 'ct', T('tytuł')).replace('<span class="tx ct"', '<span class="tx ct" style="display:block"');
         h += '<div class="dGrid">';
         for (var k = 0; k < 6; k++) {
           if (k === 3) h += '</div><div class="dNet"></div><div class="dGrid">';
-          h += '<span class="cell' + (c.hi[k] ? ' hi' : '') + '" contenteditable="' + CE + '" spellcheck="false" data-p="' + base + '.cells.' + k + '" data-hi="' + base + '.hi.' + k + '" data-ph="%" title="Dwuklik – zaznacz / odznacz czerwoną ramkę">' + esc(c.cells[k]) + '</span>';
+          h += '<span class="cell' + (c.hi[k] ? ' hi' : '') + '" contenteditable="' + CE + '" spellcheck="false" data-p="' + base + '.cells.' + k + '" data-hi="' + base + '.hi.' + k + '" data-ph="%" title="' + T('Dwuklik – zaznacz / odznacz czerwoną ramkę') + '">' + esc(c.cells[k]) + '</span>';
         }
-        h += '</div><div class="dn2">' + rt(base + '.notes', '', 'notatka') + '</div></div>';
+        h += '</div><div class="dn2">' + rt(base + '.notes', '', T('notatka')) + '</div></div>';
       });
       h += '</div></div>';
     });
-    h += '<div class="addbar"><button type="button" class="addbtn" data-act="dist-row-add">+ dodaj wiersz dystrybucji</button></div>';
+    h += '<div class="addbar"><button type="button" class="addbtn" data-act="dist-row-add">' + T('+ dodaj wiersz dystrybucji') + '</button></div>';
     h += footHTML() + boxesHTML('p1') + '</section>';
     return h;
   }
@@ -536,38 +752,38 @@ function loadSharedTeams() {
   function cardHTML(pp, items, i) {
     var c = items[i], base = pp + '.items.' + i, srv = pp === 'p3', h = '';
     if (c.k === 'legend') {
-      return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pp, i) + '</div>' + rt(base + '.html', '', 'Legenda…') + '</div>';
+      return '<div class="card legend" data-i="' + i + '"><div class="ops">' + opsBtns(pp, i) + '</div>' + rt(base + '.html', '', T('Legenda…')) + '</div>';
     }
     h += '<div class="card" data-i="' + i + '"><div class="ops">' + opsBtns(pp, i) + '</div><div class="chead">' + shIcon(base + '.num', '#ffffff') +
-      '<div class="nm">' + tx(base + '.name', '', 'NAZWISKO') + '<span class="sub">' + tx(base + '.sub', '', srv ? 'typ zagrywki' : 'schemat ataku') + '</span></div></div>';
+      '<div class="nm">' + tx(base + '.name', '', T('NAZWISKO')) + '<span class="sub">' + tx(base + '.sub', '', T(srv ? 'typ zagrywki' : 'schemat ataku')) + '</span></div></div>';
     h += '<div class="cw">' + courtSVG('persp', base + '.shapes');
     if (!srv) { // miejsce ataku (0/1/2) w dwóch pierwszych sekcjach, rodzaj ataku (K1/K7) w sekcji środkowych – przy wierzchołku stożka
       var opts = c.sec === 2 ? ['', 'K1', 'K7'] : ['', '0', '1', '2'];
-      h += '<select class="ballSel' + (c.ball ? '' : ' empty') + '" data-ball="' + base + '.ball" title="' + (c.sec === 2 ? 'Rodzaj ataku: K1 / K7' : 'Miejsce ataku: 0 / 1 / 2') + '">' +
+      h += '<select class="ballSel' + (c.ball ? '' : ' empty') + '" data-ball="' + base + '.ball" title="' + T(c.sec === 2 ? 'Rodzaj ataku: K1 / K7' : 'Miejsce ataku: 0 / 1 / 2') + '">' +
         opts.map(function (o) { return '<option value="' + o + '"' + ((c.ball || '') === o ? ' selected' : '') + '>' + (o || '–') + '</option>'; }).join('') + '</select>';
     }
-    h += '</div><div class="cnotes' + (srv ? ' ctr' : '') + '">' + rt(base + '.notes', '', 'uwagi') + '</div></div>';
+    h += '</div><div class="cnotes' + (srv ? ' ctr' : '') + '">' + rt(base + '.notes', '', T('uwagi')) + '</div></div>';
     return h;
   }
   function opsBtns(pp, i) {
-    return '<button type="button" data-act="card-left" data-pp="' + pp + '" data-i="' + i + '" title="Przesuń wcześniej">◀</button><button type="button" data-act="card-right" data-pp="' + pp + '" data-i="' + i + '" title="Przesuń później">▶</button>' +
-      '<button type="button" data-act="card-del" data-pp="' + pp + '" data-i="' + i + '" title="Usuń kartę">✕</button>';
+    return '<button type="button" data-act="card-left" data-pp="' + pp + '" data-i="' + i + '" title="' + T('Przesuń wcześniej') + '">◀</button><button type="button" data-act="card-right" data-pp="' + pp + '" data-i="' + i + '" title="' + T('Przesuń później') + '">▶</button>' +
+      '<button type="button" data-act="card-del" data-pp="' + pp + '" data-i="' + i + '" title="' + T('Usuń kartę') + '">✕</button>';
   }
   function pnHTML(pp) {
     var d = getPath(doc, pp), items = d.items, srv = pp === 'p3', h = '<section class="page" data-page="' + pp + '">' + bandHTML() +
       barHTML(pp === 'p2' ? 'titles.t3' : srv ? 'titles.t4' : pp + '.title', true);
     if (srv) {
       h += '<div class="grid">'; items.forEach(function (c, i) { h += cardHTML(pp, items, i); });
-      h += '</div><div class="addbar"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '">+ dodaj kartę zawodnika</button></div>';
+      h += '</div><div class="addbar"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '">' + T('+ dodaj kartę zawodnika') + '</button></div>';
     } else {
       [0, 1, 2].forEach(function (s) {
-        h += '<div class="secH">' + tx('secT.' + s, '', 'Sekcja') + '<span class="secOps noprint"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '" data-sec="' + s + '">+ karta</button>' +
-          (s === 1 ? '<button type="button" class="addbtn" data-act="legend-add" data-pp="' + pp + '">+ legenda</button>' : '') + '</span></div><div class="grid atk">';
+        h += '<div class="secH">' + tx('secT.' + s, '', T('Sekcja')) + '<span class="secOps noprint"><button type="button" class="addbtn" data-act="card-add" data-pp="' + pp + '" data-sec="' + s + '">' + T('+ karta') + '</button>' +
+          (s === 1 ? '<button type="button" class="addbtn" data-act="legend-add" data-pp="' + pp + '">' + T('+ legenda') + '</button>' : '') + '</span></div><div class="grid atk">';
         items.forEach(function (c, i) { if (c.sec === s) h += cardHTML(pp, items, i); });
         h += '</div>';
       });
-      h += '<div class="addbar"><button type="button" class="addbtn" data-act="page-add">+ dodaj kolejną stronę ataku</button>' +
-        (pp !== 'p2' ? '<button type="button" class="addbtn" data-act="page-del" data-pp="' + pp + '">✕ usuń tę stronę</button>' : '') + '</div>';
+      h += '<div class="addbar"><button type="button" class="addbtn" data-act="page-add">' + T('+ dodaj kolejną stronę ataku') + '</button>' +
+        (pp !== 'p2' ? '<button type="button" class="addbtn" data-act="page-del" data-pp="' + pp + '">' + T('✕ usuń tę stronę') + '</button>' : '') + '</div>';
     }
     return h + footHTML() + boxesHTML(pp) + '</section>';
   }
@@ -577,15 +793,15 @@ function loadSharedTeams() {
     arr.forEach(function (b, i) {
       var base = pp + '.boxes.' + i;
       h += '<div class="tbox' + (b.border ? ' bd' : '') + '" data-pp="' + pp + '" data-bi="' + i + '" style="left:' + b.x + 'px;top:' + b.y + 'px;width:' + b.w + 'px;height:' + b.h + 'px">' +
-        '<div class="tbhd noprint" title="Przeciągnij, aby przesunąć"><span class="tbgrip">⋮⋮</span><button type="button" data-act="box-sm" title="Mniejszy tekst">A−</button><button type="button" data-act="box-lg" title="Większy tekst">A+</button>' +
-        '<button type="button" data-act="box-bd" title="Ramka wokół pola">▢</button><button type="button" data-act="box-del" title="Usuń pole">✕</button></div>' +
-        '<div class="rt tbt" contenteditable="true" spellcheck="false" data-p="' + base + '.html" data-rich="1" data-ph="Wpisz tekst…" style="font-size:' + (b.size || 11) + 'px">' + clean(b.html) + '</div>' +
-        '<i class="tbrs noprint" title="Zmień rozmiar"></i></div>';
+        '<div class="tbhd noprint" title="' + T('Przeciągnij, aby przesunąć') + '"><span class="tbgrip">⋮⋮</span><button type="button" data-act="box-sm" title="' + T('Mniejszy tekst') + '">A−</button><button type="button" data-act="box-lg" title="' + T('Większy tekst') + '">A+</button>' +
+        '<button type="button" data-act="box-bd" title="' + T('Ramka wokół pola') + '">▢</button><button type="button" data-act="box-del" title="' + T('Usuń pole') + '">✕</button></div>' +
+        '<div class="rt tbt" contenteditable="true" spellcheck="false" data-p="' + base + '.html" data-rich="1" data-ph="' + T('Wpisz tekst…') + '" style="font-size:' + (b.size || 11) + 'px">' + clean(b.html) + '</div>' +
+        '<i class="tbrs noprint" title="' + T('Zmień rozmiar') + '"></i></div>';
     });
     return h;
   }
   var inserting = false;
-  function setInserting(on) { inserting = on; document.body.classList.toggle('inserting', on); var bb = document.getElementById('boxBtn'); if (bb) bb.classList.toggle('on', on); if (on) toast('Kliknij miejsce na stronie, w którym ma się pojawić pole tekstowe (Esc – anuluj).'); }
+  function setInserting(on) { inserting = on; document.body.classList.toggle('inserting', on); var bb = document.getElementById('boxBtn'); if (bb) bb.classList.toggle('on', on); if (on) toast(T('Kliknij miejsce na stronie, w którym ma się pojawić pole tekstowe (Esc – anuluj).')); }
   var bdrag = null;
   stage.addEventListener('pointerdown', function (e) {
     var hd = e.target.closest('.tbhd'), rs = e.target.closest('.tbrs');
@@ -620,16 +836,16 @@ function loadSharedTeams() {
   function lockFormation() {
     var all = doc.p1.formation || (doc.p1.formation = []), shirts = all.filter(function (s) { return s.t === 'shirt'; }).slice(0, 6), others = all.filter(function (s) { return s.t !== 'shirt'; });
     for (var k = 0; k < 6; k++) {
-      if (!shirts[k]) shirts[k] = shirt(0, 0, String(k + 1), 'ZAWODNIK ' + (k + 1), '#ffffff');
+      if (!shirts[k]) shirts[k] = shirt(0, 0, String(k + 1), T('ZAWODNIK {0}', k + 1), '#ffffff');
       shirts[k].x = FORM_POS[k][0]; shirts[k].y = FORM_POS[k][1];
       shirts[k].name = String(shirts[k].name || '').toUpperCase(); // w schemacie ustawienia tylko wielkie litery
     }
     doc.p1.formation = shirts.concat(others);
     // dokumenty ze starszych wersji: sekcje ataku, dodatkowe strony ataku
-    if (!Array.isArray(doc.secT) || doc.secT.length < 3) doc.secT = SEC_TITLES.slice();
+    if (!Array.isArray(doc.secT) || doc.secT.length < 3) doc.secT = secTitles();
     if (!Array.isArray(doc.xa)) doc.xa = [];
     doc.p2.items.forEach(function (c, i) { if (c.sec !== 0 && c.sec !== 1 && c.sec !== 2) c.sec = Math.min(2, Math.floor(i / 3)); });
-    doc.xa.forEach(function (x) { if (!Array.isArray(x.items)) x.items = []; x.items.forEach(function (c) { if (c.sec !== 0 && c.sec !== 1 && c.sec !== 2) c.sec = 1; }); if (x.title == null) x.title = 'ATAK'; });
+    doc.xa.forEach(function (x) { if (!Array.isArray(x.items)) x.items = []; x.items.forEach(function (c) { if (c.sec !== 0 && c.sec !== 1 && c.sec !== 2) c.sec = 1; }); if (x.title == null) x.title = T('ATAK'); });
     ['p1', 'p2', 'p3'].concat(doc.xa.map(function (x, i) { return 'xa.' + i; })).forEach(function (k) { var d = getPath(doc, k); if (!Array.isArray(d.boxes)) d.boxes = []; });
     normSubs(); doc.p1.libName = maskText('name', doc.p1.libName || '');
     if (!/^P[1-6]$/.test(doc.p1.rot)) doc.p1.rot = 'P1'; // rotacja wybierana z listy P1–P6
@@ -637,7 +853,7 @@ function loadSharedTeams() {
   function renderAll() {
     lockFormation();
     var st = '', pps = ['p2'].concat(doc.xa.map(function (x, i) { return 'xa.' + i; })).concat(['p3']), pgs = [p1HTML()].concat(pps.map(pnHTML));
-    pgs.forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">Strona ' + (i + 1) + ' z ' + pgs.length + '</span>' + h + '</div>'; });
+    pgs.forEach(function (h, i) { st += '<div class="pageWrap"><span class="pageNo">' + T('Strona {0} z {1}', i + 1, pgs.length) + '</span>' + h + '</div>'; });
     stage.innerHTML = st;
     applyTheme(); drawAll(); syncTb(); fit();
   }
@@ -709,15 +925,15 @@ function loadSharedTeams() {
     function swapSame(dir) { var j = i + dir; while (j >= 0 && j < items.length && items[j].sec !== items[i].sec) j += dir; if (j < 0 || j >= items.length) return; var t = items[i]; items[i] = items[j]; items[j] = t; }
     if (a === 'card-add') {
       if (pp === 'p3') items.push(srvCard(items.length + 1));
-      else { var sc = +b.getAttribute('data-sec'); if (secCount(sc) >= SEC_MAX) { toast('W sekcji mieszczą się 3 karty w wierszu – użyj „+ dodaj kolejną stronę ataku”.'); return; } items.push(atkCard('', SEC_KIND[sc], sc)); }
+      else { var sc = +b.getAttribute('data-sec'); if (secCount(sc) >= SEC_MAX) { toast(T('W sekcji mieszczą się 3 karty w wierszu – użyj „+ dodaj kolejną stronę ataku”.')); return; } items.push(atkCard('', SEC_KIND[sc], sc)); }
     }
-    else if (a === 'legend-add') { if (secCount(1) >= SEC_MAX) { toast('W tej sekcji nie ma miejsca na legendę – usuń kartę lub użyj innej strony.'); return; } items.push({ k: 'legend', sec: 1, html: LEGEND }); }
+    else if (a === 'legend-add') { if (secCount(1) >= SEC_MAX) { toast(T('W tej sekcji nie ma miejsca na legendę – usuń kartę lub użyj innej strony.')); return; } items.push({ k: 'legend', sec: 1, html: legendHTML() }); }
     else if (a === 'card-del') { items.splice(i, 1); }
     else if (a === 'card-left') { swapSame(-1); }
     else if (a === 'card-right') { swapSame(1); }
     else if (a === 'page-add') { doc.xa.push(newAtkPage()); scr = doc.xa.length; }
-    else if (a === 'page-del') { if (!confirm('Usunąć tę stronę ataku razem z jej zawartością?')) return; doc.xa.splice(+pp.split('.')[1], 1); }
-    else if (a === 'dist-add') { if (doc.p1.dist[ri].cards.length < DIST_MAX) doc.p1.dist[ri].cards.push(distCard()); else toast('Maksymalnie ' + DIST_MAX + ' kart w wierszu.'); }
+    else if (a === 'page-del') { if (!confirm(T('Usunąć tę stronę ataku razem z jej zawartością?'))) return; doc.xa.splice(+pp.split('.')[1], 1); }
+    else if (a === 'dist-add') { if (doc.p1.dist[ri].cards.length < DIST_MAX) doc.p1.dist[ri].cards.push(distCard()); else toast(T('Maksymalnie {0} kart w wierszu.', DIST_MAX)); }
     else if (a === 'dist-del') { doc.p1.dist[ri].cards.splice(ci, 1); }
     else if (a === 'dist-row-del') { doc.p1.dist.splice(ri, 1); }
     else if (a.indexOf('box-') === 0) {
@@ -781,11 +997,11 @@ function loadSharedTeams() {
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         setPath(doc, logoTarget, cv.toDataURL('image/png'));
         if (logoTarget === 'meta.ourLogo') { // logo naszego zespołu: kolory zespołu wyliczamy z logo (poprawisz je w „Kolory zespołu”)
-          var th = themeFromCanvas(cv); if (th) { doc.colors = themeObj(th); toast('Kolory zespołu ustawiono na podstawie logo. Zmienisz je w „🎨 Kolory zespołu”.'); }
+          var th = themeFromCanvas(cv); if (th) { doc.colors = themeObj(th); toast(T('Kolory zespołu ustawiono na podstawie logo. Zmienisz je w „🎨 Kolory zespołu”.')); }
         }
         renderAll(); commit();
       };
-      img.onerror = function () { toast('Nie udało się wczytać obrazu.'); };
+      img.onerror = function () { toast(T('Nie udało się wczytać obrazu.')); };
       img.src = fr.result;
     };
     fr.readAsDataURL(f);
@@ -835,10 +1051,10 @@ function loadSharedTeams() {
   function svgPt(svg, e) { var c = svg.getScreenCTM(); if (!c) return [0, 0]; var i = c.inverse(); return [Math.round((i.a * e.clientX + i.c * e.clientY + i.e) * 10) / 10, Math.round((i.b * e.clientX + i.d * e.clientY + i.f) * 10) / 10]; }
   function clampPt(svg, p) { var w = kind(svg) === 'top' ? 250 : 240; return [Math.max(0, Math.min(w, p[0])), Math.max(0, Math.min(190, p[1]))]; }
   function activeName() {
-    if (!activePath) return 'kliknij diagram, aby go wybrać';
-    if (activePath === 'p1.formation') return 'Ustawienie przeciwnika';
+    if (!activePath) return T('kliknij diagram, aby go wybrać');
+    if (activePath === 'p1.formation') return T('Ustawienie przeciwnika');
     var m = activePath.match(/^(p\d|xa\.\d+)\.items\.(\d+)\.shapes$/); if (!m) return activePath;
-    var c = getPath(doc, m[1]).items[+m[2]]; return (m[1] === 'p3' ? 'Zagrywka' : 'Atak') + ' – ' + (c.name || ('karta ' + (+m[2] + 1)));
+    var c = getPath(doc, m[1]).items[+m[2]]; return T(m[1] === 'p3' ? 'Zagrywka' : 'Atak') + ' – ' + (c.name || T('karta {0}', +m[2] + 1));
   }
   function setActive(path) { if (activePath === path) return; activePath = path; $('activeLbl').textContent = activeName(); drawAll(); }
   var cur = null, preview = null, conePts = null, lastTap = null; // trwające rysowanie
@@ -863,7 +1079,7 @@ function loadSharedTeams() {
       try { svg.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); return;
     }
     e.preventDefault();
-    if (tool === 'shirt' && path === FORM_PATH) { toast('W ustawieniu przeciwnika pozycje zawodników są stałe – edytuj numer i nazwisko (dwuklik na koszulce).'); return; }
+    if (tool === 'shirt' && path === FORM_PATH) { toast(T('W ustawieniu przeciwnika pozycje zawodników są stałe – edytuj numer i nazwisko (dwuklik na koszulce).')); return; }
     if (tool === 'shirt') { addShape(path, shirt(p[0], p[1], '', '', color === '#ffffff' ? '#ffffff' : color)); openShirtEditor(svg, sel.i); return; }
     if (tool === 'text') { addShape(path, { t: 'text', x: p[0], y: p[1], text: '', color: color === '#ffffff' ? '#14213d' : color, size: 11 }); openTextEditor(svg, sel.i); return; }
     if (tool === 'arrow') { cur = { svg: svg, path: path, mode: 'arrow', a: p, b: p }; try { svg.setPointerCapture(e.pointerId); } catch (x) {} drawPreview(); return; }
@@ -920,8 +1136,8 @@ function loadSharedTeams() {
   function openShirtEditor(svg, i) {
     var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
     var pop = $('pop');
-    pop.innerHTML = '<div><label>Numer</label><input id="pNum" maxlength="3" value="' + esc(s.num) + '"></div><div><label>Nazwisko (pod koszulką)</label><input id="pName" maxlength="22" value="' + esc(s.name) + '"></div>' +
-      '<div><label>Kolor koszulki</label><div class="sws" id="pSws"></div></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">🗑 Usuń</button><button type="button" id="pOk">Gotowe</button></div>';
+    pop.innerHTML = '<div><label>' + T('Numer') + '</label><input id="pNum" maxlength="3" value="' + esc(s.num) + '"></div><div><label>' + T('Nazwisko (pod koszulką)') + '</label><input id="pName" maxlength="22" value="' + esc(s.name) + '"></div>' +
+      '<div><label>' + T('Kolor koszulki') + '</label><div class="sws" id="pSws"></div></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">' + T('🗑 Usuń') + '</button><button type="button" id="pOk">' + T('Gotowe') + '</button></div>';
     popAt(svg, s.x, s.y);
     if (isLocked(path, s)) $('pDel').style.display = 'none'; // koszulek w schemacie ustawienia nie usuwamy
     var sw = $('pSws'); PAL.forEach(function (c) { var d = document.createElement('span'); d.className = 'sw' + (c === s.color ? ' on' : ''); d.style.background = c; d.dataset.c = c; sw.appendChild(d); });
@@ -939,7 +1155,7 @@ function loadSharedTeams() {
   }
   function openTextEditor(svg, i) {
     var path = svg.getAttribute('data-path'), s = shapesOf(path)[i]; if (!s) return;
-    var pop = $('pop'); pop.innerHTML = '<div><label>Napis</label><input id="pTxt" maxlength="40" value="' + esc(s.text) + '"></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">🗑 Usuń</button><button type="button" id="pOk">Gotowe</button></div>';
+    var pop = $('pop'); pop.innerHTML = '<div><label>' + T('Napis') + '</label><input id="pTxt" maxlength="40" value="' + esc(s.text) + '"></div><div style="display:flex;gap:6px;justify-content:space-between"><button type="button" id="pDel">' + T('🗑 Usuń') + '</button><button type="button" id="pOk">' + T('Gotowe') + '</button></div>';
     popAt(svg, s.x, s.y);
     $('pTxt').addEventListener('input', function () { s.text = $('pTxt').value; drawCanvas(svg); });
     function done() { if (!s.text.trim()) shapesOf(path).splice(i, 1), sel = null; closePop(); redrawPath(path); commit(); }
@@ -956,7 +1172,7 @@ function loadSharedTeams() {
   document.addEventListener('mousedown', function (e) { if ($('pop').classList.contains('show') && !e.target.closest('#pop') && !e.target.closest('svg.court')) closePop(); });
 
   // ---------- Pasek narzędzi ----------
-  function setTbCollapsed(on) { var t = $('tb'); t.classList.toggle('collapsed', on); $('tbToggle').textContent = on ? '▾ Rysowanie' : '▴ Zwiń'; $('tbToggle').setAttribute('aria-expanded', on ? 'false' : 'true'); }
+  function setTbCollapsed(on) { var t = $('tb'); t.classList.toggle('collapsed', on); $('tbToggle').textContent = T(on ? '▾ Rysowanie' : '▴ Zwiń'); $('tbToggle').setAttribute('aria-expanded', on ? 'false' : 'true'); }
   $('tbToggle').addEventListener('click', function () { setTbCollapsed(!$('tb').classList.contains('collapsed')); });
   setTbCollapsed(!!(window.matchMedia && matchMedia('(max-width: 700px)').matches)); // na telefonie start ze zwiniętym menu rysowania
   function syncTb() {
@@ -975,20 +1191,20 @@ function loadSharedTeams() {
   var THEME_ROWS = [['c1', '1 · paski sekcji i ramka nagłówka'], ['c2', '2 · belka z lewej – środek'], ['c3', '3 · belka z lewej – dół']];
   var HEX_RE = /^#[0-9a-f]{6}$/i;
   function themeChip(s, i) {
-    return '<span class="thset" data-i="' + i + '" title="Użyj tego zestawu" style="display:inline-flex;align-items:center;gap:4px;border:2px solid var(--line);border-radius:8px;padding:2px 4px;cursor:pointer">' +
+    return '<span class="thset" data-i="' + i + '" title="' + T('Użyj tego zestawu') + '" style="display:inline-flex;align-items:center;gap:4px;border:2px solid var(--line);border-radius:8px;padding:2px 4px;cursor:pointer">' +
       '<span style="display:inline-flex;width:48px;height:18px;border-radius:5px;overflow:hidden"><i style="flex:1;background:' + s[0] + '"></i><i style="flex:1;background:' + s[1] + '"></i><i style="flex:1;background:' + s[2] + '"></i></span>' +
-      '<b class="thdel" data-i="' + i + '" title="Usuń zestaw" style="font-size:11px;color:var(--muted);padding:0 3px">✕</b></span>';
+      '<b class="thdel" data-i="' + i + '" title="' + T('Usuń zestaw') + '" style="font-size:11px;color:var(--muted);padding:0 3px">✕</b></span>';
   }
   function openThemePop() {
-    var pop = $('pop'), saved = loadThemes(), h = '<div style="font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Kolory zespołu</div>';
+    var pop = $('pop'), saved = loadThemes(), h = '<div style="font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em">' + T('Kolory zespołu') + '</div>';
     THEME_ROWS.forEach(function (r) {
       var v = doc.colors[r[0]];
-      h += '<div><label>' + r[1] + '</label><div style="display:flex;gap:6px;align-items:center"><input type="color" class="thc" data-row="' + r[0] + '" value="' + esc(v) + '" style="width:44px;height:32px;padding:2px;cursor:pointer;flex:none">' +
+      h += '<div><label>' + T(r[1]) + '</label><div style="display:flex;gap:6px;align-items:center"><input type="color" class="thc" data-row="' + r[0] + '" value="' + esc(v) + '" style="width:44px;height:32px;padding:2px;cursor:pointer;flex:none">' +
         '<input type="text" class="thx" data-row="' + r[0] + '" value="' + esc(v) + '" maxlength="7" spellcheck="false" placeholder="#RRGGBB" style="font-family:ui-monospace,Consolas,monospace"></div></div>';
     });
-    h += '<div><button type="button" id="thSave" title="Zapisz bieżące trzy kolory jako swój zestaw – nowy gameplan startuje z ostatnio zapisanego">💾 Zapisz mój zestaw</button></div>';
-    if (saved.length) h += '<div><label>Moje zestawy (kliknij, aby użyć)</label><div id="thSets" style="display:flex;flex-wrap:wrap;gap:6px;max-width:300px">' + saved.map(themeChip).join('') + '</div></div>';
-    h += '<div style="display:flex;justify-content:flex-end"><button type="button" id="thOk">Gotowe</button></div>';
+    h += '<div><button type="button" id="thSave" title="' + T('Zapisz bieżące trzy kolory jako swój zestaw – nowy gameplan startuje z ostatnio zapisanego') + '">' + T('💾 Zapisz mój zestaw') + '</button></div>';
+    if (saved.length) h += '<div><label>' + T('Moje zestawy (kliknij, aby użyć)') + '</label><div id="thSets" style="display:flex;flex-wrap:wrap;gap:6px;max-width:300px">' + saved.map(themeChip).join('') + '</div></div>';
+    h += '<div style="display:flex;justify-content:flex-end"><button type="button" id="thOk">' + T('Gotowe') + '</button></div>';
     pop.innerHTML = h; pop.classList.add('show');
     var r0 = $('themeBtn').getBoundingClientRect(); pop.style.left = Math.min(innerWidth - 340, Math.max(8, r0.left)) + 'px'; pop.style.top = (r0.bottom + 8) + 'px';
     pop.oninput = function (e) { // zmiana koloru na żywo
@@ -1006,7 +1222,7 @@ function loadSharedTeams() {
       if (e.target.id === 'thSave') {
         l = loadThemes(); var cur = [c.c1, c.c2, c.c3];
         l = l.filter(function (s) { return s.join() !== cur.join(); }); l.push(cur); if (l.length > 8) l.shift(); saveThemes(l);
-        toast('Zapisano zestaw kolorów. Nowe gameplany będą startować z tego zestawu.'); openThemePop();
+        toast(T('Zapisano zestaw kolorów. Nowe gameplany będą startować z tego zestawu.')); openThemePop();
       } else if (e.target.closest('.thdel')) {
         l = loadThemes(); l.splice(+e.target.closest('.thdel').dataset.i, 1); saveThemes(l); openThemePop();
       } else if (e.target.closest('.thset')) {
@@ -1018,20 +1234,20 @@ function loadSharedTeams() {
   // kopiowanie kształtów między boiskami: zaznaczony kształt albo (bez zaznaczenia) wszystkie kształty aktywnego diagramu
   var clip = null, clipSrc = null;
   function copyShapes() {
-    if (sel && shapesOf(sel.path)[sel.i]) { clip = [clone(shapesOf(sel.path)[sel.i])]; clipSrc = sel.path; toast('Skopiowano zaznaczony kształt. Kliknij inne boisko i wklej (Ctrl+V).'); }
-    else if (activePath && shapesOf(activePath).length) { clip = clone(shapesOf(activePath)); clipSrc = activePath; toast('Skopiowano wszystkie kształty (' + clip.length + ') z diagramu. Kliknij inne boisko i wklej.'); }
-    else toast('Zaznacz kształt albo kliknij diagram, z którego chcesz kopiować.');
+    if (sel && shapesOf(sel.path)[sel.i]) { clip = [clone(shapesOf(sel.path)[sel.i])]; clipSrc = sel.path; toast(T('Skopiowano zaznaczony kształt. Kliknij inne boisko i wklej (Ctrl+V).')); }
+    else if (activePath && shapesOf(activePath).length) { clip = clone(shapesOf(activePath)); clipSrc = activePath; toast(T('Skopiowano wszystkie kształty ({0}) z diagramu. Kliknij inne boisko i wklej.', clip.length)); }
+    else toast(T('Zaznacz kształt albo kliknij diagram, z którego chcesz kopiować.'));
   }
   function pasteShapes() {
-    if (!clip || !clip.length) { toast('Schowek jest pusty – najpierw skopiuj kształty.'); return; }
-    if (!activePath) { toast('Kliknij boisko, do którego chcesz wkleić.'); return; }
+    if (!clip || !clip.length) { toast(T('Schowek jest pusty – najpierw skopiuj kształty.')); return; }
+    if (!activePath) { toast(T('Kliknij boisko, do którego chcesz wkleić.')); return; }
     var arr = shapesOf(activePath), off = activePath === clipSrc ? 10 : 0, first = arr.length;
     clone(clip).forEach(function (s) {
       if (activePath === FORM_PATH && s.t === 'shirt') return; // koszulek nie wklejamy do schematu ustawienia
       if (off) { if (s.pts) s.pts = s.pts.map(function (q) { return [q[0] + off, q[1] + off]; }); else { s.x += off; s.y += off; } }
       arr.push(s);
     });
-    sel = { path: activePath, i: arr.length - 1 }; redrawPath(activePath); commit(); toast('Wklejono ' + (arr.length - first) + ' kształt(y).');
+    sel = { path: activePath, i: arr.length - 1 }; redrawPath(activePath); commit(); toast(T('Wklejono {0} kształt(y).', arr.length - first));
   }
   $('copyBtn').addEventListener('click', copyShapes); $('pasteBtn').addEventListener('click', pasteShapes);
   // formatowanie tekstu: przyciski nie odbierają fokusu z edytowanego pola
@@ -1042,9 +1258,9 @@ function loadSharedTeams() {
     if (c || t) { var a = document.activeElement; if (a && a.getAttribute && a.getAttribute('data-rich')) { setPath(doc, a.getAttribute('data-p'), clean(a.innerHTML)); commitSoon(); } }
   });
   $('delShape').addEventListener('click', delSel);
-  function delSel() { if (!sel) return; if (isLocked(sel.path, shapesOf(sel.path)[sel.i])) { toast('Koszulek w schemacie ustawienia przeciwnika nie usuwamy.'); return; } shapesOf(sel.path).splice(sel.i, 1); var p = sel.path; sel = null; redrawPath(p); commit(); }
+  function delSel() { if (!sel) return; if (isLocked(sel.path, shapesOf(sel.path)[sel.i])) { toast(T('Koszulek w schemacie ustawienia przeciwnika nie usuwamy.')); return; } shapesOf(sel.path).splice(sel.i, 1); var p = sel.path; sel = null; redrawPath(p); commit(); }
   $('clearCanvas').addEventListener('click', function () {
-    if (!activePath) { toast('Najpierw kliknij diagram, który chcesz wyczyścić.'); return; }
+    if (!activePath) { toast(T('Najpierw kliknij diagram, który chcesz wyczyścić.')); return; }
     var keep = activePath === FORM_PATH ? shapesOf(activePath).filter(function (s) { return s.t === 'shirt'; }) : []; // w schemacie ustawienia koszulki zostają
     if (shapesOf(activePath).length === keep.length) return; setPath(doc, activePath, keep); sel = null; redrawPath(activePath); commit();
   });
@@ -1075,29 +1291,39 @@ function loadSharedTeams() {
 
   // ---------- Plik, nowy, PDF ----------
   $('newBtn').addEventListener('click', function () {
-    if (!confirm('Utworzyć nowy, pusty gameplan? Bieżący zostanie zastąpiony (cofnięcie: Ctrl+Z).')) return;
+    if (!confirm(T('Utworzyć nowy, pusty gameplan? Bieżący zostanie zastąpiony (cofnięcie: Ctrl+Z).'))) return;
     doc = defaultDoc(); sel = null; activePath = null; $('activeLbl').textContent = activeName(); renderAll(); commit();
   });
   $('saveBtn').addEventListener('click', function () {
     var d = new Date(), name = 'gameplan-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '.json';
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(doc)], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast('Zapisano plik ' + name);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000); toast(T('Zapisano plik {0}', name));
   });
   $('loadBtn').addEventListener('click', function () { $('loadFile').value = ''; $('loadFile').click(); });
   $('loadFile').addEventListener('change', function () {
     var f = this.files[0]; if (!f) return; var fr = new FileReader();
     fr.onload = function () {
-      try { var d = JSON.parse(fr.result); if (!d || !d.p1 || !d.p2 || !d.p3 || !d.meta) throw new Error('bad'); doc = d; sel = null; renderAll(); commit(); toast('Wczytano gameplan.'); }
-      catch (e) { toast('To nie jest poprawny plik gameplanu.'); }
+      try { var d = JSON.parse(fr.result); if (!d || !d.p1 || !d.p2 || !d.p3 || !d.meta) throw new Error('bad'); doc = d; sel = null; renderAll(); commit(); toast(T('Wczytano gameplan.')); }
+      catch (e) { toast(T('To nie jest poprawny plik gameplanu.')); }
     };
     fr.readAsText(f);
   });
   $('printBtn').addEventListener('click', function () {
-    toast('W oknie drukowania wybierz „Zapisz jako PDF”, papier A4, marginesy: brak.');
+    toast(T('W oknie drukowania wybierz „Zapisz jako PDF”, papier A4, marginesy: brak.'));
     setTimeout(function () { document.body.classList.add('printing'); var a = document.activeElement; if (a && a.blur) a.blur(); window.print(); document.body.classList.remove('printing'); }, 350);
   });
 
-  renderAll();
+  // ---------- Język (flagi w nagłówku) ----------
+  function setLang(l) {
+    lang = (l === 'en' || l === 'it') ? l : 'pl'; try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    document.documentElement.lang = lang;
+    Array.prototype.forEach.call(document.querySelectorAll('#langSw [data-lang]'), function (b) { b.classList.toggle('on', b.dataset.lang === lang); b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false'); });
+    applyI18n(); setTbCollapsed($('tb').classList.contains('collapsed')); $('activeLbl').textContent = activeName(); closePop(); renderAll();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#langSw [data-lang]'), function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  addEventListener('storage', function (e) { if (e.key === LANG_KEY && (e.newValue === 'pl' || e.newValue === 'en' || e.newValue === 'it') && e.newValue !== lang) setLang(e.newValue); }); // zmiana języka w innej karcie (np. na stronie głównej)
+
+  setLang(lang);
   hist = [JSON.stringify(doc)]; hi = 0; histOn = true; syncHist();
 })();
 </script>
