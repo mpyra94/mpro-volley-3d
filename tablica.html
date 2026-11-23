@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tablica Taktyczna – mPro Volley 3D</title>
 <!-- © 2026 Michał Pyra · mPro Volley 3D. Wszelkie prawa zastrzeżone. Kopiowanie, rozpowszechnianie i odsprzedaż bez pisemnej zgody autora są zabronione. -->
-<script>(function(){var t='light',b='floor';try{t=localStorage.getItem('mpv:theme')||'light';b=localStorage.getItem('mpv:tablica:bg')||'floor';}catch(e){}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bg',b);})();</script>
+<script>(function(){var t='light';try{t=localStorage.getItem('mpv:theme')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bg','light');})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
@@ -23,14 +23,15 @@
     --bg: #0b1220; --glass: rgba(17, 26, 42, 0.96); --line: #27364d;
     --text: #e6edf7; --muted: #93a3bd; --field: #1a2638;
   }
+  /* jasne tło planszy (jedyny wariant) */
   :root[data-bg="light"] { --boardBg: #e6eefa; --boardZone: #cfe0f6; --benchFill: rgba(14, 27, 61, .06); --benchStroke: rgba(14, 27, 61, .3); --benchTxt: rgba(14, 27, 61, .6); }
   .bgOuter { fill: var(--boardBg); }
   .bgZone { fill: var(--boardZone, var(--boardBg)); } /* jasne tło: jaśniejsza ramka wokół boiska jak wcześniej; parkiet: ten sam kolor co tło */
   .bench { fill: var(--benchFill); stroke: var(--benchStroke); stroke-width: 1.5; }
   .benchTxt { fill: var(--benchTxt); }
   header .seg { display: inline-flex; border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; overflow: hidden; }
-  header .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; }
-  .hl { font-size: 12px; font-weight: 700; color: #cfe3ff; text-transform: uppercase; letter-spacing: .05em; }
+  header .seg button { border: 0; border-radius: 0; padding: 4px 9px; font-size: 12.5px; white-space: nowrap; }
+  .hl { font-size: 11px; font-weight: 700; color: #cfe3ff; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
   header .seg button.on { background: #ffd60a; color: #0e1b3d; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
@@ -40,12 +41,22 @@
     border: 1px solid rgba(255, 255, 255, .45); border-radius: 9px; padding: 6px 12px; cursor: pointer;
     transition: background .15s, border-color .15s; }
   button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
-  header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; color: #fff;
+  @media (min-width: 821px) and (max-width: 1500px) { header .hide-m { display: none; } } /* na średnich ekranach przycisk „Menu” to sama ikona – tytuł mieści się w jednej linii */
+  header { display: flex; align-items: center; gap: 8px 8px; padding: 8px 12px; flex-wrap: wrap; color: #fff;
     background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%);
     box-shadow: 0 8px 20px -12px rgba(7, 26, 82, .8); z-index: 2; }
-  header h1 { font-size: 19px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase;
-    letter-spacing: .02em; flex: 1; min-width: 150px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 800; font-style: italic; text-transform: uppercase;
+    letter-spacing: 0; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (min-width: 1181px) { header { flex-wrap: nowrap; } header .hgrp, header #langSw, header a, header button { flex-shrink: 0; } } /* menu w jednej linii; przy węższym oknie zawija się */
+  @media (min-width: 821px) and (max-width: 1180px) { header h1 { flex: 1 1 100%; } }
   header a { text-decoration: none; }
+  body.half #fTeamSeg, body.half #fTeamSeg + .rb-sep { display: none; } /* widok połowy: pracujemy tylko na drużynie A */
+  #langSw { display: inline-flex; gap: 3px; align-items: center; }
+  #langSw button { padding: 3px; line-height: 0; border-radius: 7px; opacity: .6; border: 2px solid transparent; background: transparent; }
+  #langSw button:hover { opacity: 1; background: rgba(255, 255, 255, .18); }
+  #langSw button.on { opacity: 1; border-color: #ffd60a; background: rgba(255, 255, 255, .12); }
+  #langSw svg { width: 24px; height: 16px; display: block; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  @media (max-width: 820px) { #langSw { gap: 3px; } #langSw svg { width: 22px; height: 15px; } #langSw button { padding: 2px; } }
   header button:disabled { opacity: .4; cursor: default; }
   #undoBtn, #redoBtn { font-size: 17px; padding: 4px 12px; }
 
@@ -63,45 +74,100 @@
   .teamLabel { font-size: 18px; font-weight: 800; font-style: italic; text-transform: uppercase; text-anchor: middle; }
   #board.drawing { cursor: crosshair; }
   #board.drawing .pawn { pointer-events: none; }
-  footer { text-align: center; color: var(--muted); font-size: 11px; padding: 6px 0 10px; }
+  footer { text-align: center; color: var(--muted); font-size: 10px; line-height: 1.2; padding: 2px 0 3px; }
 
   /* ---------- Menu boczne ---------- */
-  #side { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
-  #side[hidden] { display: none; }
-  /* pasek ikon (zwinięte menu) + panel jednej sekcji */
-  #rail { flex: none; align-self: flex-start; margin: 8px 0 8px 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 12;
-    background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 6px 18px -10px rgba(7, 26, 82, .6); }
-  #rail .logo { text-align: center; font-size: 22px; padding: 2px 0 6px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
-  #rail .undoRow { display: flex; gap: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
-  #rail .undoRow button { width: 30px; height: 30px; padding: 0; font-size: 17px; line-height: 1; color: var(--text); background: var(--field);
-    border: 1px solid var(--line); border-radius: 8px; }
-  #rail .undoRow button:hover:not(:disabled) { background: var(--field); border-color: var(--accent); }
-  #rail .undoRow button:disabled { opacity: .35; cursor: default; }
-  #rail button.rb { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 64px; padding: 7px 2px; color: var(--text);
-    background: transparent; border: 1px solid transparent; border-radius: 10px; font: inherit; cursor: pointer; }
-  #rail button.rb span { font-size: 19px; line-height: 1; }
-  #rail button.rb small { font-size: 10.5px; font-weight: 600; color: var(--muted); }
-  #rail button.rb:hover { background: var(--field); border-color: var(--line); }
-  #rail button.rb.on { background: var(--accent); border-color: var(--accent); }
-  #rail button.rb.on small { color: #fff; }
-  body.drawing #rail [data-sec="draw"]:not(.on) small { color: var(--accent); font-weight: 800; }
-  .panelHead { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 8px 4px; }
-  .panelHead b { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .05em; font-size: 15px; }
-  #side .card > summary { display: none; }
-  #side .card { display: none; }
-  #side[data-open="teams"] #teamsCard, #side[data-open="draw"] #drawCard, #side[data-open="pawns"] #pawnsCard { display: block; }
+  /* menu po lewej: karty (Piłka, Drużyny, Pionki) rozwijane i zwijane niezależnie – można mieć otwartych kilka naraz.
+     Rotacje i Rysowanie są od tego menu niezależne: to osobne okna po prawej stronie, każde zwija się do pionowej zakładki.
+     Lewe menu nakłada się na planszę, więc nie zabiera jej miejsca ani nie przesuwa boiska; przyciskiem « można je całkiem schować */
+  #side { overflow-y: auto; padding: 8px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -10px rgba(7, 26, 82, .5); }
+  .mTop { display: flex; gap: 5px; align-items: center; margin-bottom: 8px; }
+  .mTop button { height: 30px; padding: 0 9px; font-size: 15px; line-height: 1; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .mTop button:hover:not(:disabled) { border-color: var(--accent); }
+  .mTop button:disabled { opacity: .35; cursor: default; }
+  .mTop #menuHide { margin-left: auto; font-size: 17px; }
+  #side .card { padding: 0 12px; margin-bottom: 6px; }
+  #side .card > summary { padding: 9px 0; font-size: 12.5px; gap: 8px; justify-content: flex-start; }
+  #side .card > summary .ci { font-size: 15px; font-style: normal; }
+  #ballBtn { display: inline-flex; align-items: center; gap: 6px; }
+  #ballBtn .ci { display: inline-flex; width: 18px; height: 18px; }
+  #ballBtn .ci svg { width: 100%; height: 100%; }
+  #side .card > summary::after { margin-left: auto; }
+  #side .card[open] { padding-bottom: 10px; }
+  #side .card[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  #drawCard > summary { display: none; } /* Rysowanie ma teraz własne okno (zakładka po prawej) albo arkusz na telefonie – ta karta tylko przenosi tam swoją zawartość */
+  #drawCard.dimTools #drawTools { opacity: .6; }
+  #menuBtn { position: fixed; left: 8px; top: calc(var(--hdrH, 49px) + 8px); z-index: 12; width: 38px; height: 38px; padding: 0; font-size: 18px; color: var(--text);
+    background: var(--glass); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px -10px rgba(7, 26, 82, .6); }
+  #menuBtn[hidden] { display: none; }
+  body.menuOff #side { display: none; }
+  /* Rotacje i Rysowanie: okna niezależne od lewego menu (menuOff ich nie dotyczy), każde zwijane do pionowej zakładki po prawej stronie */
+  .dockBody { padding: 8px 10px 10px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -10px rgba(7, 26, 82, .5); }
+  .dockBody .dockTitle { font-size: 12.5px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--text); margin-bottom: 4px; }
+  .dockTab { display: none; }
+  @media (min-width: 821px) {
+    .layout { position: relative; }
+    #side { position: absolute; left: 8px; top: 8px; bottom: 8px; width: 262px; z-index: 11; } /* lewe menu rozciągnięte na całą wysokość planszy */
+    /* kolumna po prawej, pod przyciskami przybliżania: Rotacje i Rysowanie, każde jako zakładka + okno (w kolorze górnego paska) */
+    /* zoomCtl jest teraz poziomy i niski (ok. 44px), więc kolumna może zaczynać się dużo wyżej niż poprzednio – więcej miejsca na treść bez przewijania */
+    #dockColumn { position: fixed; right: 10px; top: calc(var(--hdrH, 49px) + 62px); bottom: 12px; z-index: 11; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .dockPanel { display: flex; flex-direction: row-reverse; align-items: flex-start; min-height: 0; }
+    .dockTab { display: inline-flex; align-items: center; justify-content: center; flex: none; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
+      font: inherit; font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 14px 7px; cursor: pointer; color: #fff;
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border: 1px solid rgba(255, 255, 255, .35); border-radius: 10px;
+      box-shadow: 0 10px 24px -10px rgba(7, 26, 82, .8); }
+    .dockTab:hover { border-color: #ffd60a; }
+    body.drawing #drawDockPanel .dockTab { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    .dockPanel.open .dockTab { display: none; } /* otwarte okno samo jest swoim przyciskiem - zwija je ✕ przy tytule, zakładka nie dubluje się obok */
+    .dockBody { display: none; width: 250px; margin-right: 8px; color: #fff; min-height: 0; max-height: 100%; overflow-y: auto;
+      background: linear-gradient(115deg, #071a52 0%, #0c3fd0 60%, #1b8cff 100%); border-color: rgba(255, 255, 255, .25); } /* rośnie do wysokości treści; przewijanie to już tylko awaryjne zabezpieczenie na bardzo niskim oknie */
+    .dockPanel.open .dockBody { display: block; }
+    .dockBody .dockTitle { color: #cfe3ff; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .dockBody .dockClose { font: inherit; font-size: 13px; line-height: 1; color: #cfe3ff; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 7px; width: 22px; height: 22px; padding: 0; cursor: pointer; }
+    .dockBody .dockClose:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; color: #fff; }
+    .dockBody .card { background: transparent; border: 0; padding: 0; margin: 0; border-radius: 0; }
+    .dockBody button, .dockBody select, .dockBody input { font: inherit; font-size: 13px; border-radius: 8px; padding: 5px 9px; }
+    .dockBody button { color: #fff; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .45); font-weight: 600; cursor: pointer; }
+    .dockBody button:hover { background: rgba(255, 255, 255, .3); border-color: #ffd60a; }
+    .dockBody button.on { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
+    .dockBody button:disabled { opacity: .45; cursor: default; }
+    .dockBody select { color: #0e1b3d; background: #fff; border: 1px solid rgba(255, 255, 255, .45); } /* lista rozwijana ma stały jasny motyw (nie var(--text) – w ciemnym motywie byłby prawie biały na białym tle) */
+    .dockBody input[type=color] { width: 100%; height: 32px; padding: 2px; cursor: pointer; border: 1px solid rgba(255, 255, 255, .45); }
+    .dockBody input[type=range] { width: 100px; padding: 0; accent-color: #ffd60a; }
+    .dockBody label { font-size: 12px; color: #cfe3ff; display: block; margin-bottom: 2px; }
+    .dockBody .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+    .dockBody .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+    .dockBody .grid3 button { padding: 6px 4px; font-size: 12.5px; }
+    .dockBody .seg { display: inline-flex; border: 1px solid rgba(255, 255, 255, .45); border-radius: 999px; overflow: hidden; }
+    .dockBody .seg button { border: 0; border-radius: 0; }
+    .dockBody .hint { font-size: 12px; color: #cfe3ff; margin-top: 6px; }
+    .dockBody .alpha { display: inline-flex; align-items: center; gap: 5px; }
+    .dockBody .alpha b { min-width: 34px; font-size: 12px; }
+    .dockBody b { color: #fff; }
+    #rotBar { display: block; flex: none; padding: 0; background: transparent; border: 0; }
+    #rotBar .rb-main, #rotBar .rb-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 7px; padding: 0; }
+    #rotBar .rb-sep, #rbMore { display: none; }
+    #rotBar .full { display: inline; } #rotBar .short { display: none; }
+    #rotBar #resetBtn, #rotBar #resetAllBtn { flex: 1 1 100%; }
+    #rotBar #resetAllBtn { border-color: rgba(255, 150, 150, .8); }
+    #rotBar .rotGrid { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 100%; }
+    #rotBar .rotGrid button { flex: 1 1 0; min-width: 34px; padding: 6px 0; }
+  }
+  #pawnPop { position: fixed; z-index: 60; width: 236px; padding: 10px 12px 12px; background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 40px -12px rgba(7, 26, 82, .6); }
+  #pawnPop[hidden] { display: none; }
+  #pawnPop .ppHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  #pawnPop .ppHead b { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .04em; font-size: 13px; }
+  #pawnPop .ppHead button { height: 26px; padding: 0 8px; font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 7px; cursor: pointer; }
+  #pawnPop label { display: block; margin: 8px 0 3px; font-size: 12px; color: var(--muted); }
+  #pawnPop input, #pawnPop select { width: 100%; font: inherit; font-size: 14px; padding: 6px 9px; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; }
   #trash { position: absolute; right: 12px; bottom: 12px; z-index: 5; width: 96px; height: 96px; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     border: 3px dashed rgba(255, 255, 255, .75); border-radius: 18px; background: rgba(14, 27, 61, .55); color: #fff; font-size: 34px; line-height: 1; pointer-events: none; transition: transform .12s, background .12s; }
   #trash small { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
   #trash.show { display: flex; }
   #trash.hot { background: rgba(217, 72, 72, .9); border-style: solid; transform: scale(1.12); }
   #board.drawing .ballg { pointer-events: none; }
-  @media (max-width: 820px) {
-    #rail { position: fixed; left: 6px; top: calc(var(--hdrH, 56px) + 8px); margin: 0; padding: 4px; z-index: 12; }
-    #rail .logo, #rail button.rb small { display: none; }
-    #rail .undoRow { flex-direction: column; }
-    #rail button.rb { width: 36px; padding: 6px 0; }
-  }
+  @media (max-width: 820px) { #menuBtn { left: 6px; } }
   .card { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px 10px; margin-bottom: 8px; }
   .card > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 8px 0 4px;
     font-size: 13px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--text); user-select: none; }
@@ -138,10 +204,8 @@
   #side .rrow input, #side .rrow select { padding: 3px 6px; }
   #side .rb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 11px;
     color: #fff; border: 2px solid #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px var(--line); }
-  #side.dimTools #drawTools { opacity: .6; }
   /* ---------- Pasek rotacji (dół) ---------- */
-  #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px;
-    background: var(--glass); border-top: 1px solid var(--line); }
+  #rotBar { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 8px 12px; }
   #rotBar .rb-title { font-size: 13px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   #rotBar .rb-sep { width: 1px; height: 26px; background: var(--line); }
   #rotBar button { font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--field);
@@ -166,7 +230,14 @@
   #rotBar .short, #rbMore { display: none; }
   @media (max-width: 820px) {
     footer { display: none; }
-    #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+    #dockColumn { display: contents; } /* bez pudełka: #rotDockPanel i #drawDockPanel są bezpośrednio w <body>, tak jak dawniej #rotDock */
+    #drawDockPanel { display: none; } /* na telefonie Rysowanie dalej otwiera osobny arkusz (przycisk ✏️ w nagłówku), nie to okno */
+    .dockTab { display: none; }
+    .dockPanel { display: block; }
+    #rotDockPanel .dockBody { display: block; position: static; width: auto; margin-right: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none;
+      border-top: 1px solid var(--line); color: inherit; background: none; }
+    #rotDockPanel .dockTitle { display: none; }
+    #rotBar { display: block; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: var(--glass); border-top: 1px solid var(--line); }
     .rb-main, .rb-extra { display: flex; align-items: center; justify-content: center; gap: 6px; }
     .rb-extra { display: none; margin-top: 8px; }
     #rotBar.open .rb-extra { display: flex; flex-wrap: wrap; }
@@ -189,7 +260,7 @@
   }
   /* ---------- Nagłówek: pulpit / telefon ---------- */
   .hdr-extra { display: contents; }
-  .hgrp { display: inline-flex; align-items: center; gap: 6px; }
+  .hgrp { display: inline-flex; align-items: center; gap: 4px; }
   #hdrMore { display: none; }
   @media (max-width: 820px) {
     header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
@@ -199,11 +270,11 @@
     #hdrMore { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; }
     .hdr-extra { display: none; }
     /* rozwinięte menu: grupy filtrów jedna pod drugą, podpis grupy nad przyciskami */
-    header.open .hdr-extra { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 100%; gap: 10px 14px; padding: 8px 0 4px 54px; border-top: 1px solid rgba(255, 255, 255, .25); }
+    header.open .hdr-extra { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: row dense; flex: 1 1 100%; gap: 10px 14px; padding: 8px 0 4px 54px; border-top: 1px solid rgba(255, 255, 255, .25); }
     header.open .hgrp { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
     header.open .hgrp .seg { max-width: 100%; }
-    header.open .hgrp:nth-child(3) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-    header.open .hgrp:nth-child(3) .hl { flex: 1 1 100%; }
+    header.open .hgrp.wide { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+    header.open .hgrp.wide .hl { flex: 1 1 100%; }
     header.open #hdrMore { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
   }
   #drawDock { flex: none; width: 340px; overflow-y: auto; padding: 8px 0 8px 8px; }
@@ -241,7 +312,7 @@
     #hdrDraw { display: inline-block; font-size: 15px; padding: 4px 12px; }
     body.drawing #hdrDraw { background: #ffd60a; color: #0e1b3d; border-color: #ffd60a; }
     body.drawing #drawDock { display: block; flex: none; background: var(--glass); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
-    body.drawing #rotBar { display: none; }
+    body.drawing #rotDockPanel { display: none; }
     #drawDock .card { border: 0; background: transparent; padding: 0; margin: 0; border-radius: 0; }
     #drawDock .card > summary, #drawDock .hint, #drawDock .card > .row:first-of-type { display: none; }
     /* narzędzia rysowania na telefonie: wszystko widoczne bez przewijania – narzędzia w siatce 4×2, kolory w jednej linii */
@@ -261,7 +332,10 @@
   .sw { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
   .sw:hover { transform: scale(1.1); }
   .sw.on { outline: 3px solid var(--accent); outline-offset: 1px; }
-  #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 4px;
+  #shStat { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: 270px; padding: 7px 11px; border-radius: 10px; font-size: 12px; line-height: 1.45;
+    background: var(--glass); color: var(--text); border: 1px solid var(--line); box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); pointer-events: none; }
+  #shStat[hidden] { display: none; }
+  #zoomCtl { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; flex-direction: row; gap: 4px; padding: 4px;
     background: var(--glass); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 16px -8px rgba(7, 26, 82, .6); }
   #zoomCtl button { font: inherit; font-weight: 700; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px;
     min-width: 44px; padding: 7px 8px; font-size: 15px; cursor: pointer; }
@@ -269,11 +343,36 @@
   #zoomCtl #zoomReset { font-size: 12px; }
   #shotModal { position: fixed; inset: 0; z-index: 300; background: rgba(14, 27, 61, .72); display: flex; align-items: center; justify-content: center; padding: 12px; }
   #shotModal[hidden] { display: none; }
+  #animModal { position: fixed; inset: 0; z-index: 350; background: rgba(14, 27, 61, .78); display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #animModal[hidden] { display: none; }
+  .animBox { background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: 96vw; max-height: 96vh;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .6); }
+  #animCanvas { display: block; border-radius: 6px; background: #dde7f5; aspect-ratio: 4 / 3; height: auto; width: min(900px, 90vw, calc((96vh - 150px) * 4 / 3)); }
+  #busy3d { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 400; padding: 16px 26px; border-radius: 14px; font-weight: 700;
+    background: rgba(14, 27, 61, .92); color: #fff; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6); }
+  #busy3d[hidden] { display: none; }
+  #capHint { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 90; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 13px;
+    background: rgba(14, 27, 61, .94); color: #fff; box-shadow: 0 12px 30px -10px rgba(0, 0, 0, .6); max-width: 90vw; text-align: center; pointer-events: none; }
+  #capHint[hidden] { display: none; }
+  #busy3d.prog { min-width: 280px; text-align: center; background: linear-gradient(90deg, rgba(255, 214, 10, .38) var(--p, 0%), transparent var(--p, 0%)), rgba(14, 27, 61, .92); } /* pasek postępu w tle */
+  #busy3d::before { content: ''; display: inline-block; width: 14px; height: 14px; margin-right: 10px; vertical-align: -2px; border: 3px solid rgba(255, 255, 255, .35); border-top-color: #ffd60a; border-radius: 50%; animation: spin3d .8s linear infinite; }
+  @keyframes spin3d { to { transform: rotate(360deg); } }
   .shotBox { background: var(--glass); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: 96vw; max-height: 96vh; overflow: auto;
     display: flex; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 24px 60px -16px rgba(0, 0, 0, .6); }
   .shotHead { display: flex; align-items: center; gap: 10px; width: 100%; }
   .shotHead b { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .04em; flex: 1; }
   .shotInfo { font-size: 12px; color: var(--muted); }
+  .shotRow { display: flex; align-items: stretch; justify-content: center; gap: 14px; }
+  #angleBox { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 8px; width: 34px; padding: 4px 0; line-height: 1.2; }
+  #angleBox[hidden] { display: none; }
+  #angleBox { width: 44px; }
+  .zoomBtns { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .zoomBtns button { font: inherit; font-weight: 800; font-size: 16px; line-height: 1; width: 32px; height: 28px; padding: 0; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+  .zoomBtns button:hover { border-color: var(--accent); }
+  .zoomBtns b { font-size: 11px; cursor: pointer; }
+  #angleBox .angleLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  #angleBox b { font-size: 12px; }
+  #angleSlider { writing-mode: vertical-lr; direction: rtl; flex: 1; width: 22px; min-height: 80px; margin: 0; accent-color: var(--accent); cursor: pointer; } /* w górę = wyższy kąt */
   .shotStage { position: relative; overflow: hidden; border-radius: 6px; touch-action: none; line-height: 0; }
   #shotCanvas { display: block; }
   #cropBox { position: absolute; border: 2px solid #ffd60a; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .58); cursor: move; touch-action: none; }
@@ -315,83 +414,58 @@ function saveSharedTeams(teamsObj) {
 
 <header>
   <a href="index.html" target="_blank" rel="noopener"><button type="button" title="Menu główne">⬅️<span class="hide-m"> Menu</span></button></a>
-  <h1>📋 Tablica Taktyczna</h1>
+  <h1>Tablica taktyczna</h1>
+  <div id="langSw" role="group" aria-label="Language">
+    <button type="button" data-lang="pl" title="Polski" aria-label="Polski"><svg viewBox="0 0 16 10" aria-hidden="true"><rect width="16" height="5" fill="#fff"/><rect y="5" width="16" height="5" fill="#dc143c"/></svg></button>
+    <button type="button" data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukc)" stroke="#c8102e" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#c8102e" stroke-width="6"/></svg></button>
+    <button type="button" data-lang="it" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce2b37"/></svg></button>
+  </div>
   <div class="hdr-extra">
-    <div class="hgrp"><span class="hl">Na pionku</span>
+    <div class="hgrp"><span class="hl">Widok</span>
+      <span class="seg" id="viewSeg" title="Całe boisko albo powiększona połowa drużyny A (z 4 m boiska rywala, bez jego pionków)"><button type="button" data-view="full" title="Całe boisko, obie drużyny">Całe</button><button type="button" data-view="half" title="Powiększona dolna połowa (drużyna A) z 4 m boiska rywala; pionki rywala są ukryte">Połowa</button></span></div>
+    <div class="hgrp"><span class="hl">Pionek</span>
       <span class="seg" id="pawnSeg" title="Co wyświetlać na pionku"><button type="button" data-pawn="num" title="Numer zawodnika">Numer</button><button type="button" data-pawn="role" title="Pierwsza litera pozycji (R, A, P, Ś, L)">Pozycja</button><button type="button" data-pawn="none" title="Pionek bez napisu">Brak</button></span></div>
     <div class="hgrp"><span class="hl">Etykieta</span>
       <span class="seg" id="lblPop"><button type="button" data-lbl="name" title="Imię / nazwisko przy pionku">Nazwisko</button><button type="button" data-lbl="role" title="Pełna nazwa pozycji przy pionku">Pozycja</button></span></div>
-    <div class="hgrp"><span class="hl">Filtry</span>
-      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span>
-      <span class="seg" id="bgSeg" title="Tło poza boiskiem"><button type="button" data-bg="floor">Tło: parkiet</button><button type="button" data-bg="light">Tło: jasne</button></span></div>
+    <div class="hgrp wide"><span class="hl">Filtry</span>
+      <span class="seg" id="zonesSeg" title="Numery stref i oś boiska"><button type="button" id="zonesBtn">Strefy</button></span></div>
     <div class="hgrp"><span class="hl">Zrzut</span>
-      <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button></span></div>
+      <span class="seg" id="shotSeg" title="Zrzut ekranu planszy"><button type="button" data-shot="png" title="Zapisz zrzut jako PNG">PNG</button><button type="button" data-shot="pdf" title="Zapisz zrzut jako PDF">PDF</button><button type="button" data-shot="3d" title="Wygeneruj widok 3D zza drużyny A (z siatką, jak w modelu 3D)">3D</button></span></div>
   </div>
   <button type="button" id="hdrDraw" title="Rysowanie na boisku">✏️</button>
   <button type="button" id="hdrMore" title="Menu: pionki, etykiety, filtry, zrzut" aria-label="Menu" aria-expanded="false"><svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M1 1.5h18M1 7h18M1 12.5h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
 </header>
 <div class="layout">
-  <nav id="rail" aria-label="Menu boczne">
-    <div class="logo" title="mPro Volley 3D">🏐</div>
-    <div class="undoRow">
+  <aside id="side">
+    <div class="mTop">
       <button type="button" id="undoBtn" title="Cofnij (Ctrl+Z)" disabled>↶</button>
       <button type="button" id="redoBtn" title="Ponów (Ctrl+Y)" disabled>↷</button>
+      <button type="button" id="menuHide" title="Ukryj menu">«</button>
     </div>
-    <button type="button" class="rb" data-sec="teams" title="Drużyny: nazwa, logo, kolor, zawodnicy"><span>👥</span><small>Drużyny</small></button>
-    <button type="button" class="rb" data-sec="pawns" title="Pionki: rozmiar, usuwanie, przywracanie"><span>🔵</span><small>Pionki</small></button>
-    <button type="button" class="rb" data-act="ball" title="Pokaż / ukryj piłkę na boisku"><span>🏐</span><small>Piłka</small></button>
-    <button type="button" class="rb" data-sec="draw" title="Rysowanie na boisku"><span>✏️</span><small>Rysuj</small></button>
-  </nav>
-  <aside id="side" hidden>
-    <div class="panelHead"><b id="panelTitle"></b><button type="button" id="panelClose" title="Zamknij panel">✕</button></div>
-    <details class="card" id="drawCard" open>
-      <summary>Rysowanie</summary>
-      <div class="row"><button type="button" id="drawBtn" title="Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki">✏️ Rysuj na boisku</button></div>
-      <div id="drawTools">
-        <div class="grid3" id="drTools">
-          <button type="button" data-dtool="select" title="Edytuj kształty – przeciągaj punkty lub cały kształt">↖ Edycja</button>
-          <button type="button" data-dtool="pen" class="on" title="Rysuj odręcznie">✏ Pióro</button>
-          <button type="button" data-dtool="line" title="Linia">╱ Linia</button>
-          <button type="button" data-dtool="arrow" title="Strzałka">➜ Strzałka</button>
-          <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
-          <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
-          <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
-          <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
-        </div>
-        <div class="row">
-          <input type="color" id="drColor" value="#ff3b30" hidden>
-          <div class="swatches" id="drSwatches" title="Kolor"></div>
-          <select id="drWidth" title="Grubość"><option value="3">cienka</option><option value="6" selected>średnia</option><option value="12">gruba</option></select>
-          <select id="drBorder" title="Obramowanie wielokątów"><option value="0" selected>bez obramowania</option><option value="2">obramowanie cienkie</option><option value="5">obramowanie grube</option></select>
-        </div>
-        <div class="row">
-          <button type="button" id="drFill" class="on" title="Wypełnienie półprzezroczyste kształtów">◧ Wypełnienie</button>
-          <label class="alpha" title="Krycie wypełnienia (%)"><input type="range" id="drAlpha" min="10" max="100" step="5" value="40" aria-label="Krycie wypełnienia (%)"><b id="drAlphaV">40%</b></label>
-        </div>
-        <div class="row">
-          <button type="button" id="drDel" title="Usuń zaznaczony rysunek (Delete)">🗑 Usuń</button>
-          <button type="button" id="drClear">Wyczyść rysunki</button>
-        </div>
-        <div class="hint">Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.</div>
-      </div>
+    <details class="card" id="ballCard">
+      <summary><span class="ci">🏐</span><span>Piłka</span></summary>
+      <div class="row"><button type="button" id="ballBtn" data-act="ball" title="Pokaż / ukryj piłkę na boisku"><span class="ci">🏐</span> Pokaż piłkę na boisku</button></div>
+      <div class="row"><button type="button" id="shadowBtn" title="Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka">Cień bloku</button></div>
+      <div class="hint">Cień bloku pokazuje, które miejsca boiska są zasłonięte blokiem pionków drużyny po drugiej stronie siatki stykających się z nią, licząc z punktu, w którym stoi piłka. Włączenie tego filtra pokazuje też piłkę na boisku.</div>
     </details>
 
-    <details class="card" id="pawnsCard" open>
-      <summary>Pionki</summary>
+    <details class="card" id="teamsCard">
+      <summary><span class="ci">👥</span><span>Drużyny</span></summary>
+      <div id="tBox"></div>
+    </details>
+
+    <details class="card" id="pawnsCard">
+      <summary><span class="ci">🔵</span><span>Pionki</span></summary>
       <div class="hint" style="margin-top:0">Aby usunąć pionek, przeciągnij go do kosza, który pojawia się w prawym dolnym rogu planszy. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).</div>
       <div class="row"><b>Rozmiar wszystkich</b></div>
-      <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset">100%</button></div>
+      <div class="row"><button type="button" id="gsSmaller" title="Pomniejsz wszystkie pionki">−</button><b id="gsVal">100%</b><button type="button" id="gsBigger" title="Powiększ wszystkie pionki">+</button><button type="button" id="gsReset" title="Przywróć domyślny rozmiar pionków (100%)">100% (domyślny)</button></div>
       <div class="row"><button type="button" id="restoreGone" title="Przywróć pionki usunięte z boiska">Przywróć usunięte pionki <span id="goneN"></span></button></div>
-    </details>
-
-    <details class="card" id="teamsCard" open>
-      <summary>Drużyny</summary>
-      <div id="tBox"></div>
     </details>
 
   </aside>
 
   <main>
+    <div id="shStat" hidden role="status"></div>
     <div id="trash" aria-hidden="true">🗑<small>USUŃ</small></div>
     <div id="zoomCtl" role="group" aria-label="Przybliżenie">
       <button type="button" id="zoomIn" title="Przybliż (kółko myszy / szczypanie)">+</button>
@@ -401,27 +475,77 @@ function saveSharedTeams(teamsObj) {
     <svg id="board" viewBox="-140 -60 680 1020" preserveAspectRatio="xMidYMid meet"></svg>
   </main>
 </div>
-<div id="rotBar">
-  <div class="rb-main">
-    <span class="rb-title">Rotacje</span>
-    <span class="seg" id="fTeamSeg"><button type="button" data-fteam="a" class="on"><span class="full">Drużyna A</span><span class="short">A</span></button><button type="button" data-fteam="b"><span class="full">Drużyna B</span><span class="short">B</span></button></span>
-    <span class="rb-sep"></span>
-    <button type="button" id="rotPrev" title="Poprzednia rotacja">⟲</button>
-    <b id="rotCur">P1</b>
-    <button type="button" id="rotNext" title="Następna rotacja (zgodnie ze wskazówkami zegara)">⟳</button>
-    <span class="rb-sep"></span>
-    <span class="seg" id="fModeSeg"><button type="button" data-fmode="base" title="Ustawienie bazowe"><span class="full">Bazowo</span><span class="short">Baz.</span></button><button type="button" data-fmode="recv" title="Przyjęcie: 2 przyjmujących + libero, środkowy z tylnej linii schodzi na ławkę"><span class="full">Przyjęcie</span><span class="short">Prz.</span></button><button type="button" data-fmode="def" title="Obrona: blok trzech z przodu, tył w obronie, libero za środkowego"><span class="full">Obrona</span><span class="short">Obr.</span></button></span>
-    <button type="button" id="rbMore" title="Wybór rotacji i reset" aria-expanded="false">⌃</button>
+<div id="dockColumn">
+  <div class="dockPanel" id="rotDockPanel">
+    <button type="button" class="dockTab" data-dock="rot" aria-expanded="true" title="Rozwiń okno Rotacje">Rotacje</button>
+    <div class="dockBody" id="rotDockBody">
+      <div class="dockTitle"><span>Rotacje</span><button type="button" class="dockClose" data-dock="rot" title="Zwiń okno Rotacje">✕</button></div>
+      <div id="rotBar">
+        <div class="rb-main">
+          <span class="seg" id="fTeamSeg"><button type="button" data-fteam="a" class="on"><span class="full">Drużyna A</span><span class="short">A</span></button><button type="button" data-fteam="b"><span class="full">Drużyna B</span><span class="short">B</span></button></span>
+          <button type="button" id="rotPrev" title="Poprzednia rotacja">⟲</button>
+          <b id="rotCur">P1</b>
+          <button type="button" id="rotNext" title="Następna rotacja (zgodnie ze wskazówkami zegara)">⟳</button>
+          <span class="seg" id="fModeSeg"><button type="button" data-fmode="base" title="Ustawienie bazowe"><span class="full">Bazowo</span><span class="short">Baz.</span></button><button type="button" data-fmode="recv" title="Przyjęcie: 2 przyjmujących + libero, środkowy z tylnej linii schodzi na ławkę"><span class="full">Przyjęcie</span><span class="short">Prz.</span></button><button type="button" data-fmode="def" title="Obrona: blok trzech z przodu, tył w obronie, libero za środkowego"><span class="full">Obrona</span><span class="short">Obr.</span></button></span>
+          <button type="button" id="rbMore" title="Wybór rotacji i reset" aria-expanded="false">⌃</button>
+        </div>
+        <div class="rb-extra">
+          <span class="rotGrid" id="rotGrid" title="Rotacja = strefa rozgrywającego. Kolejność: P1 → P6 → P5 → P4 → P3 → P2"></span>
+          <button type="button" id="resetBtn" title="Przywróć domyślne rozstawienie, rotację P1 i ustawienie bazowe">↺ Przywróć domyślne</button>
+          <button type="button" id="resetAllBtn" title="Zresetuj wszystko: powrót do ekranu jak po uruchomieniu (bez rysunków i zaznaczonych filtrów)">⟲ Zresetuj wszystko</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="rb-extra">
-    <span class="rotGrid" id="rotGrid" title="Rotacja = strefa rozgrywającego. Kolejność: P1 → P6 → P5 → P4 → P3 → P2"></span>
-    <span class="rb-sep"></span>
-    <button type="button" id="resetBtn" title="Przywróć domyślne rozstawienie, rotację P1 i ustawienie bazowe">↺ Przywróć domyślne</button>
+  <div class="dockPanel" id="drawDockPanel">
+    <button type="button" class="dockTab" data-dock="draw" aria-expanded="false" title="Rozwiń okno Rysowanie">Rysowanie</button>
+    <div class="dockBody" id="drawDockBody">
+      <div class="dockTitle"><span>Rysowanie</span><button type="button" class="dockClose" data-dock="draw" title="Zwiń okno Rysowanie">✕</button></div>
+    </div>
   </div>
+</div>
+<details class="card" id="drawCard">
+  <summary><span class="ci">✏️</span><span>Rysowanie</span></summary>
+  <div class="row"><button type="button" id="drawBtn" title="Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki">✏️ Rysuj na boisku</button></div>
+  <div id="drawTools">
+    <div class="grid3" id="drTools">
+      <button type="button" data-dtool="select" title="Edytuj kształty – przeciągaj punkty lub cały kształt">↖ Edycja</button>
+      <button type="button" data-dtool="pen" class="on" title="Rysuj odręcznie">✏ Pióro</button>
+      <button type="button" data-dtool="line" title="Linia">╱ Linia</button>
+      <button type="button" data-dtool="arrow" title="Strzałka">➜ Strzałka</button>
+      <button type="button" data-dtool="rect" title="Prostokąt">▭ Prostokąt</button>
+      <button type="button" data-dtool="ellipse" title="Elipsa / okrąg">◯ Elipsa</button>
+      <button type="button" data-dtool="triangle" title="Trójkąt – kliknij 3 punkty">△ Trójkąt</button>
+      <button type="button" data-dtool="text" title="Tekst – kliknij w miejscu napisu">T Tekst</button>
+    </div>
+    <div class="row">
+      <input type="color" id="drColor" value="#ff3b30" hidden>
+      <div class="swatches" id="drSwatches" title="Kolor"></div>
+      <select id="drWidth" title="Grubość"><option value="3">cienka</option><option value="6" selected>średnia</option><option value="12">gruba</option></select>
+      <select id="drBorder" title="Obramowanie wielokątów"><option value="0" selected>bez obramowania</option><option value="2">obramowanie cienkie</option><option value="5">obramowanie grube</option></select>
+    </div>
+    <div class="row">
+      <button type="button" id="drFill" class="on" title="Wypełnienie półprzezroczyste kształtów">◧ Wypełnienie</button>
+      <label class="alpha" title="Krycie wypełnienia (%)"><input type="range" id="drAlpha" min="10" max="100" step="5" value="40" aria-label="Krycie wypełnienia (%)"><b id="drAlphaV">40%</b></label>
+    </div>
+    <div class="row">
+      <button type="button" id="drDel" title="Usuń zaznaczony rysunek (Delete)">🗑 Usuń</button>
+      <button type="button" id="drClear">Wyczyść rysunki</button>
+    </div>
+    <div class="hint">Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.</div>
+  </div>
+</details>
+<button type="button" id="menuBtn" hidden title="Pokaż menu" aria-label="Menu">☰</button>
+<div id="pawnPop" hidden role="dialog" aria-label="Zawodnik">
+  <div class="ppHead"><b id="ppTitle">Zawodnik</b><button type="button" id="ppClose" title="Zamknij">✕</button></div>
+  <label for="ppNum">Numer</label><select id="ppNum"></select>
+  <label for="ppName">Imię / nazwisko</label><input id="ppName" type="text" maxlength="20" autocomplete="off">
+  <label for="ppRole">Rola</label><select id="ppRole"></select>
 </div>
 <div id="shotModal" hidden>
   <div class="shotBox">
     <div class="shotHead"><b>Zrzut ekranu <span id="shotKind"></span></b><span id="shotInfo" class="shotInfo"></span><button type="button" id="shotClose" title="Zamknij">✕</button></div>
+    <div class="shotRow">
     <div class="shotStage" id="shotStage">
       <canvas id="shotCanvas"></canvas>
       <div id="cropBox">
@@ -429,10 +553,34 @@ function saveSharedTeams(teamsObj) {
         <span id="cropWm">mPro Volley 3D</span>
       </div>
     </div>
-    <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony). Znak wodny „mPro Volley 3D” zostanie dodany w prawym dolnym rogu zrzutu.</div>
-    <div class="shotBtns"><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
+    <div id="angleBox" hidden>
+      <div class="zoomBtns" role="group" aria-label="Przybliżenie">
+        <button type="button" id="z3In" title="Przybliż widok 3D (kółko myszy nad podglądem)">+</button>
+        <b id="z3Val" title="Przywróć 100%">100%</b>
+        <button type="button" id="z3Out" title="Oddal widok 3D">−</button>
+      </div>
+      <div class="zoomBtns panBtns" role="group" aria-label="Przesunięcie kamery">
+        <button type="button" id="p3Fwd" title="Przesuń kamerę do przodu (w stronę siatki)">▲</button>
+        <button type="button" id="p3Back" title="Przesuń kamerę do tyłu">▼</button>
+      </div>
+      <span class="angleLbl">Kąt</span>
+      <input type="range" id="angleSlider" min="4" max="90" step="1" value="30" aria-label="Kąt widoku" title="Kąt widoku: wyżej = widok bardziej z góry">
+      <b id="angleVal">30°</b>
+    </div>
+    </div>
+    <div class="shotHint">Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).</div>
+    <div class="shotBtns"><button type="button" id="shotAnim" hidden title="Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)">🎞 Stwórz animację</button><button type="button" id="shotAll" title="Ramka na cały parkiet">Cały parkiet</button><button type="button" id="shotView" title="Ramka na fragment widoczny teraz na ekranie">Jak na ekranie</button><button type="button" id="shotCancel">Anuluj</button><button type="button" id="shotSave" class="primary">Zapisz</button></div>
   </div>
 </div>
+<div id="animModal" hidden>
+  <div class="animBox">
+    <div class="shotHead"><b>Animacja 3D</b><button type="button" id="animX" title="Zamknij">✕</button></div>
+    <canvas id="animCanvas" width="1200" height="900"></canvas>
+    <div class="shotBtns"><button type="button" id="animPlay">⏸ Pauza</button><button type="button" id="animSave" class="primary" title="Zapisz animację jako plik wideo (nagranie trwa tyle, co animacja)">💾 Zapisz animację…</button><button type="button" id="animClose">Zamknij</button></div>
+  </div>
+</div>
+<div id="capHint" hidden role="status">Na boisku może być jednocześnie tylko 6 zawodników drużyny.</div>
+<div id="busy3d" hidden role="status">Generowanie widoku 3D…</div>
 <div id="drawDock"></div>
 <input id="drText" type="text" hidden placeholder="Wpisz tekst i Enter" aria-label="Tekst na boisku">
 
@@ -447,6 +595,229 @@ function saveSharedTeams(teamsObj) {
   var teams = loadSharedTeams() || JSON.parse(JSON.stringify(DEFAULT_SHARED_TEAMS));
   ['a', 'b'].forEach(function (t) { teams[t] = Object.assign({}, DEFAULT_SHARED_TEAMS[t], teams[t] || {}); });
   var defName = { a: 'Drużyna A', b: 'Drużyna B' };
+
+  // ---------- Wersje językowe: polski (domyślnie), English, Italiano ----------
+  // Klucz = tekst polski. Statyczny tekst i atrybuty (title, placeholder, aria-label) tłumaczy applyI18n(), teksty tworzone w kodzie – T().
+  var LANG_KEY = 'mpv:lang', lang = 'pl';
+  try { var lg0 = localStorage.getItem(LANG_KEY); if (lg0 === 'en' || lg0 === 'it') lang = lg0; } catch (e) {}
+  var I18N = { en: {}, it: {} };
+  [ // [polski, English, Italiano]
+    ['Tablica Taktyczna', 'Tactical Board', 'Lavagna Tattica'],
+    ['Tablica taktyczna', 'Tactical board', 'Lavagna tattica'],
+    ['Całe', 'Full', 'Intero'],
+    ['Połowa', 'Half', 'Metà'],
+    ['Parkiet', 'Floor', 'Parquet'],
+    ['Jasne', 'Light', 'Chiaro'],
+    ['Menu główne', 'Main menu', 'Menu principale'],
+    ['Widok', 'View', 'Vista'],
+    ['Całe boisko', 'Full court', 'Campo intero'],
+    ['Połowa boiska', 'Half court', 'Metà campo'],
+    ['Całe boisko albo powiększona połowa drużyny A (z 4 m boiska rywala, bez jego pionków)', 'Full court or an enlarged half for team A (with 4 m of the opponent’s court, without their pawns)', 'Campo intero oppure metà campo ingrandita della squadra A (con 4 m del campo avversario, senza le sue pedine)'],
+    ['Całe boisko, obie drużyny', 'Full court, both teams', 'Campo intero, entrambe le squadre'],
+    ['Powiększona dolna połowa (drużyna A) z 4 m boiska rywala; pionki rywala są ukryte', 'Enlarged lower half (team A) with 4 m of the opponent’s court; the opponent’s pawns are hidden', 'Metà campo inferiore ingrandita (squadra A) con 4 m del campo avversario; le pedine avversarie sono nascoste'],
+    ['Pionek', 'Pawn', 'Pedina'],
+    ['Co wyświetlać na pionku', 'What to show on the pawn', 'Cosa mostrare sulla pedina'],
+    ['Numer', 'Number', 'Numero'],
+    ['Numer zawodnika', 'Player number', 'Numero del giocatore'],
+    ['Pozycja', 'Position', 'Ruolo'],
+    ['Pierwsza litera pozycji (R, A, P, Ś, L)', 'Position abbreviation (S, OP, OH, MB, L)', 'Sigla del ruolo (P, O, S, C, L)'],
+    ['Brak', 'None', 'Nessuno'],
+    ['Pionek bez napisu', 'Pawn without text', 'Pedina senza testo'],
+    ['Etykieta', 'Label', 'Etichetta'],
+    ['Nazwisko', 'Name', 'Nome'],
+    ['Imię / nazwisko przy pionku', 'Name next to the pawn', 'Nome accanto alla pedina'],
+    ['Pełna nazwa pozycji przy pionku', 'Full position name next to the pawn', 'Nome completo del ruolo accanto alla pedina'],
+    ['Filtry', 'Filters', 'Filtri'],
+    ['Strefy', 'Zones', 'Zone'],
+    ['Numery stref i oś boiska', 'Zone numbers and court axis', 'Numeri delle zone e asse del campo'],
+    ['Tło: parkiet', 'Background: floor', 'Sfondo: parquet'],
+    ['Tło: jasne', 'Background: light', 'Sfondo: chiaro'],
+    ['Tło poza boiskiem', 'Background outside the court', 'Sfondo fuori dal campo'],
+    ['Zrzut', 'Snapshot', 'Screenshot'],
+    ['Zrzut ekranu planszy', 'Board screenshot', 'Screenshot della lavagna'],
+    ['Zapisz zrzut jako PNG', 'Save the screenshot as PNG', 'Salva lo screenshot come PNG'],
+    ['Zapisz zrzut jako PDF', 'Save the screenshot as PDF', 'Salva lo screenshot come PDF'],
+    ['Rysowanie na boisku', 'Drawing on the court', 'Disegno sul campo'],
+    ['Menu: pionki, etykiety, filtry, zrzut', 'Menu: pawns, labels, filters, screenshot', 'Menu: pedine, etichette, filtri, screenshot'],
+    ['Menu boczne', 'Side menu', 'Menu laterale'],
+    ['Cofnij (Ctrl+Z)', 'Undo (Ctrl+Z)', 'Annulla (Ctrl+Z)'],
+    ['Ponów (Ctrl+Y)', 'Redo (Ctrl+Y)', 'Ripeti (Ctrl+Y)'],
+    ['Drużyny', 'Teams', 'Squadre'],
+    ['Drużyny: nazwa, logo, kolor, zawodnicy', 'Teams: name, logo, colour, players', 'Squadre: nome, logo, colore, giocatori'],
+    ['Pionki', 'Pawns', 'Pedine'],
+    ['Pionki: rozmiar, usuwanie, przywracanie', 'Pawns: size, removal, restoring', 'Pedine: dimensione, rimozione, ripristino'],
+    ['Piłka', 'Ball', 'Palla'],
+    ['Pokaż / ukryj piłkę na boisku', 'Show / hide the ball on the court', 'Mostra / nascondi la palla sul campo'],
+    ['Rysuj', 'Draw', 'Disegna'],
+    ['Zamknij panel', 'Close panel', 'Chiudi il pannello'],
+    ['Aby usunąć pionek, przeciągnij go do kosza, który pojawia się w prawym dolnym rogu planszy. Rozmiar zmienia się tylko dla wszystkich pionków naraz (poniżej).', 'To remove a pawn, drag it to the bin that appears in the bottom-right corner of the board. The size can only be changed for all pawns at once (below).', 'Per rimuovere una pedina, trascinala nel cestino che compare in basso a destra sulla lavagna. La dimensione si cambia solo per tutte le pedine insieme (qui sotto).'],
+    ['Rozmiar wszystkich', 'Size of all pawns', 'Dimensione di tutte le pedine'],
+    ['Pomniejsz wszystkie pionki', 'Make all pawns smaller', 'Riduci tutte le pedine'],
+    ['Powiększ wszystkie pionki', 'Make all pawns larger', 'Ingrandisci tutte le pedine'],
+    ['100% (domyślny)', '100% (default)', '100% (predefinito)'],
+    ['Przywróć domyślny rozmiar pionków (100%)', 'Restore the default pawn size (100%)', 'Ripristina la dimensione predefinita delle pedine (100%)'],
+    ['Przywróć usunięte pionki','Restore removed pawns', 'Ripristina le pedine rimosse'],
+    ['Przywróć pionki usunięte z boiska', 'Restore the pawns removed from the court', 'Ripristina le pedine rimosse dal campo'],
+    ['Rysowanie', 'Drawing', 'Disegno'],
+    ['✏️ Rysuj na boisku', '✏️ Draw on the court', '✏️ Disegna sul campo'],
+    ['✓ Zakończ rysowanie', '✓ Finish drawing', '✓ Termina il disegno'],
+    ['Po włączeniu rysujesz, po wyłączeniu przeciągasz pionki', 'When on, you draw; when off, you drag the pawns', 'Se attivo disegni, se disattivo trascini le pedine'],
+    ['↖ Edycja', '↖ Edit', '↖ Modifica'],
+    ['Edytuj kształty – przeciągaj punkty lub cały kształt', 'Edit shapes – drag the points or the whole shape', 'Modifica le forme: trascina i punti o l’intera forma'],
+    ['✏ Pióro', '✏ Pen', '✏ Penna'],
+    ['Rysuj odręcznie', 'Freehand drawing', 'Disegno a mano libera'],
+    ['╱ Linia', '╱ Line', '╱ Linea'],
+    ['Linia', 'Line', 'Linea'],
+    ['➜ Strzałka', '➜ Arrow', '➜ Freccia'],
+    ['Strzałka', 'Arrow', 'Freccia'],
+    ['▭ Prostokąt', '▭ Rectangle', '▭ Rettangolo'],
+    ['Prostokąt', 'Rectangle', 'Rettangolo'],
+    ['◯ Elipsa', '◯ Ellipse', '◯ Ellisse'],
+    ['Elipsa / okrąg', 'Ellipse / circle', 'Ellisse / cerchio'],
+    ['△ Trójkąt', '△ Triangle', '△ Triangolo'],
+    ['Trójkąt – kliknij 3 punkty', 'Triangle – click 3 points', 'Triangolo: clicca 3 punti'],
+    ['T Tekst', 'T Text', 'T Testo'],
+    ['Tekst – kliknij w miejscu napisu', 'Text – click where the text should go', 'Testo: clicca dove vuoi il testo'],
+    ['Kolor', 'Colour', 'Colore'],
+    ['Grubość', 'Thickness', 'Spessore'],
+    ['cienka', 'thin', 'sottile'],
+    ['średnia', 'medium', 'media'],
+    ['gruba', 'thick', 'spessa'],
+    ['Obramowanie wielokątów', 'Polygon border', 'Bordo dei poligoni'],
+    ['bez obramowania', 'no border', 'senza bordo'],
+    ['obramowanie cienkie', 'thin border', 'bordo sottile'],
+    ['obramowanie grube', 'thick border', 'bordo spesso'],
+    ['◧ Wypełnienie', '◧ Fill', '◧ Riempimento'],
+    ['Wypełnienie półprzezroczyste kształtów', 'Semi-transparent fill of the shapes', 'Riempimento semitrasparente delle forme'],
+    ['Krycie wypełnienia (%)', 'Fill opacity (%)', 'Opacità del riempimento (%)'],
+    ['🗑 Usuń', '🗑 Delete', '🗑 Elimina'],
+    ['Usuń zaznaczony rysunek (Delete)', 'Delete the selected drawing (Delete)', 'Elimina il disegno selezionato (Delete)'],
+    ['Wyczyść rysunki', 'Clear drawings', 'Cancella i disegni'],
+    ['Trójkąt i czworokąt: klikaj kolejne punkty. Narysowany kształt zostaje zaznaczony: zmieniasz jego kolor i styl, a żółte punkty przeciągasz. „Edycja” pozwala wybrać dowolny kształt i przesunąć go w całości. Esc odznacza.', 'Triangle and quadrilateral: click the points one by one. The drawn shape stays selected: you can change its colour and style and drag the yellow points. “Edit” lets you pick any shape and move it as a whole. Esc deselects.', 'Triangolo e quadrilatero: clicca i punti uno dopo l’altro. La forma disegnata resta selezionata: puoi cambiarne colore e stile e trascinare i punti gialli. «Modifica» permette di scegliere qualsiasi forma e spostarla per intero. Esc deseleziona.'],
+    ['Drużyna A', 'Team A', 'Squadra A'],
+    ['Drużyna B', 'Team B', 'Squadra B'],
+    ['Nazwa i logo', 'Name and logo', 'Nome e logo'],
+    ['Nazwa drużyny', 'Team name', 'Nome della squadra'],
+    ['Wgraj logo…', 'Upload logo…', 'Carica logo…'],
+    ['Usuń', 'Remove', 'Rimuovi'],
+    ['Wyświetlaj logo na boisku', 'Show the logo on the court', 'Mostra il logo sul campo'],
+    ['Przywróć domyślny kolor', 'Restore the default colour', 'Ripristina il colore predefinito'],
+    ['Kolor pionków drużyny. Pozostałe barwy (spodenki, buty, libero) ustawisz w modelu 3D.', 'The colour of the team’s pawns. Other colours (shorts, shoes, libero) can be set in the 3D model.', 'Il colore delle pedine della squadra. Gli altri colori (pantaloncini, scarpe, libero) si impostano nel modello 3D.'],
+    ['Zawodnicy', 'Players', 'Giocatori'],
+    ['Imię / nazwisko', 'Name / surname', 'Nome / cognome'],
+    ['Imię i nazwisko', 'First and last name', 'Nome e cognome'],
+    ['Rola', 'Role', 'Ruolo'],
+    ['R rozgrywający · A atakujący · P przyjmujący · Ś środkowy · L libero. Wyświetlanie na pionkach: sekcja „Etykiety” na górze menu.', 'S setter · OP opposite · OH outside hitter · MB middle blocker · L libero. What is shown on the pawns is set in the “Pawn” and “Label” options at the top.', 'P palleggiatore · O opposto · S schiacciatore · C centrale · L libero. Cosa mostrare sulle pedine si imposta in «Pedina» ed «Etichetta» in alto.'],
+    ['rozgrywający', 'setter', 'palleggiatore'],
+    ['atakujący', 'opposite', 'opposto'],
+    ['przyjmujący', 'outside hitter', 'schiacciatore'],
+    ['środkowy', 'middle blocker', 'centrale'],
+    ['USUŃ', 'DELETE', 'ELIMINA'],
+    ['ŁAWKA', 'BENCH', 'PANCHINA'],
+    ['Przybliżenie', 'Zoom', 'Zoom'],
+    ['Przybliż (kółko myszy / szczypanie)', 'Zoom in (mouse wheel / pinch)', 'Ingrandisci (rotella del mouse / pizzico)'],
+    ['Przywróć widok całego boiska', 'Reset the view', 'Ripristina la vista'],
+    ['Oddal', 'Zoom out', 'Riduci'],
+    ['Rotacje', 'Rotations', 'Rotazioni'],
+    ['Rozwiń okno Rotacje', 'Expand the Rotations window', 'Espandi la finestra Rotazioni'],
+    ['Rozwiń okno Rysowanie', 'Expand the Drawing window', 'Espandi la finestra Disegno'],
+    ['Zwiń okno Rotacje', 'Collapse the Rotations window', 'Comprimi la finestra Rotazioni'],
+    ['Zwiń okno Rysowanie', 'Collapse the Drawing window', 'Comprimi la finestra Disegno'],
+    ['Poprzednia rotacja', 'Previous rotation', 'Rotazione precedente'],
+    ['Następna rotacja (zgodnie ze wskazówkami zegara)', 'Next rotation (clockwise)', 'Rotazione successiva (in senso orario)'],
+    ['Bazowo', 'Base', 'Base'],
+    ['Baz.', 'Base', 'Base'],
+    ['Ustawienie bazowe', 'Base formation', 'Schieramento base'],
+    ['Przyjęcie', 'Reception', 'Ricezione'],
+    ['Prz.', 'Rec.', 'Ric.'],
+    ['Przyjęcie: 2 przyjmujących + libero, środkowy z tylnej linii schodzi na ławkę', 'Reception: 2 outside hitters + libero; the back-row middle blocker goes to the bench', 'Ricezione: 2 schiacciatori + libero; il centrale di seconda linea va in panchina'],
+    ['Obrona', 'Defence', 'Difesa'],
+    ['Obr.', 'Def.', 'Dif.'],
+    ['Obrona: blok trzech z przodu, tył w obronie, libero za środkowego', 'Defence: three-man block at the net, back row in defence, libero in for the middle blocker', 'Difesa: muro a tre a rete, seconda linea in difesa, libero al posto del centrale'],
+    ['Wybór rotacji i reset', 'Choose a rotation and reset', 'Scelta della rotazione e reset'],
+    ['Rotacja = strefa rozgrywającego. Kolejność: P1 → P6 → P5 → P4 → P3 → P2', 'Rotation = the setter’s zone. Order: P1 → P6 → P5 → P4 → P3 → P2', 'Rotazione = zona del palleggiatore. Ordine: P1 → P6 → P5 → P4 → P3 → P2'],
+    ['↺ Przywróć domyślne', '↺ Restore defaults', '↺ Ripristina predefiniti'],
+    ['Przywróć domyślne rozstawienie, rotację P1 i ustawienie bazowe', 'Restore the default setup, rotation P1 and the base formation', 'Ripristina lo schieramento predefinito, la rotazione P1 e lo schieramento base'],
+    ['Zrzut ekranu', 'Screenshot', 'Screenshot'],
+    ['Zamknij', 'Close', 'Chiudi'],
+    ['Podgląd pokazuje cały parkiet – przeciągnij ramkę lub jej uchwyty, aby wybrać fragment (także oddalony).', 'The preview shows the whole court – drag the frame or its handles to choose an area (also zoomed out).', 'L’anteprima mostra tutto il campo: trascina il riquadro o le sue maniglie per scegliere una porzione (anche ridotta).'],
+    ['Cały parkiet', 'Whole court', 'Tutto il campo'],
+    ['Ramka na cały parkiet', 'Frame the whole court', 'Riquadro su tutto il campo'],
+    ['Jak na ekranie', 'As on screen', 'Come sullo schermo'],
+    ['Ramka na fragment widoczny teraz na ekranie', 'Frame the part currently visible on screen', 'Riquadro sulla parte ora visibile sullo schermo'],
+    ['Anuluj', 'Cancel', 'Annulla'],
+    ['Zapisz', 'Save', 'Salva'],
+    ['Wpisz tekst i Enter', 'Type the text and press Enter', 'Scrivi il testo e premi Invio'],
+    ['Tekst na boisku', 'Text on the court', 'Testo sul campo'],
+    ['Przesuń kamerę do przodu (w stronę siatki)', 'Move the camera forward (towards the net)', 'Sposta la telecamera in avanti (verso la rete)'],
+    ['Przesuń kamerę do tyłu', 'Move the camera back', 'Sposta la telecamera indietro'],
+    ['Na boisku może być jednocześnie tylko 6 zawodników drużyny.', 'Only 6 players of a team can be on the court at the same time.', 'In campo possono esserci contemporaneamente solo 6 giocatori della squadra.'],
+    ['Cień bloku', 'Block shadow', 'Ombra del muro'],
+    ['Cień bloku: które miejsca boiska są zasłonięte blokiem z punktu, w którym jest piłka', 'Block shadow: which parts of the court are covered by the block from the ball’s position', 'Ombra del muro: quali zone del campo sono coperte dal muro dal punto in cui si trova la palla'],
+    ['Pokaż piłkę na boisku', 'Show the ball on the court', 'Mostra la palla sul campo'],
+    ['Przesunięcie kamery', 'Camera pan', 'Spostamento camera'],
+    ['Cień bloku pokazuje, które miejsca boiska są zasłonięte blokiem pionków drużyny po drugiej stronie siatki stykających się z nią, licząc z punktu, w którym stoi piłka. Włączenie tego filtra pokazuje też piłkę na boisku.',
+      'The block shadow shows which parts of the court are covered by the block of the pawns of the team on the other side of the net that touch it, measured from the point where the ball is. Turning this filter on also shows the ball on the court.',
+      'L’ombra del muro mostra quali zone del campo sono coperte dal muro delle pedine della squadra dall’altro lato della rete che la toccano, calcolata dal punto in cui si trova la palla. Attivando questo filtro viene mostrata anche la palla sul campo.'],
+    ['Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.', 'Drag the ball onto one half of the court to see the block shadow.', 'Trascina la palla su una metà del campo per vedere l’ombra del muro.'],
+    ['Atak na stronę {0} · blokujących: {1}', 'Attack on side {0} · blockers: {1}', 'Attacco sul lato {0} · a muro: {1}'],
+    ['dostępne {0}%', 'available {0}%', 'disponibile {0}%'],
+    ['cień bloku {0}% połowy', 'block shadow {0}% of the half', 'ombra del muro {0}% della metà'],
+    ['Rotacje i ustawienie drużyny (bazowo, przyjęcie, obrona)', 'Rotations and team formation (base, reception, defence)', 'Rotazioni e schieramento della squadra (base, ricezione, difesa)'],
+    ['Zawodnik', 'Player', 'Giocatore'],
+    ['Zresetuj wszystko', 'Reset everything', 'Reimposta tutto'],
+    ['⟲ Zresetuj wszystko', '⟲ Reset everything', '⟲ Reimposta tutto'],
+    ['Zresetuj wszystko: powrót do ekranu jak po uruchomieniu (bez rysunków i zaznaczonych filtrów)', 'Reset everything: back to the screen as at start-up (no drawings, no filters selected)', 'Reimposta tutto: torna alla schermata iniziale (senza disegni né filtri selezionati)'],
+    ['Zresetować wszystko? Rysunki, filtry, piłka, rozmiar i ustawienie pionków wrócą do stanu z uruchomienia.', 'Reset everything? Drawings, filters, the ball, pawn size and positions will return to the start-up state.', 'Reimpostare tutto? Disegni, filtri, palla, dimensione e posizione delle pedine tornano allo stato iniziale.'],
+    ['Ukryj menu', 'Hide the menu', 'Nascondi il menu'],
+    ['Pokaż menu', 'Show the menu', 'Mostra il menu'],
+    ['Animacja 3D', '3D animation', 'Animazione 3D'],
+    ['⏸ Pauza', '⏸ Pause', '⏸ Pausa'],
+    ['▶ Odtwórz', '▶ Play', '▶ Riproduci'],
+    ['💾 Zapisz animację…', '💾 Save the animation…', '💾 Salva l’animazione…'],
+    ['Zapisz animację jako plik wideo (nagranie trwa tyle, co animacja)', 'Save the animation as a video file (recording takes as long as the animation)', 'Salva l’animazione come file video (la registrazione dura quanto l’animazione)'],
+    ['🎞 Stwórz animację', '🎞 Create animation', '🎞 Crea animazione'],
+    ['Animacja: kamera od widoku z góry do 10° i z powrotem (plik wideo)', 'Animation: the camera goes from the top view down to 10° and back (video file)', 'Animazione: la telecamera passa dalla vista dall’alto a 10° e torna indietro (file video)'],
+    ['Generowanie animacji…', 'Generating the animation…', 'Generazione dell’animazione…'],
+    ['Zapisywanie animacji…', 'Saving the animation…', 'Salvataggio dell’animazione…'],
+    ['Ta przeglądarka nie obsługuje zapisu animacji.', 'This browser cannot record animations.', 'Questo browser non supporta la registrazione di animazioni.'],
+    ['Przybliż widok 3D (kółko myszy nad podglądem)', 'Zoom in the 3D view (mouse wheel over the preview)', 'Ingrandisci la vista 3D (rotella sopra l’anteprima)'],
+    ['Oddal widok 3D', 'Zoom out the 3D view', 'Riduci la vista 3D'],
+    ['Przywróć 100%', 'Reset to 100%', 'Ripristina il 100%'],
+    ['Kąt', 'Angle', 'Angolo'],
+    ['Kąt widoku', 'View angle', 'Angolo di vista'],
+    ['Kąt widoku: wyżej = widok bardziej z góry', 'View angle: higher = more from above', 'Angolo di vista: più in alto = più dall’alto'],
+    ['Generowanie widoku 3D…', 'Generating the 3D view…', 'Generazione della vista 3D…'],
+    ['Wygeneruj widok 3D zza drużyny A (z siatką, jak w modelu 3D)', 'Generate a 3D view from behind team A (with the net, as in the 3D model)', 'Genera una vista 3D da dietro la squadra A (con la rete, come nel modello 3D)'],
+    ['Nie udało się wygenerować widoku 3D.', 'Could not generate the 3D view.', 'Impossibile generare la vista 3D.'],
+    ['Nie udało się wykonać zrzutu.','Could not take the screenshot.', 'Impossibile creare lo screenshot.'],
+    ['© 2026 Michał Pyra · mPro Volley 3D — przeciągnij pionki, aby ustawić formację', '© 2026 Michał Pyra · mPro Volley 3D — drag the pawns to set up a formation', '© 2026 Michał Pyra · mPro Volley 3D — trascina le pedine per impostare uno schieramento']
+  ].forEach(function (r) { I18N.en[r[0]] = r[1]; I18N.it[r[0]] = r[2]; });
+  function T(k) { var d = I18N[lang]; return (d && d[k]) || k; }
+  var ROLE_ABBR = { en: { R: 'S', A: 'OP', P: 'OH', 'Ś': 'MB', L: 'L' }, it: { R: 'P', A: 'O', P: 'S', 'Ś': 'C', L: 'L' } }; // skrót pozycji na pionku
+  function RL(r) { var m = ROLE_ABBR[lang]; return (m && m[r]) || r; }
+  var i18nTxt = new WeakMap(), i18nAttr = new WeakMap();
+  function applyI18n() { // tłumaczy statyczny tekst i atrybuty strony (oryginał polski jest zapamiętany, więc można wrócić do PL)
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+      return /^(SCRIPT|STYLE|TEXTAREA)$/i.test(n.parentNode.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach(function (n) {
+      if (!i18nTxt.has(n)) i18nTxt.set(n, n.nodeValue);
+      var orig = i18nTxt.get(n), key = orig.replace(/\s+/g, ' ').trim(); if (!key) return;
+      var tr = lang === 'pl' ? key : T(key);
+      var want = tr === key ? orig : orig.replace(/^(\s*)[\s\S]*?(\s*)$/, function (m, a, b) { return a + tr + b; });
+      if (n.nodeValue !== want) n.nodeValue = want;
+    });
+    document.body.querySelectorAll('[title],[placeholder],[aria-label]').forEach(function (el) {
+      var m = i18nAttr.get(el); if (!m) i18nAttr.set(el, m = {});
+      ['title', 'placeholder', 'aria-label'].forEach(function (a) {
+        if (!el.hasAttribute(a)) return;
+        if (!(a in m)) m[a] = el.getAttribute(a);
+        var key = m[a].replace(/\s+/g, ' ').trim(), tr = lang === 'pl' ? key : T(key), want = tr === key ? m[a] : tr;
+        if (el.getAttribute(a) !== want) el.setAttribute(a, want);
+      });
+    });
+  }
 
   // ---------- Geometria boiska (rzut z góry, pionowo, siatka pośrodku; A na dole, B na górze) ----------
   // 1 m = 40 px, siatka na y = 450, oś środkowa x = 250. Układ z modelu 3D (x wzdłuż boiska, z w poprzek, A po stronie x < 0)
@@ -465,25 +836,29 @@ function saveSharedTeams(teamsObj) {
   };
   var DEFENSE = { 4: [-0.7, -2.4], 3: [-0.7, 0], 2: [-0.7, 2.4], 5: [-4.8, -2.4], 6: [-6.0, 0], 1: [-4.8, 2.4] }; // druga linia symetrycznie: boki na tej samej głębokości i w tej samej odległości od osi co blok
   // ławka (libero / środkowy schodzący z boiska) – po lewej stronie boiska
-  var BENCH_MX = { libero: -5.3, mb: -3.7 }, BENCH_X = -50; // ławka 1 m dalej od boiska (większe pionki – większy odstęp między miejscami)
+  var BENCH_MX = { libero: -5.3, mb: -3.7 }, BENCH_X = -90; // ławka 2 m od linii bocznej (dodatkowy 1 m odstępu), większe pionki – większy odstęp między miejscami (większe pionki – większy odstęp między miejscami)
   function benchPos(team, key) { var mx = BENCH_MX[key]; return [BENCH_X, CY - (team === 'a' ? mx : -mx) * UNIT]; }
   var zoneFor = function (rot, slot) { return ((rot - 1 + slot) % 6) + 1; };
 
   // Pionki poruszają się tylko po swojej połowie (A – dolna, B – górna), nie przechodzą przez siatkę (y = 450).
   // Pionek B ma etykietę nad sobą, A pod sobą – dzięki temu etykieta nigdy nie wchodzi na połowę rywala.
-  var PAWN_BASE = 1.5; // 150% to nowe „100%” rozmiaru pionków
-  var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -60, x1: 480 };
+  var PAWN_BASE = 0.95; // domyślny rozmiar pionków = „100%” w panelu (o 20% mniejszy niż poprzednie 1,19)
+  var BOUNDS = { a: { y0: 472, y1: 868 }, b: { y0: 32, y1: 428 }, x0: -100, x1: 480 };
   function clampPos(team, x, y, s) { // pionek (z uwzględnieniem rozmiaru) nie dotyka siatki
     var b = BOUNDS[team], m = 18 * (s || PAWN_BASE) + 6;
     var y0 = team === 'a' ? Math.max(b.y0, CY + m) : b.y0, y1 = team === 'b' ? Math.min(b.y1, CY - m) : b.y1;
-    return [Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x)), Math.max(y0, Math.min(y1, y))];
+    y = Math.max(y0, Math.min(y1, y)); x = Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x));
+    // w strefie 3 m przy siatce (blok, atak) pionek nie może wyjść w bok poza boisko: cały mieści się między liniami bocznymi (skrajne ustawienie = przy antence)
+    if (team === 'a' ? y <= CY + FRONT_Y : y >= CY - FRONT_Y) { var rr = 18 * (s || PAWN_BASE); x = Math.max(70 + rr, Math.min(430 - rr, x)); }
+    return [x, y];
   }
+  var FRONT_Y = 120; // szerokość strefy 3 m przy siatce w jednostkach tablicy (3 m × 40)
 
   // ---- etykieta pod/nad pionkiem i zakaz nachodzenia (pionek + jego etykieta nie mogą dotykać innych) ----
   function pillInfo(team, num) {
     var r = roster[team][num], lines = [];
     if (labels.name && r.name) lines.push({ t: r.name.length > 15 ? r.name.slice(0, 14) + '…' : r.name, b: true });
-    if (labels.role && r.role) lines.push({ t: ROLE_NAME[r.role] || r.role, b: false });
+    if (labels.role && r.role) lines.push({ t: ROLE_NAME[r.role] ? T(ROLE_NAME[r.role]) : r.role, b: false });
     if (!lines.length) return null;
     var w = 0; lines.forEach(function (l) { w = Math.max(w, l.t.length * (l.b ? 6.6 : 6) + 14); });
     return { lines: lines, w: w, h: lines.length * 14 + 6, dir: team === 'a' ? 1 : -1 };
@@ -502,7 +877,7 @@ function saveSharedTeams(teamsObj) {
     var mine = shapesOf(x, y, pill, s);
     for (var i = 0; i < others.length; i++) {
       var o = shapesOf(others[i].x, others[i].y, others[i].pill, others[i].s);
-      for (var a = 0; a < mine.length; a++) for (var b = 0; b < o.length; b++) if (shapeHit(mine[a], o[b], 2)) return true;
+      for (var a = 0; a < mine.length; a++) for (var b = 0; b < o.length; b++) if (shapeHit(mine[a], o[b], 0)) return true; // 0 = pionki mogą dojść do siebie na styk (bez marginesu)
     }
     return false;
   }
@@ -539,20 +914,22 @@ function saveSharedTeams(teamsObj) {
     el('rect', { x: 28, y: -20, width: 444, height: 940, rx: 20, fill: '#cfe0f6', class: 'bgZone' });
     // ławki rezerwowych (libero / środkowy schodzący z boiska)
     [['a', 558, 702], ['b', 198, 342]].forEach(function (b) {
-      el('rect', { x: -84, y: b[1], width: 68, height: b[2] - b[1], rx: 10, class: 'bench' });
-      el('text', { x: -50, y: b[0] === 'a' ? b[1] - 5 : b[2] + 12, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, class: 'benchTxt' }).textContent = 'ŁAWKA';
+      el('rect', { x: -124, y: b[1], width: 68, height: b[2] - b[1], rx: 10, class: 'bench' });
+      el('text', { x: -90, y: b[0] === 'a' ? b[1] - 5 : b[2] + 12, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, class: 'benchTxt' }).textContent = T('ŁAWKA');
     });
     el('rect', { x: 70, y: 90, width: 360, height: 720, fill: '#ff9d47', stroke: '#fff', 'stroke-width': 3 });
+    // strefa ataku (3 m od siatki) – ciemniejszy pomarańcz, jak w modelu 3D
+    el('rect', { x: 71.5, y: 330, width: 357, height: 240, fill: '#e07a40' });
     // linie ataku (3 m od siatki)
-    el('line', { x1: 70, y1: 330, x2: 430, y2: 330, stroke: '#eee', 'stroke-width': 2, 'stroke-dasharray': '7,6', opacity: .85 });
-    el('line', { x1: 70, y1: 570, x2: 430, y2: 570, stroke: '#eee', 'stroke-width': 2, 'stroke-dasharray': '7,6', opacity: .85 });
+    el('line', { x1: 70, y1: 330, x2: 430, y2: 330, stroke: '#fff', 'stroke-width': 3 });
+    el('line', { x1: 70, y1: 570, x2: 430, y2: 570, stroke: '#fff', 'stroke-width': 3 });
     // siatka
     el('line', { x1: 60, y1: 450, x2: 440, y2: 450, stroke: '#fff', 'stroke-width': 5 });
     el('circle', { cx: 60, cy: 450, r: 5, fill: '#fff' });
     el('circle', { cx: 440, cy: 450, r: 5, fill: '#fff' });
     if (zonesOn) { // filtr „Strefy”: numery stref 1–6 w obu połowach i oś boiska przez środek
       var zc = { 1: [-6, 3], 2: [-1.5, 3], 3: [-1.5, 0], 4: [-1.5, -3], 5: [-6, -3], 6: [-6, 0] };
-      ['a', 'b'].forEach(function (tm) {
+      (viewMode === 'half' ? ['a'] : ['a', 'b']).forEach(function (tm) {
         for (var z = 1; z <= 6; z++) {
           var zp = toBoard(mirror(tm, zc[z]));
           el('text', { x: zp[0], y: zp[1], 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 56, 'font-weight': 700, 'font-style': 'italic',
@@ -561,11 +938,17 @@ function saveSharedTeams(teamsObj) {
       });
       el('line', { x1: CX, y1: 90, x2: CX, y2: 810, stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '14,9', opacity: .4 });
     }
-    el('text', { x: 250, y: 14, class: 'teamLabel', fill: '#fff', stroke: teams.b.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.b.name || defName.b;
-    el('text', { x: 250, y: 886, class: 'teamLabel', fill: '#fff', stroke: teams.a.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.a.name || defName.a;
+    el('text', { x: 250, y: 14, class: 'teamLabel', fill: '#fff', stroke: teams.b.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.b.name || T(defName.b);
+    el('text', { x: 250, y: 886, class: 'teamLabel', fill: '#fff', stroke: teams.a.jersey, 'stroke-width': 6, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, svg).textContent = teams.a.name || T(defName.a);
     // logo drużyny w strefie wolnej (tak jak na parkiecie w modelu 3D)
     if (teams.b.logo && teams.b.floorLogo !== false) el('image', { href: teams.b.logo, x: 34, y: -14, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
     if (teams.a.logo && teams.a.floorLogo !== false) el('image', { href: teams.a.logo, x: 34, y: 862, width: 30, height: 30, preserveAspectRatio: 'xMidYMid meet' });
+    if (viewMode === 'half') { // widok połowy: widać naszą połowę (A) i 4 m boiska rywala; reszta rywala (z ławką, nazwą i logo) jest zasłonięta kolorem tła
+      // pasek wokół boiska (bgZone) ma się ciągnąć bez „schodka”: zasłaniamy tylko to, co jest poza nim (ławka rywala), a część rywala nad linią cięcia zalewamy kolorem paska
+      el('rect', { x: -140, y: -100, width: 680, height: 80, class: 'bgOuter', 'pointer-events': 'none' });
+      el('rect', { x: -140, y: -20, width: 168, height: 390, class: 'bgOuter', 'pointer-events': 'none' }); // ławka rywala (na lewo od paska)
+      el('rect', { x: 28, y: -20, width: 444, height: 310, class: 'bgZone', 'pointer-events': 'none' }); // reszta połowy rywala
+    }
   }
 
   // ---------- Pionki ----------
@@ -591,9 +974,11 @@ function saveSharedTeams(teamsObj) {
     var r = roster[team][num], col = teams[team].jersey, s = pawnScale(team, num);
     var g = el('g', { class: 'pawn', 'data-team': team, 'data-num': num, transform: 'translate(' + pos[0] + ',' + pos[1] + ')' });
     var ig = el('g', { transform: 'scale(' + s + ')' }, g);
+    el('circle', { r: 18 + 8, fill: 'rgba(0,0,0,0)', stroke: 'none', 'pointer-events': 'all', class: 'hitRing' }, ig); // niewidoczna, większa strefa chwytania – łatwiej złapać pionek
     el('circle', { r: 18, fill: col, stroke: '#fff', 'stroke-width': 3 }, ig);
     el('circle', { r: 18, class: 'ring' }, ig);
-    if (labels.pawn !== 'none') el('text', { x: 0, y: 1 }, ig).textContent = labels.pawn === 'role' ? (r.role || '–') : r.num; // numer / pierwsza litera pozycji / nic
+    var pk = labels[pawnKey()]; // numer / pierwsza litera pozycji / nic (osobno dla całego boiska i dla połowy)
+    if (pk !== 'none') el('text', { x: 0, y: 1 }, ig).textContent = pk === 'role' ? RL(r.role || '–') : r.num;
     // etykieta (nazwisko i/lub pozycja) – jej miejsce wybiera layoutLabels(), żeby nie zasłaniała pionków
     var pill = pillInfo(team, num);
     if (pill) {
@@ -644,22 +1029,70 @@ function saveSharedTeams(teamsObj) {
       placed.push(chosen.r);
     });
   }
+  // Na boisku (razem z polem wolnym wokół) może być jednocześnie najwyżej 6 pionków drużyny; reszta czeka na ławce (po lewej, x < COURT_MIN_X).
+  var COURT_MIN_X = 20, MAX_ON_COURT = 6, capTimer = 0;
+  function capNote() { var h = $('capHint'); h.hidden = false; clearTimeout(capTimer); capTimer = setTimeout(function () { h.hidden = true; }, 2200); }
   function currentPositions() { // zapisane pozycje lub domyślne (z wybranej rotacji i ustawienia)
     var m = { a: {}, b: {} };
     ['a', 'b'].forEach(function (t) {
-      var def = computeFormation(t, formState.rot[t], formState.mode[t]);
+      var def = computeFormation(t, formState.rot[t], formState.mode[t]), on = [];
       for (var n = 1; n <= 7; n++) m[t][n] = (saved && saved[t] && saved[t][n]) || def[n];
+      for (n = 1; n <= 7; n++) if (!isGone(t, n) && m[t][n][0] >= COURT_MIN_X) on.push(n);
+      while (on.length > MAX_ON_COURT) { n = on.pop(); m[t][n] = benchPos(t, n === 7 ? 'libero' : 'mb'); } // nadmiarowy pionek (np. po przywróceniu usuniętego) wraca na ławkę
     });
     return m;
   }
 
+  // ikona piłki (żółto-niebieska, trzy niebieskie pasy) – w pasku po lewej zamiast emoji 🏐; sfx = unikalny przyrostek identyfikatorów
+  function ballIcon(sfx, size) {
+    var bands = '', bi, ii, W = 0.42 * 2 * Math.PI / 3;
+    for (bi = 0; bi < 3; bi++) {
+      var lo = [], hi = [];
+      for (ii = 0; ii <= 24; ii++) {
+        var rr = 19 * ii / 24, th = Math.asin(Math.min(1, rr / 15)), a = bi * 2 * Math.PI / 3 + th;
+        lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
+      }
+      bands += '<path d="M' + lo.concat(hi.reverse()).map(function (p) { return p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('L') + 'Z" fill="#1b3a96" stroke="rgba(8,16,60,.55)" stroke-width=".7" stroke-linejoin="round"/>';
+    }
+    return '<svg viewBox="-16 -16 32 32" width="' + size + '" height="' + size + '" aria-hidden="true" style="display:block"><defs>' +
+      '<clipPath id="bcI' + sfx + '"><circle r="15"/></clipPath>' +
+      '<radialGradient id="bsI' + sfx + '" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0a1030" stop-opacity=".38"/></radialGradient></defs>' +
+      '<circle r="15" fill="#f6cf16"/><g clip-path="url(#bcI' + sfx + ')">' + bands + '</g><circle r="15" fill="url(#bsI' + sfx + ')"/><circle r="14.7" fill="none" stroke="#9a8512" stroke-width=".8"/></svg>';
+  }
+  (function () { // piłka na przycisku „Piłka” w pasku po lewej
+    var bb = document.querySelector('#ballBtn .ci');
+    if (bb) bb.innerHTML = ballIcon('B', 18);
+  })();
   // piłka (pokaż / ukryj z paska po lewej; przeciągana w dowolne miejsce)
   function drawBall() {
     if (!pst.ball.on) return;
     var g = el('g', { class: 'ballg', transform: 'translate(' + pst.ball.x + ',' + pst.ball.y + ')', style: 'cursor:grab' });
-    el('ellipse', { cx: 2, cy: 14, rx: 13, ry: 4, fill: 'rgba(14,27,61,.28)' }, g);
-    el('circle', { r: 15, fill: '#ffffff', stroke: '#8b95a8', 'stroke-width': 1.6 }, g);
-    el('path', { d: 'M-15 0 C-8 -9 8 -9 15 0 M-15 0 C-8 9 8 9 15 0 M0 -15 C-7 -7 -7 7 0 15 M-10.5 -10.5 C-5 -4 -5 4 -10.5 10.5 M10.5 -10.5 C5 -4 5 4 10.5 10.5', fill: 'none', stroke: '#8b95a8', 'stroke-width': 1.2 }, g);
+    el('ellipse', { cx: 1.4, cy: 9.8, rx: 9.1, ry: 2.8, fill: 'rgba(14,27,61,.28)' }, g);
+    // piłka żółto-niebieska (trzy zakręcone niebieskie pasy schodzące się w jednym punkcie) z delikatnym cieniowaniem kuli
+    // rozmiar piłki = 70% oryginału (promień 15 -> 10.5), wszystkie wymiary poniżej przeskalowane proporcjonalnie
+    var defs = el('defs', {}, g);
+    var cp = el('clipPath', { id: 'ballClip' }, defs); el('circle', { r: 10.5 }, cp);
+    var gr = el('radialGradient', { id: 'ballShade', cx: '35%', cy: '30%', r: '75%' }, defs);
+    el('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.42' }, gr); el('stop', { offset: '.55', 'stop-color': '#ffffff', 'stop-opacity': '0' }, gr); el('stop', { offset: '1', 'stop-color': '#0a1030', 'stop-opacity': '.38' }, gr);
+    el('circle', { r: 10.5, fill: '#f6cf16' }, g);
+    var cg = el('g', { 'clip-path': 'url(#ballClip)' }, g);
+    // trzy wąskie niebieskie pasy wychodzą ze środka i zakręcają się ku krawędzi; każdy zajmuje ok. 42% swojego sektora 120° (żółtego jest więcej, jak na zdjęciu)
+    for (var bi = 0; bi < 3; bi++) {
+      var lo = [], hi = [], n = 32, W = 0.42 * 2 * Math.PI / 3;
+      for (var ii = 0; ii <= n; ii++) {
+        var rr = 13.3 * ii / n, th = Math.asin(Math.min(1, rr / 10.5)), a = bi * 2 * Math.PI / 3 + 1.0 * th;
+        lo.push([rr * Math.cos(a), rr * Math.sin(a)]); hi.push([rr * Math.cos(a + W), rr * Math.sin(a + W)]);
+      }
+      var pts = lo.concat(hi.reverse()), dd = 'M' + pts.map(function (p) { return p[0].toFixed(2) + ' ' + p[1].toFixed(2); }).join('L') + 'Z';
+      el('path', { d: dd, fill: '#1b3a96', stroke: 'rgba(8,16,60,.55)', 'stroke-width': .6, 'stroke-linejoin': 'round' }, cg);
+    }
+    // faktura: drobna perforacja (dołki) w układzie heksagonalnym, jak na piłce meczowej
+    var pat = el('pattern', { id: 'ballDimples', width: 1.26, height: 2.1826, patternUnits: 'userSpaceOnUse' }, defs);
+    el('circle', { cx: .315, cy: .546, r: .168, fill: 'rgba(10,20,60,.2)' }, pat); el('circle', { cx: .945, cy: 1.6366, r: .168, fill: 'rgba(10,20,60,.2)' }, pat);
+    el('circle', { cx: .315, cy: .546, r: .063, fill: 'rgba(255,255,255,.22)' }, pat); el('circle', { cx: .945, cy: 1.6366, r: .063, fill: 'rgba(255,255,255,.22)' }, pat);
+    el('rect', { x: -11.2, y: -11.2, width: 22.4, height: 22.4, fill: 'url(#ballDimples)', 'clip-path': 'url(#ballClip)' }, g);
+    el('circle', { r: 10.5, fill: 'url(#ballShade)' }, g);
+    el('circle', { r: 10.29, fill: 'none', stroke: '#9a8512', 'stroke-width': .56 }, g);
     var drag = null;
     function pt(e) { var c = svg.getScreenCTM(); if (!c) return [0, 0]; var i = c.inverse(); return [i.a * e.clientX + i.c * e.clientY + i.e, i.b * e.clientX + i.d * e.clientY + i.f]; }
     g.addEventListener('pointerdown', function (e) {
@@ -669,7 +1102,7 @@ function saveSharedTeams(teamsObj) {
     g.addEventListener('pointermove', function (e) {
       if (!drag) return; var p = pt(e);
       pst.ball.x = Math.max(-90, Math.min(530, p[0] + drag.dx)); pst.ball.y = Math.max(-50, Math.min(950, p[1] + drag.dy));
-      g.setAttribute('transform', 'translate(' + pst.ball.x + ',' + pst.ball.y + ')');
+      g.setAttribute('transform', 'translate(' + pst.ball.x + ',' + pst.ball.y + ')'); queueShadow();
     });
     ['pointerup', 'pointercancel'].forEach(function (ev) { g.addEventListener(ev, function () { if (drag) { drag = null; savePst(); pushHistory(); } }); });
   }
@@ -678,10 +1111,81 @@ function saveSharedTeams(teamsObj) {
     var el_ = document.getElementById('gsVal'); if (el_) el_.textContent = Math.round(pst.gs * 100) + '%';
     var n = document.getElementById('goneN'); if (n) n.textContent = goneCount() ? '(' + goneCount() + ')' : '';
     var rb = document.getElementById('restoreGone'); if (rb) rb.disabled = !goneCount();
-    var bb = document.querySelector('#rail [data-act="ball"]'); if (bb) bb.classList.toggle('on', !!pst.ball.on);
+    var bb = document.querySelector('#ballBtn'); if (bb) bb.classList.toggle('on', !!pst.ball.on);
   }
   function removePawn(team, n) { pawnOwn(team, n).gone = true; commit(); } // usuniecie pionka: przeciagniecie do kosza
 
+  // ---------- Cień bloku (widok z góry; wysokość piłki nie ma znaczenia) ----------
+  // Piłka (punkt uderzenia) jest po jednej stronie siatki; blokują pionki drużyny po drugiej stronie, stojące przy siatce.
+  // Punkt boiska jest w cieniu, gdy prosta od piłki do niego przecina pas jednego z blokujących na linii dłoni; poza antenkami nie da się zaatakować.
+  var SHADOW_KEY = 'mpv:tablica:shadow:v1', shadowOn = false, shG = null, shQueued = false, SH_N = 120, SH_SS = 2;
+  try { shadowOn = localStorage.getItem(SHADOW_KEY) === '1'; } catch (e) {}
+  var shCv = document.createElement('canvas'); shCv.width = shCv.height = SH_N;
+  var shCtx = shCv.getContext('2d'), shImg = shCtx.createImageData(SH_N, SH_N);
+  function shadowRects(def) {
+    var rects = [];
+    pawns.forEach(function (g) {
+      if (g.dataset.team !== def) return;
+      var px = (CY - g.__pos[1]) / UNIT, pz = (g.__pos[0] - CX) / UNIT, dn = Math.abs(px);
+      // blokuje tylko pionek, który styka się z siatką (najmniejszy możliwy odstęp od niej + 4 jednostki tolerancji); pionek tuż obok siatki, ale bez styku, nie blokuje
+      if (Math.abs(g.__pos[1] - CY) > 18 * g.__s + 6 + 4 || Math.abs(pz) > 4.7) return;
+      var r = 18 * g.__s / UNIT * 0.95;
+      rects.push({ x: (px < 0 ? -1 : 1) * Math.max(0.25, dn - 0.5), zmin: pz - r, zmax: pz + r }); // dłonie ok. 0,5 m przed środkiem pionka
+    });
+    rects.sort(function (a, b) { return a.zmin - b.zmin; });
+    for (var i = 0; i < rects.length - 1; i++) { // blok szczelny: sąsiedzi z odstępem < 0,5 m zamykają szczelinę
+      var a = rects[i], b = rects[i + 1], gap = b.zmin - a.zmax;
+      if (gap > 0 && gap < 0.5) { var mid = (a.zmax + b.zmin) / 2; a.zmax = mid; b.zmin = mid; }
+    }
+    return rects;
+  }
+  var shState = null; // ostatnio policzony cień bloku (do widoku 3D)
+  function updateShadow() {
+    if (shG && shG.parentNode) shG.parentNode.removeChild(shG); shG = null; shState = null;
+    var st = $('shStat'); if (!st) return;
+    if (!shadowOn || !pst.ball.on) { st.hidden = true; return; }
+    var Bx = (CY - pst.ball.y) / UNIT, Bz = (pst.ball.x - CX) / UNIT; st.hidden = false;
+    if (Math.abs(Bx) < 0.05) { st.textContent = T('Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.'); return; }
+    var def = Bx < 0 ? 'b' : 'a', rects = shadowRects(def), step = 9 / SH_N, ssN = SH_SS * SH_SS, data = shImg.data, ok = 0, blocked = 0, HW = 4.5;
+    var COL = [[40, 235, 110, 105], [30, 18, 70, 165], [95, 100, 110, 125]]; // 0 dostępne, 1 cień bloku, 2 poza antenkami
+    for (var r = 0; r < SH_N; r++) for (var c = 0; c < SH_N; c++) {
+      var rr = 0, gg = 0, bb = 0, aa = 0, n0 = 0, n1 = 0;
+      for (var sy = 0; sy < SH_SS; sy++) {
+        var xm = def === 'a' ? -(r + (sy + .5) / SH_SS) * step : 9 - (r + (sy + .5) / SH_SS) * step;
+        for (var sx = 0; sx < SH_SS; sx++) {
+          var pz = -4.5 + (c + (sx + .5) / SH_SS) * step, dx = xm - Bx, state = 0;
+          for (var k = 0; k < rects.length; k++) {
+            var rc = rects[k], t = (rc.x - Bx) / dx; if (t <= 0 || t >= 1) continue;
+            var z = Bz + t * (pz - Bz); if (z > rc.zmin && z < rc.zmax) { state = 1; break; }
+          }
+          if (state === 0 && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW) state = 2; // prosta przechodzi przez siatkę poza antenką
+          var cl = COL[state]; rr += cl[0]; gg += cl[1]; bb += cl[2]; aa += cl[3];
+          if (state === 0) n0++; else if (state === 1) n1++;
+        }
+      }
+      var o = (r * SH_N + c) * 4; data[o] = rr / ssN; data[o + 1] = gg / ssN; data[o + 2] = bb / ssN; data[o + 3] = aa / ssN; ok += n0 / ssN; blocked += n1 / ssN;
+    }
+    shCtx.putImageData(shImg, 0, 0);
+    shG = el('g', { style: 'pointer-events:none' }, svg);
+    el('image', { x: CX - 180, y: def === 'a' ? CY : CY - 360, width: 360, height: 360, href: shCv.toDataURL(), preserveAspectRatio: 'none' }, shG);
+    rects.forEach(function (rc) { // pasy blokujących na siatce
+      el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
+    });
+    var rayZ = [], endX = def === 'a' ? -9 : 9;
+    if (rects.length) { // dwa skrajne promienie: od piłki przez krawędzie bloku do końca boiska
+      var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; });
+      [[left, left.zmin], [right, right.zmax]].forEach(function (a) {
+        var t = (endX - Bx) / (a[0].x - Bx), hz = Bz + t * (a[1] - Bz); rayZ.push(hz);
+        el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
+      });
+    }
+    shState = { def: def, rects: rects.map(function (q) { return { x: q.x, zmin: q.zmin, zmax: q.zmax }; }), Bx: Bx, Bz: Bz, endX: endX, rayZ: rayZ, png: shCv.toDataURL() };
+    if (annotG && annotG.parentNode === svg) svg.insertBefore(shG, annotG); // pod rysunkami i pionkami
+    var total = SH_N * SH_N;
+    st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + rects.length + '</b>') + '<br>' +
+      '<span style="color:#1fa65a">' + T('dostępne {0}%').replace('{0}', (ok / total * 100).toFixed(0)) + '</span> · <span style="color:#6f5bd6">' + T('cień bloku {0}% połowy').replace('{0}', (blocked / total * 100).toFixed(0)) + '</span>';
+  }
+  function queueShadow() { if (!shadowOn || shQueued) return; shQueued = true; requestAnimationFrame(function () { shQueued = false; updateShadow(); }); } // przy przeciąganiu: najwyżej raz na klatkę
   function render() {
     tween = null;
     applyView();
@@ -691,14 +1195,16 @@ function saveSharedTeams(teamsObj) {
     annotG = el('g', { 'pointer-events': 'none' });
     var pos = resolveMap(currentPositions());
     for (var n = 1; n <= 7; n++) {
-      if (!isGone('a', n)) makePawn('a', n, pos.a[n]);
-      if (!isGone('b', n)) makePawn('b', n, pos.b[n]);
+      ['a', 'b'].forEach(function (t) { // w widoku połowy tylko pionki wybranej drużyny (pozycje drugiej są zachowane)
+        if (!isGone(t, n) && (viewMode !== 'half' || t === 'a')) makePawn(t, n, pos[t][n]);
+      });
     }
     drawBall();
     handlesG = el('g', { 'pointer-events': 'none' });
     previewG = el('g', { 'pointer-events': 'none' });
     attachDrag();
     layoutLabels();
+    updateShadow();
     redrawAnnots();
     syncPawnsPanel();
   }
@@ -731,10 +1237,25 @@ function saveSharedTeams(teamsObj) {
       return [lx, ly];
     }
     pawns.forEach(function (g) {
+      g.addEventListener('dblclick', function (e) { // dwuklik na pionku: okienko zawodnika (numer, nazwisko, rola)
+        e.preventDefault(); e.stopPropagation();
+        var loc = toLocal(e), near = g, bd = 1e9;
+        pawns.forEach(function (o) { var d = Math.hypot(o.__pos[0] - loc[0], o.__pos[1] - loc[1]) / (o.__s || 1); if (d < bd) { bd = d; near = o; } }); // strefy chwytania sąsiadów nachodzą na siebie – bierzemy najbliższy środek
+        openPawnPop(near, e.clientX, e.clientY);
+      });
       g.addEventListener('pointerdown', function (e) {
         e.preventDefault(); e.stopPropagation();
         var loc = toLocal(e);
-        drag = { g: g, dx: g.__pos[0] - loc[0], dy: g.__pos[1] - loc[1], sx: e.clientX, sy: e.clientY, moved: false };
+        // Strefy chwytania sąsiednich pionków nachodzą na siebie (dla łatwiejszego łapania) – ale gdy kliknięcie trafia we właściwy,
+        // widoczny okrąg TEGO pionka, zawsze łapiemy jego, bez przekierowania. Dzięki temu stykające się pionki da się złapać
+        // i dosunąć do siebie dokładnie – przekierowanie do sąsiada działa tylko poza widocznym kółkiem (w samej strefie chwytania).
+        var dOwn = Math.hypot(g.__pos[0] - loc[0], g.__pos[1] - loc[1]) / (g.__s || 1);
+        if (dOwn > 18) {
+          var near = g, bd = dOwn;
+          pawns.forEach(function (o) { if (o === g) return; var d = Math.hypot(o.__pos[0] - loc[0], o.__pos[1] - loc[1]) / (o.__s || 1); if (d < bd) { bd = d; near = o; } });
+          if (near !== g && bd <= 18 + 8) { near.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: e.isPrimary, button: e.button, buttons: e.buttons })); return; }
+        }
+        drag = { g: g, dx: g.__pos[0] - loc[0], dy: g.__pos[1] - loc[1], sx: e.clientX, sy: e.clientY, moved: false, off: g.__pos[0] < COURT_MIN_X }; // off: pionek zaczął poza boiskiem (na ławce)
         g.classList.add('dragging');
         g.setPointerCapture && g.setPointerCapture(e.pointerId);
       });
@@ -745,6 +1266,10 @@ function saveSharedTeams(teamsObj) {
         var tr = document.getElementById('trash'); tr.classList.add('show'); tr.classList.toggle('hot', overTrash(e.clientX, e.clientY)); // kosz pojawia się podczas przeciągania
         var loc = toLocal(e);
         var team = g.dataset.team, c = clampPos(team, loc[0] + drag.dx, loc[1] + drag.dy, g.__s);
+        if (drag.off && c[0] >= COURT_MIN_X) { // na boisku jest już 6 zawodników – siódmego nie da się wciągnąć
+          var onN = pawns.filter(function (o) { return o !== g && o.dataset.team === team && o.__pos[0] >= COURT_MIN_X; }).length;
+          if (onN >= MAX_ON_COURT) { c = [COURT_MIN_X - 8, c[1]]; capNote(); }
+        }
         var others = pawns.filter(function (o) { return o !== g; }).map(function (o) { return { x: o.__pos[0], y: o.__pos[1], pill: o.__pill, s: o.__s }; });
         var cur = g.__pos, cand = [c, [c[0], cur[1]], [cur[0], c[1]]], x = cur[0], y = cur[1];
         for (var i = 0; i < cand.length; i++) { // pionek nie może nachodzić na inne – ślizga się wzdłuż przeszkody
@@ -752,7 +1277,7 @@ function saveSharedTeams(teamsObj) {
         }
         g.__pos = [x, y];
         g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
-        layoutLabels();
+        layoutLabels(); queueShadow();
       });
       ['pointerup', 'pointercancel'].forEach(function (ev) {
         g.addEventListener(ev, function (e) {
@@ -992,7 +1517,7 @@ function saveSharedTeams(teamsObj) {
   function setDraw(on) {
     drawOn = on;
     $('drawBtn').classList.toggle('on', on);
-    $('side').classList.toggle('dimTools', !on);
+    $('drawCard').classList.toggle('dimTools', !on);
     svg.classList.toggle('drawing', on);
     document.body.classList.toggle('drawing', on);
     $('drawBtn').textContent = on ? '✓ Zakończ rysowanie' : '✏️ Rysuj na boisku';
@@ -1049,8 +1574,12 @@ function saveSharedTeams(teamsObj) {
     if (sr) ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (sr[t] && sr[t][n]) Object.assign(roster[t][n], sr[t][n]); });
   } catch (e) {}
   function saveRoster() { try { localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); } catch (e) {} }
-  var labels = { pawn: 'num', name: false, role: false }; // pawn: co jest na pionku – numer albo pozycja (pierwsza litera)
+  // pawn: co jest na pionku w widoku całego boiska, pawnHalf: w widoku połowy (domyślnie pozycja) – numer albo pozycja (pierwsza litera)
+  var labels = { pawn: 'num', pawnHalf: 'role', name: false, role: false };
   try { var sl = JSON.parse(localStorage.getItem(LABELS_KEY) || 'null'); if (sl) Object.assign(labels, sl); } catch (e) {}
+  var VIEW_KEY = 'mpv:tablica:view:v1', viewMode = 'half'; // 'half' – połowa boiska drużyny A (domyślnie), 'full' – całe boisko
+  try { if (localStorage.getItem(VIEW_KEY) === 'full') viewMode = 'full'; } catch (e) {}
+  function pawnKey() { return viewMode === 'half' ? 'pawnHalf' : 'pawn'; }
   function saveLabels() { try { localStorage.setItem(LABELS_KEY, JSON.stringify(labels)); } catch (e) {} }
   function saveTeams() { saveSharedTeams(teams); }
   function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
@@ -1059,16 +1588,24 @@ function saveSharedTeams(teamsObj) {
   var lblBtns = document.querySelectorAll('#lblPop [data-lbl]');
   function markLabels() {
     lblBtns.forEach(function (b) { b.classList.toggle('on', !!labels[b.dataset.lbl]); });
-    document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) { b.classList.toggle('on', b.dataset.pawn === labels.pawn); });
+    document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) { b.classList.toggle('on', b.dataset.pawn === labels[pawnKey()]); });
+    document.querySelectorAll('#viewSeg [data-view]').forEach(function (b) { b.classList.toggle('on', b.dataset.view === viewMode); });
   }
   lblBtns.forEach(function (b) {
     b.addEventListener('click', function () { labels[b.dataset.lbl] = !labels[b.dataset.lbl]; saveLabels(); markLabels(); render(); });
   });
+  function syncShadowBtn() { $('shadowBtn').classList.toggle('on', shadowOn); }
+  $('shadowBtn').addEventListener('click', function () { // cień bloku: pokazuje się, gdy piłka jest po jednej stronie siatki; włączenie pokazuje piłkę
+    shadowOn = !shadowOn; try { localStorage.setItem(SHADOW_KEY, shadowOn ? '1' : '0'); } catch (e) {} syncShadowBtn();
+    if (shadowOn && (!pst.ball.on || Math.abs(pst.ball.y - CY) < 30)) { pst.ball.on = true; if (Math.abs(pst.ball.y - CY) < 30) { pst.ball.x = CX; pst.ball.y = 300; } savePst(); render(); pushHistory(); }
+    else updateShadow();
+  });
+  syncShadowBtn();
   function syncZonesBtn() { $('zonesBtn').classList.toggle('on', zonesOn); }
   $('zonesBtn').addEventListener('click', function () { zonesOn = !zonesOn; try { localStorage.setItem(ZONES_KEY, zonesOn ? '1' : '0'); } catch (e) {} syncZonesBtn(); render(); });
   syncZonesBtn();
   document.querySelectorAll('#pawnSeg [data-pawn]').forEach(function (b) {
-    b.addEventListener('click', function () { labels.pawn = b.dataset.pawn; saveLabels(); markLabels(); render(); });
+    b.addEventListener('click', function () { labels[pawnKey()] = b.dataset.pawn; saveLabels(); markLabels(); render(); });
   });
   markLabels();
 
@@ -1081,14 +1618,10 @@ function saveSharedTeams(teamsObj) {
     var t = teamTab, tm = teams[t];
     var h = '';
     h += '<div class="row"><span class="seg" id="tTabs">' + ['a', 'b'].map(function (k) {
-      return '<button type="button" data-tab="' + k + '" class="' + (k === t ? 'on' : '') + '">' + esc(teams[k].name || defName[k]) + '</button>';
+      return '<button type="button" data-tab="' + k + '" class="' + (k === t ? 'on' : '') + '">' + esc(teams[k].name || T(defName[k])) + '</button>';
     }).join('') + '</span></div>';
-    h += '<details class="sub" open><summary>Kategoria</summary><div class="row"><span class="seg" id="tGender">' +
-      '<button type="button" data-gender="m" class="' + ((teams.a.gender || 'm') === 'm' ? 'on' : '') + '">Mężczyźni</button>' +
-      '<button type="button" data-gender="f" class="' + (teams.a.gender === 'f' ? 'on' : '') + '">Kobiety</button></span></div>' +
-      '<div class="hint">Dotyczy obu drużyn naraz (wysokość siatki w modelu 3D).</div></details>';
     h += '<details class="sub" open><summary>Nazwa i logo</summary>' +
-      '<div class="row"><input type="text" id="tName" maxlength="24" placeholder="' + esc(defName[t]) + '" value="' + esc(tm.name) + '" aria-label="Nazwa drużyny"></div>' +
+      '<div class="row"><input type="text" id="tName" maxlength="24" placeholder="' + esc(T(defName[t])) + '" value="' + esc(tm.name) + '" aria-label="Nazwa drużyny"></div>' +
       '<div class="row logoRow"><span class="logoPrev" style="' + (tm.logo ? 'background-image:url(&quot;' + esc(tm.logo) + '&quot;)' : '') + '">' + (tm.logo ? '' : '—') + '</span>' +
       '<button type="button" id="tLogoUp">Wgraj logo…</button><button type="button" id="tLogoDel"' + (tm.logo ? '' : ' disabled') + '>Usuń</button>' +
       '<input type="file" id="tLogoFile" accept="image/*" hidden></div>' +
@@ -1100,7 +1633,7 @@ function saveSharedTeams(teamsObj) {
       return '<div class="rrow" data-n="' + n + '"><span class="rb" style="background:' + esc(col) + '">' + esc(r.num) + '</span>' +
         '<select class="rn" aria-label="Numer">' + NUMS.map(function (v) { return '<option value="' + v + '"' + (v === String(r.num) ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
         '<input class="rm" type="text" maxlength="20" placeholder="Imię / nazwisko" value="' + esc(r.name) + '" aria-label="Imię i nazwisko">' +
-        '<select class="rr" aria-label="Rola">' + ROLES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === r.role ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></div>';
+        '<select class="rr" aria-label="Rola">' + ROLES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === r.role ? ' selected' : '') + '>' + (x[0] ? RL(x[0]) : x[1]) + '</option>'; }).join('') + '</select></div>';
     }).join('') + '<div class="hint">R rozgrywający · A atakujący · P przyjmujący · Ś środkowy · L libero. Wyświetlanie na pionkach: sekcja „Etykiety” na górze menu.</div></details>';
     return h;
   }
@@ -1127,7 +1660,6 @@ function saveSharedTeams(teamsObj) {
     var b = e.target.closest('button'); if (!b) return;
     var t = teamTab;
     if (b.dataset.tab) { teamTab = b.dataset.tab; renderTeamsPanel(); }
-    else if (b.dataset.gender) { teams.a.gender = teams.b.gender = b.dataset.gender; saveTeams(); renderTeamsPanel(); }
     else if (b.id === 'tLogoUp') $('tLogoFile').click();
     else if (b.id === 'tLogoDel') { teams[t].logo = ''; teamsChanged(); renderTeamsPanel(); }
     else if (b.id === 'tFloorLogo') { teams[t].floorLogo = teams[t].floorLogo === false; teamsChanged(); renderTeamsPanel(); }
@@ -1135,7 +1667,7 @@ function saveSharedTeams(teamsObj) {
   });
   $('tBox').addEventListener('input', function (e) {
     var el_ = e.target, t = teamTab, row = el_.closest('.rrow');
-    if (el_.id === 'tName') { teams[t].name = el_.value; teamsChanged(); var tb = document.querySelector('#tTabs [data-tab="' + t + '"]'); if (tb) tb.textContent = el_.value || defName[t]; }
+    if (el_.id === 'tName') { teams[t].name = el_.value; teamsChanged(); var tb = document.querySelector('#tTabs [data-tab="' + t + '"]'); if (tb) tb.textContent = el_.value || T(defName[t]); }
     else if (el_.type === 'color') { teams[t][el_.dataset.key] = el_.value; teamsChanged(); }
     else if (row && el_.classList.contains('rm')) { roster[t][row.dataset.n].name = el_.value; saveRoster(); render(); }
   });
@@ -1149,39 +1681,95 @@ function saveSharedTeams(teamsObj) {
     }
   });
 
-  $('side').classList.add('dimTools');
-  // menu boczne: wąski pasek ikon + panel rozwijany przyciskiem (jak w modelu 3D); ponowne kliknięcie lub ✕ zwija panel
-  var SEC_TITLES = { teams: 'Drużyny', pawns: 'Pionki', draw: 'Rysowanie' };
-  function openSec(name) {
-    var side = $('side');
-    if (!name || (side.dataset.open === name && !side.hidden)) { side.hidden = true; side.dataset.open = ''; }
-    else { side.dataset.open = name; side.hidden = false; $('panelTitle').textContent = SEC_TITLES[name]; }
-    document.querySelectorAll('#rail [data-sec]').forEach(function (b) { b.classList.toggle('on', !side.hidden && b.dataset.sec === side.dataset.open); });
+  $('drawCard').classList.add('dimTools');
+  // menu boczne: karty (Piłka, Drużyny, Pionki) to natywne <details> – każdą rozwija się i zwija osobno, można mieć otwartych kilka naraz
+  $('ballBtn').addEventListener('click', function () { pst.ball.on = !pst.ball.on; savePst(); render(); pushHistory(); }); // piłka: pokaż / ukryj
+  // lewe menu (Piłka/Drużyny/Pionki) można schować przyciskiem «, a przywrócić przyciskiem ☰; na telefonie domyślnie jest schowane.
+  // Rotacje i Rysowanie są od tego menu całkiem niezależne – patrz obsługa .dockPanel niżej.
+  var MENU_KEY = 'mpv:tablica:menu:v1', menuOff = matchMedia('(max-width: 820px)').matches;
+  try { var mk = localStorage.getItem(MENU_KEY); if (mk === 'off') menuOff = true; else if (mk === 'on') menuOff = false; } catch (e) {}
+  function setMenuOff(off, keep) {
+    menuOff = off; document.body.classList.toggle('menuOff', off); $('menuBtn').hidden = !off;
+    if (!keep) try { localStorage.setItem(MENU_KEY, off ? 'off' : 'on'); } catch (e) {}
     setRotH();
   }
-  $('rail').addEventListener('click', function (e) {
-    var ba = e.target.closest('[data-act="ball"]'); // piłka: pokaż / ukryj
-    if (ba) { pst.ball.on = !pst.ball.on; savePst(); render(); pushHistory(); return; }
-    var b = e.target.closest('[data-sec]'); if (!b) return;
-    if (b.dataset.sec === 'draw' && matchMedia('(max-width: 820px)').matches) { $('hdrDraw').click(); return; } // na telefonie narzędzia są w pasku u dołu
-    openSec(b.dataset.sec);
+  $('menuHide').addEventListener('click', function () { setMenuOff(true); });
+  $('menuBtn').addEventListener('click', function () { setMenuOff(false); });
+  // Rotacje i Rysowanie: dwa niezależne okna po prawej stronie, każde zwijane do swojej pionowej zakładki (klik otwiera / zamyka to jedno okno)
+  var DOCK_KEY = 'mpv:tablica:dock:';
+  function dockPanelEl(name) { return $(name === 'rot' ? 'rotDockPanel' : 'drawDockPanel'); }
+  function setDockOpen(name, open, keep) {
+    dockPanelEl(name).classList.toggle('open', open);
+    document.querySelectorAll('.dockTab[data-dock="' + name + '"]').forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+    if (!keep) try { localStorage.setItem(DOCK_KEY + name, open ? '1' : '0'); } catch (e) {}
+    // tylko jedno z okien (Rotacje / Rysowanie) na raz – razem byłoby za ciasno na typowym ekranie (Rysowanie musiałoby się przewijać)
+    if (open) { var other = name === 'rot' ? 'draw' : 'rot'; if (dockPanelEl(other).classList.contains('open')) setDockOpen(other, false, keep); }
+  }
+  function initDock(name, defOpen) {
+    var open = defOpen;
+    try { var v = localStorage.getItem(DOCK_KEY + name); if (v === '1') open = true; else if (v === '0') open = false; } catch (e) {}
+    setDockOpen(name, open, true);
+  }
+  document.querySelectorAll('.dockTab').forEach(function (b) {
+    b.addEventListener('click', function () { var n = b.dataset.dock; setDockOpen(n, !dockPanelEl(n).classList.contains('open')); });
   });
-  $('panelClose').addEventListener('click', function () { openSec(null); });
+  document.querySelectorAll('.dockClose').forEach(function (b) {
+    b.addEventListener('click', function () { setDockOpen(b.dataset.dock, false); });
+  });
+  initDock('draw', false); initDock('rot', true); // Rotacje domyślnie rozwinięte, Rysowanie domyślnie zwinięte (telefon: oba bez znaczenia – patrz CSS); draw jako pierwsze, żeby init('rot', true) nie zamknęło go przez wzajemne wykluczanie
+  // „Zresetuj wszystko”: powrót do ekranu jak po uruchomieniu – bez rysunków i zaznaczonych filtrów (zapisane drużyny, zawodnicy i język zostają)
+  $('resetAllBtn').addEventListener('click', function () {
+    if (!confirm(T('Zresetować wszystko? Rysunki, filtry, piłka, rozmiar i ustawienie pionków wrócą do stanu z uruchomienia.'))) return;
+    [POS_KEY, PSTATE_KEY, ANN_KEY, FORM_KEY, LABELS_KEY, ZONES_KEY, SHADOW_KEY, VIEW_KEY].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    location.reload();
+  });
+  // ---- okienko zawodnika (dwuklik na pionku): numer, nazwisko, rola ----
+  function closePawnPop() { $('pawnPop').hidden = true; }
+  function openPawnPop(g, cx, cy) {
+    var t = g.dataset.team, n = +g.dataset.num, r = roster[t][n], pop = $('pawnPop');
+    pop.dataset.team = t; pop.dataset.n = n;
+    $('ppTitle').textContent = T('Zawodnik') + ' · ' + (teams[t].name || T(defName[t]));
+    $('ppNum').innerHTML = NUMS.map(function (v) { return '<option value="' + v + '">' + v + '</option>'; }).join(''); $('ppNum').value = String(r.num);
+    $('ppName').value = r.name || '';
+    $('ppRole').innerHTML = ROLES.map(function (x) { return '<option value="' + x[0] + '">' + (x[0] ? RL(x[0]) + ' – ' + T(ROLE_NAME[x[0]]) : x[1]) + '</option>'; }).join(''); $('ppRole').value = r.role || '';
+    pop.hidden = false;
+    var w = pop.offsetWidth || 236, h = pop.offsetHeight || 250;
+    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, cx + 16)) + 'px'; pop.style.top = Math.max(8, Math.min(innerHeight - h - 8, cy - 30)) + 'px';
+    setTimeout(function () { $('ppName').focus(); $('ppName').select(); }, 0);
+  }
+  function ppApply() {
+    var pop = $('pawnPop'); if (pop.hidden) return;
+    var r = roster[pop.dataset.team][+pop.dataset.n];
+    r.num = $('ppNum').value; r.name = $('ppName').value; r.role = $('ppRole').value;
+    saveRoster(); render(); renderTeamsPanel();
+  }
+  ['ppNum', 'ppRole'].forEach(function (id) { $(id).addEventListener('change', ppApply); });
+  $('ppName').addEventListener('input', ppApply);
+  $('ppClose').addEventListener('click', closePawnPop);
+  $('pawnPop').addEventListener('keydown', function (e) { if (e.key === 'Escape' || e.key === 'Enter') { e.stopPropagation(); closePawnPop(); } });
+  document.addEventListener('pointerdown', function (e) { if (!$('pawnPop').hidden && !e.target.closest('#pawnPop')) closePawnPop(); }, true);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('pawnPop').hidden) closePawnPop(); });
   // ---------- Przybliżanie / oddalanie (przyciski, kółko myszy, szczypanie; przesuwanie – przeciąganie tła) ----------
   var FULL = { x: -140, y: -60, w: 680, h: 1020 }, view = { cx: FULL.x + FULL.w / 2, cy: FULL.y + FULL.h / 2, z: 1 }, ZMAX = 4;
+  // widok połowy: wycinek planszy z połową wybranej drużyny (od siatki do nazwy drużyny i logo) – przy 100% wypełnia pole planszy
+  // zawsze dolna połowa (drużyna A), plus 4 m boiska rywala za siatką; dalszą część rywala i jego pionki ukrywamy
+  var HALF = { x: -140, y: 290, w: 680, h: 646 };
+  var SHOT = { x: -20, y: -60, w: 540, h: 1020 }; // obszar zrzutu ekranu: boisko z marginesem, bez ławek
+  function baseView() { return viewMode === 'half' ? HALF : FULL; } // obszar widoczny przy przybliżeniu 100%
+  function resetView() { var B = baseView(); view.cx = B.x + B.w / 2; view.cy = B.y + B.h / 2; view.z = 1; }
   function clampView() {
-    var w = FULL.w / view.z, h = FULL.h / view.z;
-    view.cx = Math.max(FULL.x + w / 2, Math.min(FULL.x + FULL.w - w / 2, view.cx));
-    view.cy = Math.max(FULL.y + h / 2, Math.min(FULL.y + FULL.h - h / 2, view.cy));
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z; // przy oddaleniu poza obszar bazowy widok jest wyśrodkowany
+    view.cx = w >= B.w ? B.x + B.w / 2 : Math.max(B.x + w / 2, Math.min(B.x + B.w - w / 2, view.cx));
+    view.cy = h >= B.h ? B.y + B.h / 2 : Math.max(B.y + h / 2, Math.min(B.y + B.h - h / 2, view.cy));
   }
   function applyView() {
     clampView();
-    var w = FULL.w / view.z, h = FULL.h / view.z;
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z;
     svg.setAttribute('viewBox', (view.cx - w / 2).toFixed(1) + ' ' + (view.cy - h / 2).toFixed(1) + ' ' + w.toFixed(1) + ' ' + h.toFixed(1));
     var pct = document.getElementById('zoomReset'); if (pct) pct.textContent = Math.round(view.z * 100) + '%';
   }
   function zoomAt(clientX, clientY, factor) { // przybliża wokół punktu pod kursorem
-    var nz = Math.max(1, Math.min(ZMAX, view.z * factor)); if (nz === view.z) return;
+    var nz = Math.max(viewMode === 'half' ? 0.75 : 1, Math.min(ZMAX, view.z * factor)); if (nz === view.z) return;
     var ctm = svg.getScreenCTM(), p = ctm ? ctm.inverse() : null;
     var bx = p ? p.a * clientX + p.c * clientY + p.e : view.cx, by = p ? p.b * clientX + p.d * clientY + p.f : view.cy;
     view.z = nz; applyView();
@@ -1191,7 +1779,7 @@ function saveSharedTeams(teamsObj) {
   function zoomCenter(factor) { var r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor); }
   document.getElementById('zoomIn').addEventListener('click', function () { zoomCenter(1.25); });
   document.getElementById('zoomOut').addEventListener('click', function () { zoomCenter(1 / 1.25); });
-  document.getElementById('zoomReset').addEventListener('click', function () { view.cx = FULL.x + FULL.w / 2; view.cy = FULL.y + FULL.h / 2; view.z = 1; applyView(); });
+  document.getElementById('zoomReset').addEventListener('click', function () { resetView(); applyView(); });
   svg.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
   var ptrs = {};
   svg.addEventListener('pointerdown', function (e) {
@@ -1220,6 +1808,12 @@ function saveSharedTeams(teamsObj) {
     var clone = svg.cloneNode(true);
     var layers = Array.prototype.filter.call(clone.children, function (c) { return c.tagName === 'g' && c.getAttribute('pointer-events') === 'none'; });
     layers.slice(1).forEach(function (g) { g.parentNode.removeChild(g); }); // bez uchwytów i podglądu rysowania
+    // ławki (wraz z pionkami na nich) nie trafiają na zrzut
+    Array.prototype.slice.call(clone.querySelectorAll('.bench, .benchTxt')).forEach(function (n) { n.parentNode.removeChild(n); });
+    Array.prototype.slice.call(clone.querySelectorAll('.pawn')).forEach(function (p) {
+      var m = /translate\(\s*(-?[\d.]+)/.exec(p.getAttribute('transform') || '');
+      if (m && parseFloat(m[1]) < -10) p.parentNode.removeChild(p);
+    });
     var cs = getComputedStyle(document.documentElement);
     function v(n, d) { return (cs.getPropertyValue(n) || '').trim() || d; }
     var style = document.createElementNS(NS, 'style');
@@ -1233,7 +1827,7 @@ function saveSharedTeams(teamsObj) {
       '.teamLabel{font-size:18px;font-weight:800;font-style:italic;text-transform:uppercase;text-anchor:middle}';
     clone.insertBefore(style, clone.firstChild);
     // zawsze cały parkiet (z marginesem) – ramką kadrowania wybierasz potem dowolny fragment, także oddalony
-    var vb = [FULL.x, FULL.y, FULL.w, FULL.h], k = 2000 / Math.max(FULL.w, FULL.h);
+    var vb = [SHOT.x, SHOT.y, SHOT.w, SHOT.h], k = 2000 / Math.max(SHOT.w, SHOT.h); // obszar zrzutu: bez pasa z ławką
     clone.setAttribute('viewBox', vb.join(' '));
     var W = Math.round(vb[2] * k), H = Math.round(vb[3] * k);
     clone.setAttribute('xmlns', NS); clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
@@ -1244,7 +1838,7 @@ function saveSharedTeams(teamsObj) {
       var g = cv.getContext('2d'); g.fillStyle = v('--boardBg', '#2f6b8a'); g.fillRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H);
       cb(cv, W, H);
     };
-    img.onerror = function () { alert('Nie udało się wykonać zrzutu.'); };
+    img.onerror = function () { alert(T('Nie udało się wykonać zrzutu.')); };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
   }
   function downloadBlob(blob, name) {
@@ -1274,6 +1868,195 @@ function saveSharedTeams(teamsObj) {
   }
   // Po wybraniu PNG / PDF otwiera się okno z kadrowaniem; do zapisanego obrazu dodawany jest znak wodny „mPro Volley 3D”.
   var WATERMARK = 'mPro Volley 3D', shotCv = null, shotKind = 'png', crop = { x: 0, y: 0, w: 0, h: 0 }, shotDisp = { w: 0, h: 0, k: 1 };
+  // ---- Widok 3D zza drużyny A: model3d.html w ukrytej ramce renderuje scenę (siatka, zawodnicy) z pozycji pionków i odsyła obraz ----
+  var frame3d = null, ready3d = false, pend3d = null, rid3d = 0, timer3d = 0;
+  function busy3d(on, txt, pct) { // pct (0–100): pasek postępu w tle okienka
+    var b = $('busy3d');
+    if (on) b.textContent = txt || T('Generowanie widoku 3D…');
+    b.classList.toggle('prog', on && pct != null); if (pct != null) b.style.setProperty('--p', Math.max(0, Math.min(100, pct)) + '%');
+    b.hidden = !on;
+  }
+  function drop3d() { if (frame3d) { frame3d.remove(); frame3d = null; ready3d = false; } } // ukryta ramka nie pracuje w tle po wygenerowaniu obrazu
+  function fail3d() { clearTimeout(timer3d); pend3d = null; anim3d = null; busy3d(false); drop3d(); alert(T('Nie udało się wygenerować widoku 3D.')); }
+  var angle3d = 30, zoom3d = 1, pan3d = 0, // dodatkowe przesunięcie kamery (▲▼); kadr sam mieści całą naszą połowę z 2 m za linią końcową
+ queued3d = false, angleTimer = 0; // kąt kamery (stopnie nad poziomem) i przybliżenie – suwak i przyciski przy podglądzie
+  function render3dAngle() { // nowy obraz po zmianie kąta / przybliżenia (kamera zmienia się w ukrytej ramce, która żyje do zamknięcia podglądu)
+    if (!frame3d || !ready3d || anim3d) return;
+    if (pend3d) { queued3d = true; return; }
+    pend3d = ++rid3d; clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+    frame3d.contentWindow.postMessage({ type: 'mpv-render', id: pend3d, angleOnly: true, angle: angle3d, zoom: zoom3d, pan: pan3d, W: 1200, H: 900, ss: 2 }, '*');
+  }
+  function queue3d() { clearTimeout(angleTimer); angleTimer = setTimeout(render3dAngle, 60); }
+  $('angleSlider').addEventListener('input', function () { angle3d = +this.value; $('angleVal').textContent = angle3d + '°'; queue3d(); });
+  function setZoom3d(z) { zoom3d = Math.max(0.5, Math.min(3, Math.round(z * 100) / 100)); $('z3Val').textContent = Math.round(zoom3d * 100) + '%'; queue3d(); }
+  function setPan3d(p) { pan3d = Math.max(-10, Math.min(10, Math.round(p * 10) / 10)); queue3d(); } // przesunięcie kamery wzdłuż boiska (m), + = w stronę siatki
+  function holdBtn(id, fn) { // przycisk ze strzałką: klik = jeden krok, przytrzymanie = powtarzanie
+    var b = $(id), t = 0, iv = 0;
+    function stop() { clearTimeout(t); clearInterval(iv); }
+    b.addEventListener('pointerdown', function () { fn(); stop(); t = setTimeout(function () { iv = setInterval(fn, 120); }, 350); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, stop); });
+  }
+  holdBtn('p3Fwd', function () { setPan3d(pan3d + 0.5); });
+  holdBtn('p3Back', function () { setPan3d(pan3d - 0.5); });
+  $('z3In').addEventListener('click', function () { setZoom3d(zoom3d * 1.2); });
+  $('z3Out').addEventListener('click', function () { setZoom3d(zoom3d / 1.2); });
+  $('z3Val').addEventListener('click', function () { setZoom3d(1); });
+  $('shotStage').addEventListener('wheel', function (e) { if (shotKind !== '3d') return; e.preventDefault(); setZoom3d(zoom3d * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); }, { passive: false });
+  function payload3d(id) {
+    var pos = positionsNow(), list = [];
+    ['a', 'b'].forEach(function (t) {
+      var mode = formState.mode[t], items = [];
+      for (var n = 1; n <= 7; n++) {
+        var p = pos[t][n], x = (CY - p[1]) / UNIT, z = (p[0] - CX) / UNIT, r = roster[t][n]; // tablica → układ modelu 3D (x wzdłuż boiska, A przy x < 0)
+        var ax = t === 'a' ? x : -x, pose = 'stand'; // ax = odległość od siatki po stronie własnej (ujemna dla A)
+        if (mode === 'def') pose = ax > -3.4 ? 'block' : 'defense'; else if (mode === 'recv') pose = ax < -3.4 ? 'pass' : 'stand';
+        var pk = labels[pawnKey()], txt = pk === 'role' ? RL(r.role || '–') : pk === 'none' ? ' ' : String(r.num); // napis na pionku jak na tablicy: numer / litera pozycji / nic
+        var pi = pillInfo(t, n); // etykieta przy pionku (nazwisko / pozycja) – tak samo jak na tablicy
+        items.push({ id: t + (n - 1), x: x, z: z, num: txt, name: r.name || '', pose: pose, r: 18 * pawnScale(t, n) / UNIT, r2: 18 * pawnScale(t, n) / UNIT, hidden: isGone(t, n) || t === 'b', // widok 3D tylko z pionkami drużyny A
+          label: pi ? pi.lines.map(function (l) { return { t: l.t, b: !!l.b }; }) : null });
+      }
+      // pionki, które na tablicy się stykają (np. blok przy siatce), mają się stykać także po zmniejszeniu: grupa jest skalowana wokół swojego środka
+      // „stykają się” = odstęp środków do 1,3 × suma promieni (pionki na tablicy nie mogą być bliżej niż ok. 1,05 ×, a przy ślizganiu po sobie zostaje szczelina)
+      var vis = items.filter(function (q) { return !q.hidden && q.z >= -5.7 && Math.abs(q.x) < 10.8; }), par = vis.map(function (_, i) { return i; }), edges = [];
+      var find = function (i) { while (par[i] !== i) i = par[i] = par[par[i]]; return i; };
+      for (var i = 0; i < vis.length; i++) for (var j = i + 1; j < vis.length; j++)
+        if (Math.hypot(vis[i].x - vis[j].x, vis[i].z - vis[j].z) < (vis[i].r2 + vis[j].r2) * 1.3) { par[find(i)] = find(j); edges.push([i, j]); }
+      // skrajne ustawienie przy antence: pionek w strefie 3 m przy siatce dociśnięty do linii bocznej (na tablicy nie może wyjść poza boisko)
+      var ZH = 4.5; // połowa szerokości boiska = położenie antenki (m)
+      vis.forEach(function (q) { q.ant = (q.x >= -3.3 && q.x <= 0 && Math.abs(q.z) >= ZH - q.r2 - 0.1) ? (q.z < 0 ? -1 : 1) : 0; });
+      var groups = {}; vis.forEach(function (q, i) { (groups[find(i)] = groups[find(i)] || []).push(i); });
+      Object.keys(groups).forEach(function (k) {
+        var g = groups[k]; if (g.length < 2) return;
+        // pionki w 3D mają taki sam rozmiar jak na tablicy, więc pozycje zostają; sąsiedzi w bloku są tylko dosuwani do dokładnego zetknięcia
+        for (var it = 0; it < 60; it++) edges.forEach(function (e) { // każda para sąsiadów ma się stykać dokładnie (odstęp środków = suma promieni)
+          var a = vis[e[0]], b = vis[e[1]]; if (find(e[0]) !== +k) return;
+          var dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1e-6, c = (d - (a.r2 + b.r2)) / 2 / d;
+          a.x += dx * c; a.z += dz * c; b.x -= dx * c; b.z -= dz * c;
+        });
+      });
+      // blok przy antence = „zamknięta prosta”: zewnętrzny pionek dotyka antenki (płaszczyzny linii bocznej), reszta bloku dosunięta do niego w stronę środka
+      var gr = {}; vis.forEach(function (q, i) { (gr[find(i)] = gr[find(i)] || []).push(q); });
+      Object.keys(gr).forEach(function (k) {
+        var g = gr[k], a = g.filter(function (q) { return q.ant; }); if (!a.length) return;
+        var q0 = a.reduce(function (m, q) { return Math.abs(q.z) > Math.abs(m.z) ? q : m; });
+        var dz = q0.ant * (ZH - q0.r2) - q0.z; g.forEach(function (q) { q.z += dz; });
+      });
+      items.forEach(function (q) { list.push(q); });
+    });
+    var tm = {}; ['a', 'b'].forEach(function (t) { tm[t] = { jersey: teams[t].jersey, name: teams[t].name || '', logo: teams[t].logo || '', floorLogo: teams[t].floorLogo !== false }; });
+    updateShadow(); // cień bloku zgodnie z filtrem na tablicy (shState = null, gdy filtr wyłączony lub brak piłki po jednej ze stron)
+    return { type: 'mpv-render', id: id, W: 1200, H: 900, ss: 2, angle: angle3d, zoom: zoom3d, pan: pan3d, zones: !!zonesOn, shadow: shState, drawings: drawings3d, players: list, teams: tm, ball: pst.ball.on ? { x: (CY - pst.ball.y) / UNIT, z: (pst.ball.x - CX) / UNIT } : null };
+  }
+  window.addEventListener('message', function (ev) {
+    var d = ev.data; if (!d || !frame3d || ev.source !== frame3d.contentWindow) return;
+    if (d.type === 'mpv-ready') { ready3d = true; if (pend3d) { if (drawingsPending) waitSend3d = true; else frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); } }
+    else if (d.type === 'mpv-rendered' && anim3d && d.id >= anim3d.base && d.id <= anim3d.base + anim3d.n) { // klatka animacji (wszystkie zlecone naraz, wracają po kolei)
+      if (d.error || !d.blob) { fail3d(); return; }
+      anim3d.frames[d.id - anim3d.base] = URL.createObjectURL(d.blob); anim3d.got++;
+      clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+      var pct = Math.round(100 * anim3d.got / (anim3d.n + 1)); busy3d(true, T('Generowanie animacji…') + ' ' + pct + '%', pct);
+      if (anim3d.got > anim3d.n) finishAnim3d();
+    }
+    else if (d.type === 'mpv-rendered' && d.id === pend3d) {
+      clearTimeout(timer3d); pend3d = null;
+      if (d.error || !(d.blob || d.dataUrl)) { fail3d(); return; }
+      var img = new Image(), imgUrl = d.blob ? URL.createObjectURL(d.blob) : d.dataUrl;
+      img.onload = function () {
+        if (d.blob) URL.revokeObjectURL(imgUrl);
+        var cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0);
+        busy3d(false);
+        if (shotCv && shotKind === '3d' && !$('shotModal').hidden) { shotCv = cv; $('shotCanvas').getContext('2d').drawImage(cv, 0, 0); } // zmiana kąta: ten sam podgląd i kadr
+        else openShot(cv, '3d');
+        if (queued3d) { queued3d = false; render3dAngle(); }
+      };
+      img.onerror = fail3d; img.src = imgUrl;
+    }
+  });
+  // ---- Animacja: kamera przechodzi od widoku z góry (90°) do 10° i z powrotem. Renderujemy tylko drogę w dół (z powrotem klatki
+  // odtwarzamy wstecz), więc klatek jest o połowę mniej. Animacja gra w oknie podglądu; zapis do pliku wideo jest opcjonalny. ----
+  var anim3d = null, animPlay = null, ANIM = { W: 1200, H: 900, fps: 24, steps: 72 }; // 73 klatki w jedną stronę → 6 s w pętli (w dół i w górę)
+  function animAngle(i, n) { return 90 - 80 * (1 - Math.cos(Math.PI * i / n)) / 2; } // 90° → 10° z łagodnym startem i końcem
+  function animSeq(n) { var s = [], i; for (i = 0; i < n; i++) s.push(i); for (i = n - 2; i > 0; i--) s.push(i); return s; } // kolejność odtwarzania: w dół i z powrotem w górę
+  function startAnim3d() { // wszystkie klatki zlecamy naraz: ukryta ramka renderuje je jedna po drugiej bez przerw, a kodowanie JPEG idzie w tle
+    if (anim3d || pend3d || !frame3d || !ready3d) return;
+    var n = ANIM.steps, base = rid3d + 1; rid3d += n + 1;
+    anim3d = { n: n, base: base, got: 0, frames: [] }; pend3d = base;
+    busy3d(true, T('Generowanie animacji…') + ' 0%', 0); clearTimeout(timer3d); timer3d = setTimeout(fail3d, 30000);
+    for (var i = 0; i <= n; i++) frame3d.contentWindow.postMessage({ type: 'mpv-render', id: base + i, angleOnly: true, angle: animAngle(i, n), zoom: zoom3d, pan: pan3d, W: ANIM.W, H: ANIM.H, ss: 2, fmt: 'jpeg', keep: true, last: i === n }, '*');
+  }
+  function finishAnim3d() { // wszystkie klatki gotowe: otwieramy okno z odtwarzaniem
+    var frames = anim3d.frames; anim3d = null; pend3d = null; clearTimeout(timer3d); busy3d(false);
+    animPlay = { urls: frames, imgs: frames.map(function (u) { var im = new Image(); im.src = u; return im; }), seq: animSeq(frames.length), pos: 0, prev: 0, last: -1, playing: true, raf: 0, saving: false };
+    var cv = $('animCanvas'); cv.width = ANIM.W; cv.height = ANIM.H;
+    $('animPlay').textContent = T('⏸ Pauza'); $('animModal').hidden = false;
+    animPlay.raf = requestAnimationFrame(animTick);
+  }
+  function drawAnimFrame(g, im) { g.drawImage(im, 0, 0, ANIM.W, ANIM.H); drawWatermark(g, ANIM.W, ANIM.H); }
+  function animTick(ts) {
+    var p = animPlay; if (!p) return;
+    if (p.prev && p.playing) p.pos += (ts - p.prev) / 1000;
+    p.prev = ts;
+    var idx = p.seq[Math.floor(p.pos * ANIM.fps) % p.seq.length], im = p.imgs[idx];
+    if (idx !== p.last && im.complete && im.naturalWidth) { drawAnimFrame($('animCanvas').getContext('2d'), im); p.last = idx; }
+    p.raf = requestAnimationFrame(animTick);
+  }
+  function closeAnim3d() { if (animPlay) { cancelAnimationFrame(animPlay.raf); animPlay.urls.forEach(function (u) { URL.revokeObjectURL(u); }); animPlay = null; } $('animModal').hidden = true; }
+  $('animPlay').addEventListener('click', function () { if (!animPlay) return; animPlay.playing = !animPlay.playing; this.textContent = T(animPlay.playing ? '⏸ Pauza' : '▶ Odtwórz'); });
+  $('animClose').addEventListener('click', closeAnim3d);
+  $('animX').addEventListener('click', closeAnim3d);
+  $('animModal').addEventListener('mousedown', function (e) { if (e.target === $('animModal')) closeAnim3d(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('animModal').hidden) { e.stopPropagation(); closeAnim3d(); } }, true);
+  function saveAnim3d() { // opcjonalny zapis do pliku wideo (WebM / MP4 – zależnie od przeglądarki); nagranie trwa tyle co animacja
+    var p = animPlay; if (!p || p.saving) return;
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { alert(T('Ta przeglądarka nie obsługuje zapisu animacji.')); return; }
+    p.saving = true; busy3d(true, T('Zapisywanie animacji…'));
+    var cv = document.createElement('canvas'); cv.width = ANIM.W; cv.height = ANIM.H; var g = cv.getContext('2d');
+    var mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
+    var stream = cv.captureStream(0), track = stream.getVideoTracks()[0], chunks = [];
+    var rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12000000 } : {});
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = function () {
+      var type = rec.mimeType || mime || 'video/webm', d = new Date();
+      var name = 'tablica-3d-animacja-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + (/mp4/.test(type) ? '.mp4' : '.webm');
+      downloadBlob(new Blob(chunks, { type: type }), name); busy3d(false); p.saving = false;
+    };
+    var i = 0, t0 = 0; // tempo wg zegara – stała liczba klatek na sekundę
+    (function draw() {
+      if (i >= p.seq.length) { setTimeout(function () { rec.stop(); }, 1000 / ANIM.fps); return; }
+      var im = p.imgs[p.seq[i]], pct = Math.round(100 * i / p.seq.length);
+      busy3d(true, T('Zapisywanie animacji…') + ' ' + pct + '%', pct);
+      im.decode().then(function () {
+        if (!t0) t0 = performance.now();
+        drawAnimFrame(g, im); if (track.requestFrame) track.requestFrame();
+        i++; setTimeout(draw, Math.max(0, t0 + i * 1000 / ANIM.fps - performance.now()));
+      }).catch(function () { rec.stop(); });
+    })();
+    rec.start();
+  }
+  $('animSave').addEventListener('click', saveAnim3d);
+  $('shotAnim').addEventListener('click', startAnim3d);
+  // rysunki z tablicy (pióro, linie, strzałki, kształty, teksty) jako przezroczysty obraz całej planszy – w 3D leżą na podłodze
+  var drawings3d = null, drawingsPending = false, waitSend3d = false;
+  function annotsImage(cb) {
+    if (!annots.length || !annotG) { cb(null); return; }
+    var xml = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -60 680 1020" width="1360" height="2040"><style>text{font-family:"Exo 2",system-ui,Arial,sans-serif}</style>' + new XMLSerializer().serializeToString(annotG) + '</svg>';
+    var img = new Image();
+    img.onload = function () { var cv = document.createElement('canvas'); cv.width = 1360; cv.height = 2040; cv.getContext('2d').drawImage(img, 0, 0); cb(cv.toDataURL('image/png')); };
+    img.onerror = function () { cb(null); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+  }
+  function export3D() {
+    if (pend3d) return;
+    drawings3d = null; drawingsPending = true; waitSend3d = false;
+    annotsImage(function (u) { drawings3d = u; drawingsPending = false; if (waitSend3d && frame3d && ready3d && pend3d && !anim3d) { waitSend3d = false; frame3d.contentWindow.postMessage(payload3d(pend3d), '*'); } });
+    pend3d = ++rid3d; busy3d(true);
+    timer3d = setTimeout(fail3d, 60000);
+    if (!frame3d) {
+      frame3d = document.createElement('iframe'); frame3d.src = 'model3d.html?v=' + Date.now(); // za każdym razem świeża kopia (bez starej wersji z pamięci podręcznej przeglądarki) frame3d.setAttribute('aria-hidden', 'true'); frame3d.tabIndex = -1;
+      frame3d.style.cssText = 'position:fixed;left:-10000px;top:0;width:1280px;height:720px;border:0;visibility:hidden;pointer-events:none';
+      document.body.appendChild(frame3d);
+    } else if (ready3d) frame3d.contentWindow.postMessage(payload3d(pend3d), '*');
+  }
   function exportBoard(kind) { boardImage(function (cv) { openShot(cv, kind); }); }
   function wmFont(cropW) { return Math.max(20, Math.round(cropW * 0.045)); }
   function drawWatermark(g, W, H) {
@@ -1295,30 +2078,36 @@ function saveSharedTeams(teamsObj) {
     shotCv = cv; shotKind = kind;
     var cvs = $('shotCanvas'); cvs.width = cv.width; cvs.height = cv.height; cvs.getContext('2d').drawImage(cv, 0, 0);
     $('shotModal').hidden = false;
-    var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
+    $('shotAnim').hidden = kind !== '3d';
+    $('angleBox').hidden = kind !== '3d'; // suwak kąta widoku tylko przy widoku 3D
+    var maxW = Math.max(240, Math.min(innerWidth * 0.88, 900) - (kind === '3d' ? 60 : 0)), maxH = Math.max(240, innerHeight * 0.6), k = Math.max(cv.width / maxW, cv.height / maxH);
     shotDisp = { w: cv.width / k, h: cv.height / k, k: k };
     cvs.style.width = shotDisp.w + 'px'; cvs.style.height = shotDisp.h + 'px';
-    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px';
+    $('shotStage').style.width = shotDisp.w + 'px'; $('shotStage').style.height = shotDisp.h + 'px'; $('angleBox').style.height = Math.max(shotDisp.h, 300) + 'px'; // na niskim oknie panel sterowania nie wychodzi poza ramkę
     $('shotKind').textContent = kind.toUpperCase();
-    screenCrop();
+    $('shotView').hidden = kind === '3d'; // „Jak na ekranie” ma sens tylko dla planszy 2D
+    if (kind === '3d') wholeCrop(); else screenCrop();
   }
   function wholeCrop() { crop = { x: 0, y: 0, w: shotDisp.w, h: shotDisp.h }; placeCrop(); }
   function screenCrop() { // ramka = fragment widoczny teraz na ekranie (przy przybliżeniu 100% – cały parkiet)
-    var w = FULL.w / view.z, h = FULL.h / view.z, sx = shotDisp.w / FULL.w, sy = shotDisp.h / FULL.h;
-    crop = { x: (view.cx - w / 2 - FULL.x) * sx, y: (view.cy - h / 2 - FULL.y) * sy, w: w * sx, h: h * sy }; placeCrop();
+    var B = baseView(), w = B.w / view.z, h = B.h / view.z, sx = shotDisp.w / SHOT.w, sy = shotDisp.h / SHOT.h;
+    var x0 = Math.max(SHOT.x, view.cx - w / 2), x1 = Math.min(SHOT.x + SHOT.w, view.cx + w / 2); // część widoczna na ekranie, która mieści się w obrazie
+    var y0 = Math.max(SHOT.y, view.cy - h / 2), y1 = Math.min(SHOT.y + SHOT.h, view.cy + h / 2);
+    if (x1 - x0 < 10 || y1 - y0 < 10) { wholeCrop(); return; }
+    crop = { x: (x0 - SHOT.x) * sx, y: (y0 - SHOT.y) * sy, w: (x1 - x0) * sx, h: (y1 - y0) * sy }; placeCrop();
   }
-  function closeShot() { $('shotModal').hidden = true; shotCv = null; }
+  function closeShot() { $('shotModal').hidden = true; shotCv = null; clearTimeout(timer3d); pend3d = null; queued3d = false; anim3d = null; busy3d(false); closeAnim3d(); drop3d(); } // zamknięcie podglądu kończy też ukrytą ramkę 3D
   function saveShot() {
     if (!shotCv) return;
     var k = shotDisp.k, sx = Math.round(crop.x * k), sy = Math.round(crop.y * k);
     var sw = Math.max(1, Math.min(shotCv.width - sx, Math.round(crop.w * k))), sh = Math.max(1, Math.min(shotCv.height - sy, Math.round(crop.h * k)));
     var kind = shotKind, d = new Date();
-    var name = 'tablica-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    var name = (kind === '3d' ? 'tablica-3d-' : 'tablica-') + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     var fontsReady = (document.fonts && document.fonts.load) ? document.fonts.load('italic 800 24px "Exo 2"').catch(function () {}) : Promise.resolve();
     fontsReady.then(function () {
       var out = document.createElement('canvas'); out.width = sw; out.height = sh;
       var g = out.getContext('2d'); g.drawImage(shotCv, sx, sy, sw, sh, 0, 0, sw, sh); drawWatermark(g, sw, sh);
-      if (kind === 'png') { out.toBlob(function (b) { downloadBlob(b, name + '.png'); closeShot(); }, 'image/png'); return; }
+      if (kind === 'png' || kind === '3d') { out.toBlob(function (b) { downloadBlob(b, name + '.png'); closeShot(); }, 'image/png'); return; }
       out.toBlob(function (b) {
         var fr = new FileReader();
         fr.onload = function () { downloadBlob(buildPdf(new Uint8Array(fr.result), sw, sh), name + '.pdf'); closeShot(); };
@@ -1356,7 +2145,7 @@ function saveSharedTeams(teamsObj) {
   $('shotSave').addEventListener('click', saveShot);
   $('shotModal').addEventListener('mousedown', function (e) { if (e.target === $('shotModal')) closeShot(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('shotModal').hidden) closeShot(); });
-  document.querySelectorAll('#shotSeg [data-shot]').forEach(function (b) { b.addEventListener('click', function () { exportBoard(b.dataset.shot); }); });
+  document.querySelectorAll('#shotSeg [data-shot]').forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.shot === '3d') export3D(); else exportBoard(b.dataset.shot); }); });
   // ---------- Rotacje i ustawienie drużyny ----------
   // Logika jak w modelu 3D: rotacja = strefa rozgrywającego (P1…P6), ustawienie = bazowo / przyjęcie / obrona.
   // Środkowi (sloty 3 i 6 w składzie) schodzą z tylnej linii na ławkę, a ich miejsce zajmuje libero.
@@ -1422,7 +2211,7 @@ function saveSharedTeams(teamsObj) {
         var x = f[0] + (to[0] - f[0]) * e, y = f[1] + (to[1] - f[1]) * e;
         g.__pos = [x, y]; g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
       });
-      layoutLabels();
+      layoutLabels(); queueShadow();
       if (k < 1) requestAnimationFrame(step); else { tween = null; savePositions(); }
     }
     requestAnimationFrame(step);
@@ -1444,7 +2233,7 @@ function saveSharedTeams(teamsObj) {
     document.querySelectorAll('#rotGrid button').forEach(function (b) { b.classList.toggle('on', +b.dataset.rotn === formState.rot[t]); });
     document.querySelectorAll('#fModeSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.fmode === formState.mode[t]); });
     document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
-      b.classList.toggle('on', b.dataset.fteam === t); b.querySelector('.full').textContent = teams[b.dataset.fteam].name || defName[b.dataset.fteam];
+      b.classList.toggle('on', b.dataset.fteam === t); b.querySelector('.full').textContent = teams[b.dataset.fteam].name || T(defName[b.dataset.fteam]);
     });
   }
   [1, 6, 5, 4, 3, 2].forEach(function (r) {
@@ -1458,24 +2247,42 @@ function saveSharedTeams(teamsObj) {
     b.addEventListener('click', function () { var t = formState.fteam; applyFormation(t, formState.rot[t], b.dataset.fmode); });
   });
   document.querySelectorAll('#fTeamSeg button').forEach(function (b) {
-    b.addEventListener('click', function () { formState.fteam = b.dataset.fteam; saveForm(); syncFormUI(); });
+    b.addEventListener('click', function () {
+      formState.fteam = b.dataset.fteam; saveForm(); syncFormUI();
+    });
   });
+  // filtr „Widok”: całe boisko (domyślnie) albo połowa boiska – zawsze dolna, czyli drużyna A (przełącznik A / B jest wtedy ukryty)
+  function syncViewMode() {
+    if (viewMode === 'half' && formState.fteam !== 'a') { formState.fteam = 'a'; saveForm(); syncFormUI(); }
+    document.body.classList.toggle('half', viewMode === 'half');
+  }
+  function setViewMode(m) {
+    if (m === viewMode) return;
+    viewMode = m; try { localStorage.setItem(VIEW_KEY, m); } catch (e) {}
+    syncViewMode(); resetView(); markLabels(); render();
+  }
+  document.querySelectorAll('#viewSeg [data-view]').forEach(function (b) { b.addEventListener('click', function () { setViewMode(b.dataset.view); }); });
+  syncViewMode(); resetView(); markLabels();
 
   $('hdrMore').addEventListener('click', function () { var o = document.querySelector('header').classList.toggle('open'); $('hdrMore').setAttribute('aria-expanded', o); });
   // rysowanie na telefonie: karta narzędzi przenosi się do paska u dołu (zamiast paska rotacji), włącza ją przycisk ✏️ w nagłówku
   var mqPhone = matchMedia('(max-width: 820px)');
-  function placeDrawCard() { if (mqPhone.matches) $('drawDock').appendChild($('drawCard')); else $('side').insertBefore($('drawCard'), $('teamsCard')); setRotH(); }
+  function placeDrawCard() { // na telefonie: arkusz #drawDock (przycisk ✏️); na pulpicie: własne okno Rysowanie (zakładka po prawej) – zawsze w pełni rozwinięte, bo zwija się już samo okno
+    if (mqPhone.matches) $('drawDock').appendChild($('drawCard')); else $('drawDockBody').appendChild($('drawCard'));
+    $('drawCard').open = true;
+    setRotH();
+  }
   if (mqPhone.addEventListener) mqPhone.addEventListener('change', placeDrawCard); else mqPhone.addListener(placeDrawCard);
-  $('hdrDraw').addEventListener('click', function () { $('drawBtn').click(); if (drawOn) $('side').hidden = true; setRotH(); });
+  $('hdrDraw').addEventListener('click', function () { $('drawBtn').click(); if (drawOn) setMenuOff(true, true); setRotH(); });
   // pasek rotacji na telefonie: zwinięty (drużyna, rotacja, ustawienie) / rozwinięty (P1–P6 i reset)
   $('rbMore').addEventListener('click', function () { var o = $('rotBar').classList.toggle('open'); $('rbMore').setAttribute('aria-expanded', o); setRotH(); });
-  function setRotH() { document.documentElement.style.setProperty('--rotH', $('rotBar').offsetHeight + 'px'); }
+  function setRotH() { document.documentElement.style.setProperty('--rotH', (mqPhone.matches ? $('rotDockPanel').offsetHeight : 0) + 'px'); } // na telefonie arkusz menu stoi nad paskiem rotacji; na pulpicie Rotacje mają własne okno
   // wysokość nagłówka (rozwinięte menu jest wyższe) – boczny pasek na telefonie zaczyna się pod nim i nie zasłania menu
   function setHdrH() { document.documentElement.style.setProperty('--hdrH', document.querySelector('header').offsetHeight + 'px'); }
   if (window.ResizeObserver) new ResizeObserver(setHdrH).observe(document.querySelector('header')); else addEventListener('resize', setHdrH);
   setHdrH();
-  if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotBar')); else addEventListener('resize', setRotH);
-  if (matchMedia('(max-width: 820px)').matches) $('side').hidden = true; // na telefonie menu boczne otwiera przycisk ☰ Panel
+  if (window.ResizeObserver) new ResizeObserver(setRotH).observe($('rotDockPanel')); else addEventListener('resize', setRotH);
+  setMenuOff(menuOff, true); // stan menu z poprzedniej wizyty (na telefonie domyślnie schowane – otwiera je przycisk ☰)
   setRotH(); placeDrawCard();
   // ---------- Gotowe kolory (zamiast wpisywania hex) ----------
   var PALETTE = ['#ff3b30', '#ff9500', '#ffd60a', '#34c759', '#00c7be', '#0a84ff', '#af52de', '#ff2d92', '#ffffff', '#1c1c1e'];
@@ -1529,13 +2336,23 @@ function saveSharedTeams(teamsObj) {
   $('gsSmaller').addEventListener('click', function () { pst.gs = Math.max(0.6, Math.round((pst.gs - 0.1) * 100) / 100); commit(); });
   $('gsReset').addEventListener('click', function () { pst.gs = 1; commit(); });
   $('restoreGone').addEventListener('click', function () { ['a', 'b'].forEach(function (t) { for (var n = 1; n <= 7; n++) if (isGone(t, n)) pawnOwn(t, n).gone = false; }); commit(); });
-  // tło poza boiskiem: parkiet (niebieskozielone) albo jasne
-  function syncBg() { var b = document.documentElement.getAttribute('data-bg') || 'floor'; document.querySelectorAll('#bgSeg button').forEach(function (x) { x.classList.toggle('on', x.dataset.bg === b); }); }
-  document.querySelectorAll('#bgSeg button').forEach(function (x) {
-    x.addEventListener('click', function () { document.documentElement.setAttribute('data-bg', x.dataset.bg); try { localStorage.setItem('mpv:tablica:bg', x.dataset.bg); } catch (e) {} syncBg(); });
-  });
-  syncBg();
   updateLegend(); renderTeamsPanel(); syncFormUI(); render();
+  // przełącznik języka (flagi w nagłówku); teksty tworzone w kodzie odbudowuje ponowne wyrenderowanie, resztę tłumaczy applyI18n()
+  function setLang(l) {
+    lang = l; try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.title = T('Tablica Taktyczna') + ' – mPro Volley 3D';
+    document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.classList.toggle('on', b.dataset.lang === l); b.setAttribute('aria-pressed', b.dataset.lang === l ? 'true' : 'false'); });
+    renderTeamsPanel(); syncFormUI(); render(); applyI18n();
+  }
+  document.querySelectorAll('#langSw [data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  addEventListener('storage', function (e) { if (e.key === LANG_KEY && (e.newValue === 'pl' || e.newValue === 'en' || e.newValue === 'it') && e.newValue !== lang) setLang(e.newValue); }); // zmiana języka w innej karcie (np. na stronie głównej)
+  var i18nQueued = false; // tekst dodawany później (np. panel Drużyny, tytuł panelu) jest tłumaczony automatycznie
+  new MutationObserver(function () {
+    if (lang === 'pl' || i18nQueued) return;
+    i18nQueued = true; setTimeout(function () { i18nQueued = false; applyI18n(); }, 0);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  setLang(lang);
   histReady = true; pushHistory(); syncHistUI();
 })();
 </script>
