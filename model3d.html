@@ -1380,7 +1380,9 @@ const FULL_LABEL_K = 1.4; // pełna etykieta jest większa od samych nazwisk
 const FREE_LABEL_K = 1.6; // w wersji Free (widok tylko z góry) etykiety dodatkowo większe
 let viewMode = 'real', labelMode = 'full'; // etykiety: full | names | off
 const teamColor = p => hex(p.role === 'L' ? teams[p.team].libero : teams[p.team].jersey);
-// skala bryły: wzrost (oś Y) proporcjonalnie do wpisanej wartości, szerokość/głębokość tylko w 25% tej różnicy\nfunction setBodyScale(p, pelvis) { const k = heightScale(p), w = 1 + (k - 1) * 0.25; pelvis.scale.set(w, k, w); }\nconst HEIGHT_MIN = 150, HEIGHT_MAX = 230, defHeight = p => teams[p.team].gender === 'f' ? 180 : 200; // wzrost domyślny: 2,00 m mężczyźni / 1,80 m kobiety
+// skala bryły: wzrost (oś Y) proporcjonalnie do wpisanej wartości, szerokość/głębokość tylko w 25% tej różnicy
+function setBodyScale(p, pelvis) { const k = heightScale(p), w = 1 + (k - 1) * 0.25; pelvis.scale.set(w, k, w); }
+const HEIGHT_MIN = 150, HEIGHT_MAX = 230, defHeight = p => teams[p.team].gender === 'f' ? 180 : 200; // wzrost domyślny: 2,00 m mężczyźni / 1,80 m kobiety
 const heightScale = p => (p.h >= HEIGHT_MIN && p.h <= HEIGHT_MAX ? p.h : defHeight(p)) / 200; // skala bryły proporcjonalna do wzrostu wpisanego przy zawodniku
 function labelTexture(p) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 160;
