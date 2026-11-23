@@ -1281,7 +1281,7 @@ function buildBody(p) {
   const skin = skinMat.clone(), hair = hairMat.clone(); // własne materiały: w Gold różne karnacje i kolory włosów
   const J = {};
   const pelvis = J.pelvis = new THREE.Group();
-  pelvis.scale.setScalar(heightScale(p)); // wzrost: ok. 2,00 m mezczyzni / 1,80 m kobiety, jednolicie (bez znieksztalcen brył)
+  setBodyScale(p, pelvis); // wzrost: ok. 2,00 m mezczyzni / 1,80 m kobiety; sylwetka (szerokosc) zmienia sie tylko w niewielkim stopniu
   const shorts = mesh(F ? G.shortsF : G.shorts, shortsMat, pelvis, 0, -0.02, 0); shorts.scale.z = 0.72; // u kobiet geometria sama się zwęża do talii, bez skoku na styku z tułowiem
   const spine = J.spine = joint(pelvis, 0, 0.07, 0);
   const torso = mesh(G.torso, jerseyMat, spine, 0, 0, 0); torso.scale.set(F ? 0.92 : 1, 1, 0.66); // profil Lathe ma juz wysokosc wpisana w punkty
@@ -1365,7 +1365,7 @@ function applyPose(p) {
   const legH = (hx, hz, kx) => HIP_DROP + Math.cos(hz) * (LT * Math.cos(hx) + LS * Math.cos(hx + kx)) + FOOT_H;
   const h = Math.min(legH(c.hipL_x, c.hipL_z, c.knL), legH(c.hipR_x, c.hipR_z, c.knR));
   const hk = heightScale(p); // nogi sa skalowane razem z reszta bryly (pelvis.scale) — stopy musza wiec ladowac nizej, proporcjonalnie
-  J.pelvis.position.y = hk * (h + c.jump);
+  J.pelvis.position.y = hk * h + c.jump; // wysokość wyskoku taka sama dla wszystkich (niezależna od wzrostu)
   p.pawn.position.y = c.jump;
   p.sprite.position.y = viewMode === 'real'
     ? J.pelvis.position.y + 1.45 * hk + (c.shL_x < -2 ? 0.35 * hk : 0)
@@ -1380,7 +1380,7 @@ const FULL_LABEL_K = 1.4; // pełna etykieta jest większa od samych nazwisk
 const FREE_LABEL_K = 1.6; // w wersji Free (widok tylko z góry) etykiety dodatkowo większe
 let viewMode = 'real', labelMode = 'full'; // etykiety: full | names | off
 const teamColor = p => hex(p.role === 'L' ? teams[p.team].libero : teams[p.team].jersey);
-const HEIGHT_MIN = 150, HEIGHT_MAX = 230, defHeight = p => teams[p.team].gender === 'f' ? 180 : 200; // wzrost domyślny: 2,00 m mężczyźni / 1,80 m kobiety
+// skala bryły: wzrost (oś Y) proporcjonalnie do wpisanej wartości, szerokość/głębokość tylko w 25% tej różnicy\nfunction setBodyScale(p, pelvis) { const k = heightScale(p), w = 1 + (k - 1) * 0.25; pelvis.scale.set(w, k, w); }\nconst HEIGHT_MIN = 150, HEIGHT_MAX = 230, defHeight = p => teams[p.team].gender === 'f' ? 180 : 200; // wzrost domyślny: 2,00 m mężczyźni / 1,80 m kobiety
 const heightScale = p => (p.h >= HEIGHT_MIN && p.h <= HEIGHT_MAX ? p.h : defHeight(p)) / 200; // skala bryły proporcjonalna do wzrostu wpisanego przy zawodniku
 function labelTexture(p) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 160;
@@ -2375,7 +2375,7 @@ $('teamEd').addEventListener('input', e => {
   if (p) {
     if (el.classList.contains('rh')) { // wzrost zawodnika (cm): bryła skalowana proporcjonalnie, pusty = domyślny dla kategorii
       const v = parseInt(el.value, 10); p.h = v >= HEIGHT_MIN && v <= HEIGHT_MAX ? v : undefined;
-      p.J.pelvis.scale.setScalar(heightScale(p)); applyPose(p); shadowSig = ''; autosave(); return;
+      setBodyScale(p, p.J.pelvis); applyPose(p); shadowSig = ''; autosave(); return;
     }
     if (el.classList.contains('rn')) p.num = el.value; else if (el.classList.contains('rm')) p.name = el.value; else return;
     refreshPlayer(p); syncRoster(); if (selected === p) select(p); autosave(); return;
@@ -2475,7 +2475,7 @@ function deserialize(d, dur = 0.6) {
     // starsze zapisy miały ławki po dwóch stronach: zawodników spoza boiska przenosimy do krzesełek
     if (!d.bv && Math.abs(s.z) > 5.2) { const bp = benchPos(p.team, isLibero(p) ? 'libero' : 'mb'); s.x = bp[0]; s.z = bp[1]; }
     Object.assign(p, { num: s.num != null ? String(s.num) : p.num, role: s.role ?? p.role, name: s.name || '', h: s.h >= HEIGHT_MIN && s.h <= HEIGHT_MAX ? s.h : undefined });
-    p.J.pelvis.scale.setScalar(heightScale(p));
+    setBodyScale(p, p.J.pelvis);
     if (!isLibero(p) && s.zone) p.zone = s.zone;
     setPose(p, s.pose || 'stand'); setFacing(p, s.facing || 0);
     refreshPlayer(p); movePlayer(p, s.x, s.z, dur);
