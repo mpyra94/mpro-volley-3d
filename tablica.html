@@ -1129,12 +1129,23 @@ function saveSharedTeams(teamsObj) {
       var px = (CY - g.__pos[1]) / UNIT, pz = (g.__pos[0] - CX) / UNIT, dn = Math.abs(px);
       // blokuje tylko pionek, który styka się z siatką (najmniejszy możliwy odstęp od niej + 4 jednostki tolerancji); pionek tuż obok siatki, ale bez styku, nie blokuje
       if (Math.abs(g.__pos[1] - CY) > 18 * g.__s + 6 + 4 || Math.abs(pz) > 4.7) return;
-      var r = 0.32 * g.__s; // rzeczywista półszerokość bloku: połowa rozstawu dłoni (ok. 0,2 m) + półszerokość dłoni (ok. 0,12 m), skalowana wielkością pionka
+      var r = 0.304; // półszerokość bloku (deski) w metrach, stała: nie zależy od rozmiaru pionka ani suwaka rozmiaru; = dotychczasowe 0,32 × 0,95 (rozstaw dłoni ok. 0,2 m + półszerokość dłoni ok. 0,1 m)
       // płaszczyzna bloku na siatce (x = 0); każdy pionek to pełna ściana, piłka może przejść tylko między dwoma pionkami, gdy się w odstępie mieści
-      rects.push({ x: 0, zmin: pz - r, zmax: pz + r });
+      rects.push({ x: 0, zmin: pz - r, zmax: pz + r, pz: pz, rad: 18 * g.__s / UNIT }); // rad: narysowany promień pionka (m) – do rozpoznania pionków stykających się ze sobą
     });
     rects.sort(function (a, b) { return a.zmin - b.zmin; });
     return rects;
+  }
+  // Pionki stojące przy siatce i stykające się ze sobą (odstęp środków ≤ suma promieni + 0,1 m) tworzą blok szczelny: jedna ściana bez szczeliny.
+  // Deski rysujemy dalej osobno (stała szerokość), ale cień liczymy dla połączonej ściany; szczelina zostaje tylko między pionkami, które się nie stykają.
+  function sealRects(list) {
+    var out = [], last = null;
+    list.forEach(function (rc) {
+      if (last && rc.pz - last.pz <= last.rad + rc.rad + 0.1) { out[out.length - 1].zmax = Math.max(out[out.length - 1].zmax, rc.zmax); }
+      else out.push({ x: rc.x, zmin: rc.zmin, zmax: rc.zmax });
+      last = rc;
+    });
+    return out;
   }
   var shState = null; // ostatnio policzony cień bloku (do widoku 3D)
   function updateShadow() {
@@ -1143,7 +1154,7 @@ function saveSharedTeams(teamsObj) {
     if (!shadowOn || !pst.ball.on) { st.hidden = true; return; }
     var Bx = (CY - pst.ball.y) / UNIT, Bz = (pst.ball.x - CX) / UNIT; st.hidden = false;
     if (Math.abs(Bx) < 0.05) { st.textContent = T('Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.'); return; }
-    var def = Bx < 0 ? 'b' : 'a', rects = shadowRects(def), step = 9 / SH_N, ssN = SH_SS * SH_SS, data = shImg.data, ok = 0, blocked = 0, HW = 4.5;
+    var def = Bx < 0 ? 'b' : 'a', desks = shadowRects(def), rects = sealRects(desks), step = 9 / SH_N, ssN = SH_SS * SH_SS, data = shImg.data, ok = 0, blocked = 0, HW = 4.5;
     var COL = [[40, 235, 110, 105], [30, 18, 70, 165], [95, 100, 110, 125]]; // 0 dostępne, 1 cień bloku, 2 poza antenkami
     // Granica cienia każdego blokującego to dwie linie od KRAWĘDZI piłki (styczne do okręgu piłki, przechodzące przez końce bloku) – te same, które rysujemy;
     // pole między nimi jest zacienione, więc kolor zgadza się z liniami. sgn = po której stronie linii leży blok (środek deski).
@@ -1184,7 +1195,7 @@ function saveSharedTeams(teamsObj) {
     shCtx.putImageData(shImg, 0, 0);
     shG = el('g', { style: 'pointer-events:none' }, svg);
     el('image', { x: CX - 180, y: def === 'a' ? CY : CY - 360, width: 360, height: 360, href: shCv.toDataURL(), preserveAspectRatio: 'none' }, shG);
-    rects.forEach(function (rc) { // pasy blokujących na siatce
+    desks.forEach(function (rc) { // pasy blokujących na siatce (osobne deski o stałej szerokości)
       el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
     });
     var rayZ = [], raySt = [], endX = def === 'a' ? -9 : 9;
@@ -1202,7 +1213,7 @@ function saveSharedTeams(teamsObj) {
     shState = { def: def, rects: rects.map(function (q) { return { x: q.x, zmin: q.zmin, zmax: q.zmax }; }), Bx: Bx, Bz: Bz, endX: endX, rayZ: rayZ, raySt: raySt, png: shCv.toDataURL() };
     if (annotG && annotG.parentNode === svg) svg.insertBefore(shG, annotG); // pod rysunkami i pionkami
     var total = SH_N * SH_N;
-    st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + rects.length + '</b>') + '<br>' +
+    st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + desks.length + '</b>') + '<br>' +
       '<span style="color:#1fa65a">' + T('dostępne {0}%').replace('{0}', (ok / total * 100).toFixed(0)) + '</span> · <span style="color:#6f5bd6">' + T('cień bloku {0}% połowy').replace('{0}', (blocked / total * 100).toFixed(0)) + '</span>';
   }
   function queueShadow() { if (!shadowOn || shQueued) return; shQueued = true; requestAnimationFrame(function () { shQueued = false; updateShadow(); }); } // przy przeciąganiu: najwyżej raz na klatkę
