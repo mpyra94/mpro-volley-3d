@@ -2054,8 +2054,16 @@ function applyDefense(team, rotation) {
   const backRA = others.find(p => p !== backP) || others[1];
   if (backP) backP.zone = 6;
   if (backRA) backRA.zone = 1;
+  // Pierwsza linia (blok) w obronie zawsze ma ten sam układ ról, niezależnie od rotacji: P z lewej (strefa 4),
+  // Ś na środku (3), A lub R z prawej (2). Strefy zawodników z przodu nie są zmieniane (rotacja liczona jest ze strefy rozgrywającego) -
+  // tylko miejsce, które zajmują w obronie. Gdy ról jest inaczej (edytowane), puste miejsca zajmują pozostali wg ich stref.
+  const front = squad.filter(p => p !== backMB && !isLibero(p) && [2, 3, 4].includes(p.zone)), frontZone = new Map();
+  const takeFront = pred => { const i = front.findIndex(pred); return i < 0 ? null : front.splice(i, 1)[0]; };
+  [[4, p => p.role === 'P'], [3, p => p.role === 'Ś'], [2, p => p.role === 'A' || p.role === 'R']].forEach(([zn, pred]) => { const p = takeFront(pred); if (p) frontZone.set(zn, p); });
+  for (const zn of [4, 3, 2]) if (!frontZone.has(zn) && front.length) frontZone.set(zn, front.shift());
+  const frontOf = new Map([...frontZone].map(([zn, p]) => [p, zn]));
   for (const p of squad) {
-    const z = p === libero ? 5 : p.zone;
+    const z = p === libero ? 5 : (frontOf.get(p) ?? p.zone);
     const [x, zz] = p === backMB ? benchPos(team, 'mb') : mirror(team, DEFENSE[z]);
     assign(p, [x, zz], p === backMB ? 'stand' : ([2, 3, 4].includes(z) ? 'stand' : 'defense'), 0.9, p === backMB); // 1. linia stoi - do bloku wyskakuje dopiero po dosunięciu do siatki
   }
