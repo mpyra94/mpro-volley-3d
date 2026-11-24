@@ -822,7 +822,7 @@ function saveSharedTeams(teamsObj) {
   // ---------- Geometria boiska (rzut z góry, pionowo, siatka pośrodku; A na dole, B na górze) ----------
   // 1 m = 40 px, siatka na y = 450, oś środkowa x = 250. Układ z modelu 3D (x wzdłuż boiska, z w poprzek, A po stronie x < 0)
   // przeliczamy na tablicę: x = 250 + z·40, y = 450 − x·40.
-  var UNIT = 40, CX = 250, CY = 450, BALL_R = 0.11; // BALL_R: promień piłki w metrach (jak w widoku 3D)
+  var UNIT = 40, CX = 250, CY = 450, BALL_R = 10.5 / 40; // BALL_R: promień piłki z tablicy w metrach = promień rysowanej piłki (10,5 jedn.), nie rzeczywisty 0,11 m – cała widoczna piłka musi przejść obok bloku
   function toBoard(mp) { return [CX + mp[1] * UNIT, CY - mp[0] * UNIT]; }
   var ZONE_A = { 1: [-7, 3], 2: [-1.8, 3], 3: [-1.8, 0], 4: [-1.8, -3], 5: [-7, -3], 6: [-7, 0] };
   var mirror = function (team, p) { return team === 'a' ? p : [-p[0], -p[1]]; };
@@ -1145,6 +1145,18 @@ function saveSharedTeams(teamsObj) {
     if (Math.abs(Bx) < 0.05) { st.textContent = T('Przeciągnij piłkę na jedną z połówek boiska, aby zobaczyć cień bloku.'); return; }
     var def = Bx < 0 ? 'b' : 'a', rects = shadowRects(def), step = 9 / SH_N, ssN = SH_SS * SH_SS, data = shImg.data, ok = 0, blocked = 0, HW = 4.5;
     var COL = [[40, 235, 110, 105], [30, 18, 70, 165], [95, 100, 110, 125]]; // 0 dostępne, 1 cień bloku, 2 poza antenkami
+    // Granica cienia każdego blokującego to dwie linie od KRAWĘDZI piłki (styczne do okręgu piłki, przechodzące przez końce bloku) – te same, które rysujemy;
+    // pole między nimi jest zacienione, więc kolor zgadza się z liniami. sgn = po której stronie linii leży blok (środek deski).
+    function edgeRay(rc, zEnd, a) {
+      var vx = rc.x - Bx, vz = zEnd - Bz, dd = Math.hypot(vx, vz); if (dd <= BALL_R) return null;
+      var al = Math.asin(BALL_R / dd) * a * (vx > 0 ? 1 : -1), ca = Math.cos(al), sa = Math.sin(al);
+      var ux = vx * ca - vz * sa, uz = vx * sa + vz * ca; if (ux * vx <= 0) return null;
+      var nx = -uz / dd, nz = ux / dd; if (nx * vx + nz * vz < 0) { nx = -nx; nz = -nz; } // jednostkowy wektor prostopadły w stronę bloku (dd = |u|)
+      var sx0 = Bx + BALL_R * nx, sz0 = Bz + BALL_R * nz, zc = (rc.zmin + rc.zmax) / 2;
+      return { sx: sx0, sz: sz0, ux: ux, uz: uz, sgn: Math.sign(ux * (zc - sz0) - uz * (rc.x - sx0)) || 1 };
+    }
+    var ballOver = Math.abs(Bz) + BALL_R <= HW && Math.abs(Bx) + BALL_R <= 9; // cały obwód piłki nad boiskiem (w liniach bocznych i końcowych) – antenki nie ograniczają ataku
+    var wedges = rects.map(function (rc) { return { rc: rc, l: edgeRay(rc, rc.zmin, -1), r: edgeRay(rc, rc.zmax, 1) }; });
     for (var r = 0; r < SH_N; r++) for (var c = 0; c < SH_N; c++) {
       var rr = 0, gg = 0, bb = 0, aa = 0, n0 = 0, n1 = 0;
       for (var sy = 0; sy < SH_SS; sy++) {
@@ -1153,11 +1165,16 @@ function saveSharedTeams(teamsObj) {
           var pz = -4.5 + (c + (sx + .5) / SH_SS) * step, dx = xm - Bx, state = 0;
           // liczy się krawędź piłki: tor to walec o promieniu piłki, jego przekrój na płaszczyźnie siatki jest o BALL_R / cos(kąta) szerszy z każdej strony
           var infl = BALL_R * Math.hypot(dx, pz - Bz) / Math.max(Math.abs(dx), 1e-6);
-          for (var k = 0; k < rects.length; k++) {
-            var rc = rects[k], t = (rc.x - Bx) / dx; if (t <= 0 || t >= 1) continue;
+          for (var k = 0; k < wedges.length; k++) {
+            var w = wedges[k], rc = w.rc;
+            if (w.l && w.r) { // klin między liniami od krawędzi piłki
+              if (w.l.sgn * (w.l.ux * (pz - w.l.sz) - w.l.uz * (xm - w.l.sx)) > 0 && w.r.sgn * (w.r.ux * (pz - w.r.sz) - w.r.uz * (xm - w.r.sx)) > 0) { state = 1; break; }
+              continue;
+            }
+            var t = (rc.x - Bx) / dx; if (t <= 0 || t >= 1) continue; // piłka tuż przy bloku: zapas na liczenie po torze środka
             var z = Bz + t * (pz - Bz); if (z > rc.zmin - infl && z < rc.zmax + infl) { state = 1; break; }
           }
-          if (state === 0 && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW - BALL_R) state = 2; // prosta przechodzi przez siatkę poza antenką
+          if (state === 0 && !ballOver && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW - BALL_R) state = 2; // prosta przechodzi przez siatkę poza antenką (pomijane, gdy piłka cała jest nad boiskiem)
           var cl = COL[state]; rr += cl[0]; gg += cl[1]; bb += cl[2]; aa += cl[3];
           if (state === 0) n0++; else if (state === 1) n1++;
         }
@@ -1170,17 +1187,19 @@ function saveSharedTeams(teamsObj) {
     rects.forEach(function (rc) { // pasy blokujących na siatce
       el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
     });
-    var rayZ = [], endX = def === 'a' ? -9 : 9;
+    var rayZ = [], raySt = [], endX = def === 'a' ? -9 : 9;
     if (rects.length) { // dwa skrajne promienie: styczne do krawędzi piłki (okrąg o promieniu BALL_R wokół skrajnych punktów bloku) do końca boiska
       var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; });
       [[left, left.zmin, -1], [right, right.zmax, 1]].forEach(function (a) {
         var vx = a[0].x - Bx, vz = a[1] - Bz, dd = Math.hypot(vx, vz), al = Math.asin(Math.min(BALL_R / dd, 1)) * a[2] * (vx > 0 ? 1 : -1), ca = Math.cos(al), sa = Math.sin(al);
         var ux = vx * ca - vz * sa, uz = vx * sa + vz * ca; if (ux * vx <= 0) return;
-        var hz = Bz + (endX - Bx) / ux * uz; rayZ.push(hz);
-        el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
+        // linia wychodzi z KRAWĘDZI piłki (od strony bloku), nie ze środka: równoległa do toru środka, o BALL_R od niego, przechodzi przez skrajny punkt bloku
+        var nx = -uz / dd, nz = ux / dd; if (nx * vx + nz * vz < 0) { nx = -nx; nz = -nz; } // jednostkowy wektor prostopadły w stronę bloku (dd = |u|)
+        var sx0 = Bx + BALL_R * nx, sz0 = Bz + BALL_R * nz, hz = sz0 + (endX - sx0) / ux * uz; rayZ.push(hz); raySt.push([sx0, sz0]);
+        el('line', { x1: CX + sz0 * UNIT, y1: CY - sx0 * UNIT, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
       });
     }
-    shState = { def: def, rects: rects.map(function (q) { return { x: q.x, zmin: q.zmin, zmax: q.zmax }; }), Bx: Bx, Bz: Bz, endX: endX, rayZ: rayZ, png: shCv.toDataURL() };
+    shState = { def: def, rects: rects.map(function (q) { return { x: q.x, zmin: q.zmin, zmax: q.zmax }; }), Bx: Bx, Bz: Bz, endX: endX, rayZ: rayZ, raySt: raySt, png: shCv.toDataURL() };
     if (annotG && annotG.parentNode === svg) svg.insertBefore(shG, annotG); // pod rysunkami i pionkami
     var total = SH_N * SH_N;
     st.innerHTML = T('Atak na stronę {0} · blokujących: {1}').replace('{0}', '<b>' + def.toUpperCase() + '</b>').replace('{1}', '<b>' + rects.length + '</b>') + '<br>' +

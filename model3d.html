@@ -2699,7 +2699,7 @@ async function addBoardShadow(sh) { // cień bloku z tablicy: tekstura na połow
     const top = 3.1, bottom = NET_H - 0.25, m = new THREE.Mesh(new THREE.PlaneGeometry(rc.zmax - rc.zmin, top - bottom), mat);
     m.rotation.y = Math.PI / 2; m.position.set(rc.x, (top + bottom) / 2, (rc.zmin + rc.zmax) / 2); scene.add(m); boardShadowObjs.push(m);
   }
-  const pts = []; for (const hz of sh.rayZ) pts.push(new THREE.Vector3(sh.Bx, 0.03, sh.Bz), new THREE.Vector3(sh.endX, 0.03, hz));
+  const pts = []; sh.rayZ.forEach((hz, i) => { const s = sh.raySt?.[i] || [sh.Bx, sh.Bz]; pts.push(new THREE.Vector3(s[0], 0.03, s[1]), new THREE.Vector3(sh.endX, 0.03, hz)); }); // linie z krawędzi piłki
   if (pts.length) { const ln = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .95 })); scene.add(ln); boardShadowObjs.push(ln); }
 }
 let boardDrawObj = null;
