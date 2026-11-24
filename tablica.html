@@ -822,7 +822,7 @@ function saveSharedTeams(teamsObj) {
   // ---------- Geometria boiska (rzut z góry, pionowo, siatka pośrodku; A na dole, B na górze) ----------
   // 1 m = 40 px, siatka na y = 450, oś środkowa x = 250. Układ z modelu 3D (x wzdłuż boiska, z w poprzek, A po stronie x < 0)
   // przeliczamy na tablicę: x = 250 + z·40, y = 450 − x·40.
-  var UNIT = 40, CX = 250, CY = 450;
+  var UNIT = 40, CX = 250, CY = 450, BALL_R = 0.11; // BALL_R: promień piłki w metrach (jak w widoku 3D)
   function toBoard(mp) { return [CX + mp[1] * UNIT, CY - mp[0] * UNIT]; }
   var ZONE_A = { 1: [-7, 3], 2: [-1.8, 3], 3: [-1.8, 0], 4: [-1.8, -3], 5: [-7, -3], 6: [-7, 0] };
   var mirror = function (team, p) { return team === 'a' ? p : [-p[0], -p[1]]; };
@@ -1130,13 +1130,10 @@ function saveSharedTeams(teamsObj) {
       // blokuje tylko pionek, który styka się z siatką (najmniejszy możliwy odstęp od niej + 4 jednostki tolerancji); pionek tuż obok siatki, ale bez styku, nie blokuje
       if (Math.abs(g.__pos[1] - CY) > 18 * g.__s + 6 + 4 || Math.abs(pz) > 4.7) return;
       var r = 18 * g.__s / UNIT * 0.95;
-      rects.push({ x: (px < 0 ? -1 : 1) * Math.max(0.25, dn - 0.5), zmin: pz - r, zmax: pz + r }); // dłonie ok. 0,5 m przed środkiem pionka
+      // płaszczyzna bloku na siatce (x = 0); każdy pionek to pełna ściana, piłka może przejść tylko między dwoma pionkami, gdy się w odstępie mieści
+      rects.push({ x: 0, zmin: pz - r, zmax: pz + r });
     });
     rects.sort(function (a, b) { return a.zmin - b.zmin; });
-    for (var i = 0; i < rects.length - 1; i++) { // blok szczelny: sąsiedzi z odstępem < 0,5 m zamykają szczelinę
-      var a = rects[i], b = rects[i + 1], gap = b.zmin - a.zmax;
-      if (gap > 0 && gap < 0.5) { var mid = (a.zmax + b.zmin) / 2; a.zmax = mid; b.zmin = mid; }
-    }
     return rects;
   }
   var shState = null; // ostatnio policzony cień bloku (do widoku 3D)
@@ -1154,11 +1151,13 @@ function saveSharedTeams(teamsObj) {
         var xm = def === 'a' ? -(r + (sy + .5) / SH_SS) * step : 9 - (r + (sy + .5) / SH_SS) * step;
         for (var sx = 0; sx < SH_SS; sx++) {
           var pz = -4.5 + (c + (sx + .5) / SH_SS) * step, dx = xm - Bx, state = 0;
+          // liczy się krawędź piłki: tor to walec o promieniu piłki, jego przekrój na płaszczyźnie siatki jest o BALL_R / cos(kąta) szerszy z każdej strony
+          var infl = BALL_R * Math.hypot(dx, pz - Bz) / Math.max(Math.abs(dx), 1e-6);
           for (var k = 0; k < rects.length; k++) {
             var rc = rects[k], t = (rc.x - Bx) / dx; if (t <= 0 || t >= 1) continue;
-            var z = Bz + t * (pz - Bz); if (z > rc.zmin && z < rc.zmax) { state = 1; break; }
+            var z = Bz + t * (pz - Bz); if (z > rc.zmin - infl && z < rc.zmax + infl) { state = 1; break; }
           }
-          if (state === 0 && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW) state = 2; // prosta przechodzi przez siatkę poza antenką
+          if (state === 0 && Math.abs(Bz + (-Bx / dx) * (pz - Bz)) > HW - BALL_R) state = 2; // prosta przechodzi przez siatkę poza antenką
           var cl = COL[state]; rr += cl[0]; gg += cl[1]; bb += cl[2]; aa += cl[3];
           if (state === 0) n0++; else if (state === 1) n1++;
         }
@@ -1172,10 +1171,12 @@ function saveSharedTeams(teamsObj) {
       el('rect', { x: CX + rc.zmin * UNIT, y: CY - rc.x * UNIT - 3.5, width: (rc.zmax - rc.zmin) * UNIT, height: 7, rx: 2, fill: 'rgba(91,72,201,.92)', stroke: '#fff', 'stroke-width': 1 }, shG);
     });
     var rayZ = [], endX = def === 'a' ? -9 : 9;
-    if (rects.length) { // dwa skrajne promienie: od piłki przez krawędzie bloku do końca boiska
+    if (rects.length) { // dwa skrajne promienie: styczne do krawędzi piłki (okrąg o promieniu BALL_R wokół skrajnych punktów bloku) do końca boiska
       var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; });
-      [[left, left.zmin], [right, right.zmax]].forEach(function (a) {
-        var t = (endX - Bx) / (a[0].x - Bx), hz = Bz + t * (a[1] - Bz); rayZ.push(hz);
+      [[left, left.zmin, -1], [right, right.zmax, 1]].forEach(function (a) {
+        var vx = a[0].x - Bx, vz = a[1] - Bz, dd = Math.hypot(vx, vz), al = Math.asin(Math.min(BALL_R / dd, 1)) * a[2], ca = Math.cos(al), sa = Math.sin(al);
+        var ux = vx * ca - vz * sa, uz = vx * sa + vz * ca; if (ux * vx <= 0) return;
+        var hz = Bz + (endX - Bx) / ux * uz; rayZ.push(hz);
         el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
       });
     }
