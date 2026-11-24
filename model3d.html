@@ -666,7 +666,7 @@ function applyI18n() {
 
 // ---------- Konfiguracja ----------
 // Boisko: oś X wzdłuż (siatka w x=0), oś Z w poprzek. Drużyna A po stronie x<0.
-const COURT_L = 18, COURT_W = 9, BALL_R = 0.11;
+const COURT_L = 18, COURT_W = 9, BALL_R = 0.105; // BALL_R: promień piłki FIVB (obwód 65–67 cm → średnica ≈ 0,21 m)
 let NET_H = 2.43; // mężczyźni wg przepisów FIVB; kobiety 2,24 m - patrz syncNetHeight()
 const NET_GAP = 0.35; // minimalna odległość środka zawodnika od siatki
 const DEFAULT_TEAMS = {
@@ -1618,7 +1618,7 @@ const rayMat = new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true,
 const rayLines = new THREE.LineSegments(new THREE.BufferGeometry(), rayMat); rayLines.visible = false; scene.add(rayLines);
 let shadowOn = false, shadowSig = '';
 let ballTrackOn = false; // śledzenie piłki: zawodnicy (oprócz postawy 'blok') są zawsze zwróceni w stronę piłki
-const BLOCK_WIDTH_FACTOR = 0.7;
+const BLOCK_WIDTH_FACTOR = 1; // wymiary rzeczywiste: szerokość bloku = rozstaw dłoni + ok. 0,12 m (półszerokość dłoni) na stronę, bez zmniejszania
 const _v = new THREE.Vector3();
 function blockRects(defTeam) {
   const rects = [];
@@ -1655,6 +1655,7 @@ function updateBlockShadow() {
   });
   // piłka poniżej górnej taśmy siatki – nie da się zaatakować
   const belowNet = B.y < NET_H + BALL_R;
+  const ballOver = Math.abs(B.z) + BALL_R <= hw && Math.abs(B.x) + BALL_R <= hl; // cały obwód piłki w liniach boiska
   const data = shImg.data; let ok = 0, blocked = 0;
   const step = 9 / SH_N, sub = step / SH_SS, ssN = SH_SS * SH_SS;
   const SH_COL = [[40, 235, 110, 150], [30, 18, 70, 185], [95, 100, 110, 150]]; // 0 dostępne, 1 cień, 2 siatka/antenka
@@ -1686,7 +1687,7 @@ function updateBlockShadow() {
               if (z > rc.zmin - inflZ && z < rc.zmax + inflZ && y < rc.top + inflY) { state = 1; break; }
             }
             // siatkę pomijamy (atak z góry sięga niemal wszędzie) – liczy się tylko przejście między antenkami
-            if (state === 0 && Math.abs(B.z + (-B.x / dx) * (pz - B.z)) > hw - BALL_R) state = 2;
+            if (state === 0 && Math.abs(B.z + (-B.x / dx) * (pz - B.z)) > hw - BALL_R && !ballOver) state = 2; // antenki nie ograniczają ataku, gdy cała piłka jest nad boiskiem
           }
           const c = SH_COL[state]; rr += c[0]; gg += c[1]; bb += c[2]; aa += c[3];
           if (state === 0) n0++; else if (state === 1) n1++;
@@ -1704,11 +1705,19 @@ function updateBlockShadow() {
   if (rects.length) {
     const left = rects.reduce((a, r) => r.zmin < a.zmin ? r : a);
     const right = rects.reduce((a, r) => r.zmax > a.zmax ? r : a);
-    for (const [r, z] of [[left, left.zmin - BALL_R], [right, right.zmax + BALL_R]]) {
-      const top = new THREE.Vector3(r.x, r.top + BALL_R, z);
-      const dir = top.clone().sub(B); if (dir.y >= 0) continue;
-      const t = -B.y / dir.y; const hit = B.clone().addScaledVector(dir, t);
-      segs.push(B.clone(), hit);
+    // dokładne styczne jak w tablicy: tor środka piłki mija róg bloku (góra rąk, koniec deski) o tyle, o ile wynika z elipsy toru
+    // (te same wzory co w teście cienia, kilka iteracji), a rysowana linia to KRAWĘDŹ piłki od strony bloku (przesunięcie o BALL_R prostopadle do toru).
+    for (const [r, zEdge, side] of [[left, left.zmin, -1], [right, right.zmax, 1]]) {
+      const C = new THREE.Vector3(r.x, r.top + BALL_R, zEdge + side * BALL_R);
+      for (let k = 0; k < 4; k++) {
+        const dx = C.x - B.x, dy = C.y - B.y, dz = C.z - B.z, L3 = Math.hypot(dx, dy, dz), mIn = Math.hypot(dy, dz) || 1e-6;
+        const aEl = Math.min(BALL_R * L3 / Math.max(Math.abs(dx), 1e-6), 3), uy = dy / mIn, uz = dz / mIn;
+        C.set(r.x, r.top + Math.hypot(aEl * uy, BALL_R * uz), zEdge + side * Math.hypot(aEl * uz, BALL_R * uy));
+      }
+      const dir = C.clone().sub(B); if (dir.y >= 0) continue;
+      const n = new THREE.Vector3(dir.z, 0, -dir.x).normalize(); if (n.z * -side < 0) n.negate(); // prostopadły do toru, poziomy, w stronę bloku
+      const S = B.clone().addScaledVector(n, BALL_R), hit = S.clone().addScaledVector(dir, (0.03 - S.y) / dir.y);
+      segs.push(S, hit);
     }
   }
   rayLines.geometry.setFromPoints(segs);

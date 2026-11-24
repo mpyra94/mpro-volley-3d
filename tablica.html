@@ -822,7 +822,7 @@ function saveSharedTeams(teamsObj) {
   // ---------- Geometria boiska (rzut z góry, pionowo, siatka pośrodku; A na dole, B na górze) ----------
   // 1 m = 40 px, siatka na y = 450, oś środkowa x = 250. Układ z modelu 3D (x wzdłuż boiska, z w poprzek, A po stronie x < 0)
   // przeliczamy na tablicę: x = 250 + z·40, y = 450 − x·40.
-  var UNIT = 40, CX = 250, CY = 450, BALL_R = 10.5 / 40; // BALL_R: promień piłki z tablicy w metrach = promień rysowanej piłki (10,5 jedn.), nie rzeczywisty 0,11 m – cała widoczna piłka musi przejść obok bloku
+  var UNIT = 40, CX = 250, CY = 450, BALL_R = 0.105; // BALL_R: rzeczywisty promień piłki FIVB (średnica ≈ 0,21 m), te same wymiary co w widoku 3D
   function toBoard(mp) { return [CX + mp[1] * UNIT, CY - mp[0] * UNIT]; }
   var ZONE_A = { 1: [-7, 3], 2: [-1.8, 3], 3: [-1.8, 0], 4: [-1.8, -3], 5: [-7, -3], 6: [-7, 0] };
   var mirror = function (team, p) { return team === 'a' ? p : [-p[0], -p[1]]; };
@@ -1118,7 +1118,7 @@ function saveSharedTeams(teamsObj) {
   // ---------- Cień bloku (widok z góry; wysokość piłki nie ma znaczenia) ----------
   // Piłka (punkt uderzenia) jest po jednej stronie siatki; blokują pionki drużyny po drugiej stronie, stojące przy siatce.
   // Punkt boiska jest w cieniu, gdy prosta od piłki do niego przecina pas jednego z blokujących na linii dłoni; poza antenkami nie da się zaatakować.
-  var SHADOW_KEY = 'mpv:tablica:shadow:v1', shadowOn = false, shG = null, shQueued = false, SH_N = 120, SH_SS = 2;
+  var SHADOW_KEY = 'mpv:tablica:shadow:v1', shadowOn = false, shG = null, shQueued = false, SH_N = 240, SH_SS = 2; // 240 jak w modelu 3D – skośna krawędź cienia jest gładka
   try { shadowOn = localStorage.getItem(SHADOW_KEY) === '1'; } catch (e) {}
   var shCv = document.createElement('canvas'); shCv.width = shCv.height = SH_N;
   var shCtx = shCv.getContext('2d'), shImg = shCtx.createImageData(SH_N, SH_N);
@@ -1129,7 +1129,7 @@ function saveSharedTeams(teamsObj) {
       var px = (CY - g.__pos[1]) / UNIT, pz = (g.__pos[0] - CX) / UNIT, dn = Math.abs(px);
       // blokuje tylko pionek, który styka się z siatką (najmniejszy możliwy odstęp od niej + 4 jednostki tolerancji); pionek tuż obok siatki, ale bez styku, nie blokuje
       if (Math.abs(g.__pos[1] - CY) > 18 * g.__s + 6 + 4 || Math.abs(pz) > 4.7) return;
-      var r = 18 * g.__s / UNIT * 0.95;
+      var r = 0.32 * g.__s; // rzeczywista półszerokość bloku: połowa rozstawu dłoni (ok. 0,2 m) + półszerokość dłoni (ok. 0,12 m), skalowana wielkością pionka
       // płaszczyzna bloku na siatce (x = 0); każdy pionek to pełna ściana, piłka może przejść tylko między dwoma pionkami, gdy się w odstępie mieści
       rects.push({ x: 0, zmin: pz - r, zmax: pz + r });
     });
