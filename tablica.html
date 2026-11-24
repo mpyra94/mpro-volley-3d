@@ -1174,7 +1174,7 @@ function saveSharedTeams(teamsObj) {
     if (rects.length) { // dwa skrajne promienie: styczne do krawędzi piłki (okrąg o promieniu BALL_R wokół skrajnych punktów bloku) do końca boiska
       var left = rects[0], right = rects.reduce(function (m, q) { return q.zmax > m.zmax ? q : m; });
       [[left, left.zmin, -1], [right, right.zmax, 1]].forEach(function (a) {
-        var vx = a[0].x - Bx, vz = a[1] - Bz, dd = Math.hypot(vx, vz), al = Math.asin(Math.min(BALL_R / dd, 1)) * a[2], ca = Math.cos(al), sa = Math.sin(al);
+        var vx = a[0].x - Bx, vz = a[1] - Bz, dd = Math.hypot(vx, vz), al = Math.asin(Math.min(BALL_R / dd, 1)) * a[2] * (vx > 0 ? 1 : -1), ca = Math.cos(al), sa = Math.sin(al);
         var ux = vx * ca - vz * sa, uz = vx * sa + vz * ca; if (ux * vx <= 0) return;
         var hz = Bz + (endX - Bx) / ux * uz; rayZ.push(hz);
         el('line', { x1: pst.ball.x, y1: pst.ball.y, x2: CX + hz * UNIT, y2: CY - endX * UNIT, stroke: '#ffe08a', 'stroke-width': 2, 'stroke-dasharray': '6 5', opacity: .9 }, shG);
